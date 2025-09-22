@@ -558,11 +558,6 @@ const TsurumiApp = {
             document.querySelector('#ideal-map-container .map-guide-text').classList.toggle('hidden', isIdealStarted);
         },
         
-        // ==================================================================
-        // BUG FIX: The logic for the scroll arrow has been corrected.
-        // It now correctly identifies the scrolling element for both desktop (result page)
-        // and mobile (window) views, ensuring it appears only when needed.
-        // ==================================================================
         updateScrollIndicator: function() {
             const scrollIndicator = TsurumiApp.elements.scrollIndicator;
             const resultPage = TsurumiApp.elements.resultPage;
@@ -572,9 +567,8 @@ const TsurumiApp = {
                 return;
             }
 
-            // Determine which element is scrolling based on window width
             const isMobileView = window.innerWidth <= 768;
-            const scrollContainer = isMobileView ? document.documentElement : resultPage;
+            const scrollContainer = isMobileView ? document.documentElement : TsurumiApp.elements.resultPage;
             
             const isScrollable = scrollContainer.scrollHeight > scrollContainer.clientHeight;
             const isAtTop = scrollContainer.scrollTop < 50;
