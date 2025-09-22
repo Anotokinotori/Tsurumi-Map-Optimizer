@@ -963,11 +963,6 @@ main {
     background-size: cover;
     background-position: center;
 }
-.pattern-marker .pattern-label {
-    background-color: rgba(0,0,0,0.5);
-    padding: 1px 4px;
-    border-radius: 3px;
-}
 .pattern-marker.completed {
     background-color: #10B981;
     border-color: white;
