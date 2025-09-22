@@ -18,6 +18,7 @@ const TsurumiApp = {
         this.ui.initInputPage('current');
         this.ui.initInputPage('ideal');
         this.bindEvents();
+        this.ui.ensureScrollIndicatorIsInBody(); // Ensure arrow is a child of body
     },
 
     cacheElements: function() {
@@ -574,6 +575,14 @@ const TsurumiApp = {
             const isAtTop = scrollContainer.scrollTop < 50;
 
             scrollIndicator.classList.toggle('hidden', !isScrollable || !isAtTop);
+        },
+        
+        ensureScrollIndicatorIsInBody: function() {
+            const indicator = this.scrollIndicator;
+            if (!indicator) return;
+            if (indicator.parentElement !== document.body) {
+                document.body.appendChild(indicator);
+            }
         },
 
         showDayDetail: function(dayIndex) {
