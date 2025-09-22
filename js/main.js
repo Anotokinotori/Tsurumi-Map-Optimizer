@@ -208,17 +208,35 @@ const TsurumiApp = {
             return;
         }
 
+        // ==================================================================
+        // BUG FIX: Restore detailed text and progress counter in the loading modal.
+        // ==================================================================
+        const loadingTextEl = document.getElementById('loading-text');
+        if (loadingTextEl) {
+            loadingTextEl.innerHTML = `<span style="display: block; font-size: 1.1em; font-weight: bold; margin-bottom: 15px;">このツールは、<a href="https://youtu.be/2xqllaCTP5c?si=m9yyxXo5GS0rwFG9" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold;">ねこしたさんの解説</a>に基づき、プログラムされました！<br>ぜひ解説動画もご覧ください。</span><span style="font-size: 0.9em; color: var(--secondary-text-color);">計算には数分かかる場合がありますので、しばらくお待ちください。</span>`;
+        }
+        
+        const progressEl = document.getElementById('calculation-progress');
+        const onProgress = (verifiedCount) => {
+            if(progressEl) {
+                progressEl.textContent = `検証済みパターン: ${verifiedCount} / 59049`;
+            }
+        };
+
         this.ui.showModal('loading-modal');
         
+        // Asynchronous calculation to prevent UI freeze and allow progress updates.
         setTimeout(() => {
-            const plan = PlanCalculator.findShortestPlan(
+            PlanCalculator.findShortestPlan(
                 this.state.currentConfig,
                 this.state.idealConfig,
-                { isMultiplayer, allowBoat }
-            );
-            this.state.lastCalculatedPlan = plan;
-            this.ui.displayResults(plan, isMultiplayer, allowBoat);
-            this.ui.closeModal('loading-modal');
+                { isMultiplayer, allowBoat, onProgress }
+            ).then(plan => {
+                this.state.lastCalculatedPlan = plan;
+                this.ui.displayResults(plan, isMultiplayer, allowBoat);
+                this.ui.closeModal('loading-modal');
+                if(progressEl) progressEl.textContent = ''; // Reset progress text
+            });
         }, 50);
     },
 
@@ -629,69 +647,104 @@ const TsurumiApp = {
 // A pure object for handling complex calculations without side effects.
 const PlanCalculator = {
     findShortestPlan: function(startConfig, idealConfig, options) {
-        const { isMultiplayer, allowBoat } = options;
-        const actionsToUse = this.getAvailableActions(allowBoat);
-        
-        const PATTERN_MAP = { 'A': 0, 'B': 1, 'C': 2 };
-        const endConfigArr = groupKeys.map(k => idealConfig[k] ? PATTERN_MAP[idealConfig[k]] : -1);
-
-        let startState = 0;
-        for (let i = 0; i < groupKeys.length; i++) {
-            startState = startState * 3 + PATTERN_MAP[startConfig[groupKeys[i]]];
-        }
-
-        if (this.isStateGoal(startState, endConfigArr)) return [];
-
-        const queue = [{ state: startState, path: [] }];
-        const visited = new Set([startState]);
-
-        while (queue.length > 0) {
-            const { state, path } = queue.shift();
-            if (path.length >= 8) continue;
-
-            const currentStateArr = this.stateToArray(state);
-
-            // Solo mode actions
-            for (const soloAction of actionsToUse) {
-                const nextStateArr = [...currentStateArr];
-                for (const group of soloAction.affectedGroups) {
-                    const idx = groupKeys.indexOf(group);
-                    nextStateArr[idx] = (nextStateArr[idx] + 1) % 3;
-                }
-                const nextState = this.arrayToState(nextStateArr);
-                if (!visited.has(nextState)) {
-                    const newPath = [...path, { holdAction: { name: '---' }, advanceAction: soloAction, mode: 'ソロ' }];
-                    if (this.isStateGoal(nextState, endConfigArr)) return newPath;
-                    visited.add(nextState);
-                    queue.push({ state: nextState, path: newPath });
-                }
-            }
+        // Now returns a Promise to allow for asynchronous, non-blocking calculation.
+        return new Promise(resolve => {
+            const { isMultiplayer, allowBoat, onProgress } = options;
+            const actionsToUse = this.getAvailableActions(allowBoat);
             
-            // Multi mode actions
-            if (isMultiplayer) {
-                for (const holdAction of actionsToUse) {
-                    for (const advanceAction of actionsToUse) {
-                        const effectiveAdvance = new Set([...advanceAction.affectedGroups].filter(x => !holdAction.affectedGroups.has(x)));
-                        if (effectiveAdvance.size === 0) continue;
+            const PATTERN_MAP = { 'A': 0, 'B': 1, 'C': 2 };
+            const endConfigArr = groupKeys.map(k => idealConfig[k] ? PATTERN_MAP[idealConfig[k]] : -1);
+    
+            let startState = 0;
+            for (let i = 0; i < groupKeys.length; i++) {
+                startState = startState * 3 + PATTERN_MAP[startConfig[groupKeys[i]]];
+            }
+    
+            if (this.isStateGoal(startState, endConfigArr)) {
+                resolve([]);
+                return;
+            }
+    
+            const queue = [{ state: startState, path: [] }];
+            const visited = new Set([startState]);
+            let verifiedCount = 0;
 
-                        const nextStateArr = [...currentStateArr];
-                        for (const group of effectiveAdvance) {
-                            const idx = groupKeys.indexOf(group);
-                            nextStateArr[idx] = (nextStateArr[idx] + 1) % 3;
-                        }
-                        const nextState = this.arrayToState(nextStateArr);
-                        
+            const processChunk = () => {
+                const startTime = Date.now();
+                while (queue.length > 0 && (Date.now() - startTime < 50)) { // Process for max 50ms
+                    const { state, path } = queue.shift();
+                    verifiedCount++;
+
+                    if (path.length >= 8) continue;
+    
+                    const currentStateArr = this.stateToArray(state);
+                    let solutionPath = null;
+    
+                    // Solo mode actions
+                    for (const soloAction of actionsToUse) {
+                        const nextState = this.applyAction(currentStateArr, soloAction.affectedGroups);
                         if (!visited.has(nextState)) {
-                             const newPath = [...path, { holdAction, advanceAction, mode: 'マルチ' }];
-                             if (this.isStateGoal(nextState, endConfigArr)) return newPath;
-                             visited.add(nextState);
-                             queue.push({ state: nextState, path: newPath });
+                            const newPath = [...path, { holdAction: { name: '---' }, advanceAction: soloAction, mode: 'ソロ' }];
+                            if (this.isStateGoal(nextState, endConfigArr)) {
+                                solutionPath = newPath;
+                                break;
+                            }
+                            visited.add(nextState);
+                            queue.push({ state: nextState, path: newPath });
                         }
                     }
+                    if (solutionPath) {
+                        resolve(solutionPath);
+                        return;
+                    }
+                    
+                    // Multi mode actions
+                    if (isMultiplayer) {
+                        for (const holdAction of actionsToUse) {
+                            for (const advanceAction of actionsToUse) {
+                                const effectiveAdvance = new Set([...advanceAction.affectedGroups].filter(x => !holdAction.affectedGroups.has(x)));
+                                if (effectiveAdvance.size === 0) continue;
+        
+                                const nextState = this.applyAction(currentStateArr, effectiveAdvance);
+                                if (!visited.has(nextState)) {
+                                     const newPath = [...path, { holdAction, advanceAction, mode: 'マルチ' }];
+                                     if (this.isStateGoal(nextState, endConfigArr)) {
+                                        solutionPath = newPath;
+                                        break;
+                                     }
+                                     visited.add(nextState);
+                                     queue.push({ state: nextState, path: newPath });
+                                }
+                            }
+                            if (solutionPath) break;
+                        }
+                    }
+                    if (solutionPath) {
+                        resolve(solutionPath);
+                        return;
+                    }
                 }
-            }
+    
+                if (queue.length > 0) {
+                    if (onProgress) onProgress(verifiedCount);
+                    setTimeout(processChunk, 0); // Schedule the next chunk
+                } else {
+                    if (onProgress) onProgress(verifiedCount);
+                    resolve(null); // No solution found
+                }
+            };
+            
+            processChunk(); // Start the calculation
+        });
+    },
+
+    applyAction: function(stateArr, affectedGroups) {
+        const nextStateArr = [...stateArr];
+        for (const group of affectedGroups) {
+            const idx = groupKeys.indexOf(group);
+            nextStateArr[idx] = (nextStateArr[idx] + 1) % 3;
         }
-        return null; // No solution found
+        return this.arrayToState(nextStateArr);
     },
     
     stateToArray: function(state) {
@@ -755,4 +808,5 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
 
