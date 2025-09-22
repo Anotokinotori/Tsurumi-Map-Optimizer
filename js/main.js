@@ -15,10 +15,8 @@ const TsurumiApp = {
     // --- INITIALIZATION ---
     init: function() {
         this.cacheElements();
-        // First, create the UI elements (icons, list items).
         this.ui.initInputPage('current');
         this.ui.initInputPage('ideal');
-        // Then, bind all events, including the ones that position the created elements.
         this.bindEvents();
     },
 
@@ -116,6 +114,28 @@ const TsurumiApp = {
             el.addEventListener('click', () => this.ui.closeModal(el.dataset.target));
         });
 
+        // Step Indicator Click Events
+        this.elements.steps.forEach(stepEl => {
+            stepEl.addEventListener('click', () => {
+                const step = stepEl.dataset.step;
+                switch (step) {
+                    case '1':
+                        this.ui.showPage('current-config-page');
+                        break;
+                    case '2':
+                        if (!this.elements.goToIdealBtn.disabled) {
+                            this.ui.showPage('ideal-config-page');
+                        }
+                        break;
+                    case '3':
+                        if (this.state.lastCalculatedPlan) {
+                            this.ui.showPage('result-page');
+                        }
+                        break;
+                }
+            });
+        });
+
         // Result Page Actions
         this.elements.resultTbody.addEventListener('click', (e) => {
             if (e.target && e.target.classList.contains('btn-details')) {
@@ -129,11 +149,7 @@ const TsurumiApp = {
             this.calculatePlan();
         });
 
-        // ==================================================================
-        // BUG FIX: Reverted to the original, stable logic for layout updates.
-        // This ensures marker positions are calculated ONLY after the map image
-        // has fully loaded, preventing all timing-related layout bugs.
-        // ==================================================================
+        // Robust layout updates
         window.addEventListener('resize', () => {
             this.ui.updateMapLayout('current-map-container');
             this.ui.updateMapLayout('ideal-map-container');
@@ -141,11 +157,9 @@ const TsurumiApp = {
 
         this.elements.allMapBgs.forEach(img => {
             const containerId = img.closest('.map-container').id;
-            // If image is already loaded (e.g., from browser cache), update layout immediately.
             if (img.complete && img.naturalWidth > 0) {
                 this.ui.updateMapLayout(containerId);
             } else {
-                // Otherwise, wait for the 'load' event to fire.
                 img.addEventListener('load', () => this.ui.updateMapLayout(containerId));
             }
         });
@@ -208,9 +222,6 @@ const TsurumiApp = {
             return;
         }
 
-        // ==================================================================
-        // BUG FIX: Restore detailed text and progress counter in the loading modal.
-        // ==================================================================
         const loadingTextEl = document.getElementById('loading-text');
         if (loadingTextEl) {
             loadingTextEl.innerHTML = `<span style="display: block; font-size: 1.1em; font-weight: bold; margin-bottom: 15px;">このツールは、<a href="https://youtu.be/2xqllaCTP5c?si=m9yyxXo5GS0rwFG9" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold;">ねこしたさんの解説</a>に基づき、プログラムされました！<br>ぜひ解説動画もご覧ください。</span><span style="font-size: 0.9em; color: var(--secondary-text-color);">計算には数分かかる場合がありますので、しばらくお待ちください。</span>`;
@@ -225,7 +236,6 @@ const TsurumiApp = {
 
         this.ui.showModal('loading-modal');
         
-        // Asynchronous calculation to prevent UI freeze and allow progress updates.
         setTimeout(() => {
             PlanCalculator.findShortestPlan(
                 this.state.currentConfig,
@@ -235,7 +245,7 @@ const TsurumiApp = {
                 this.state.lastCalculatedPlan = plan;
                 this.ui.displayResults(plan, isMultiplayer, allowBoat);
                 this.ui.closeModal('loading-modal');
-                if(progressEl) progressEl.textContent = ''; // Reset progress text
+                if(progressEl) progressEl.textContent = '';
             });
         }, 50);
     },
@@ -356,8 +366,6 @@ const TsurumiApp = {
                 item.appendChild(buttons);
                 listContainer.appendChild(item);
             });
-            // NOTE: The call to updateMapLayout was removed from here.
-            // It is now handled reliably by the 'load' and 'resize' events in bindEvents.
         },
 
         showPage: function(pageId) {
@@ -384,7 +392,6 @@ const TsurumiApp = {
             if (!mapContainer || !mapContainer.offsetParent) return;
 
             const mapImage = mapContainer.querySelector('.map-bg');
-            // This check is now robust because it's only called after 'load' or on 'resize'.
             if (!mapImage || !mapImage.complete || mapImage.naturalWidth === 0) return;
 
             const markers = mapContainer.querySelectorAll('.map-marker');
@@ -450,7 +457,6 @@ const TsurumiApp = {
             TsurumiApp.elements.resultPage.scrollTop = 0;
         },
 
-        // Other UI methods...
         showModal: function(modalId) { document.getElementById(modalId).classList.add('active'); },
         closeModal: function(modalId) { document.getElementById(modalId).classList.remove('active'); },
         switchInputView: function(configType, view) {
@@ -647,7 +653,6 @@ const TsurumiApp = {
 // A pure object for handling complex calculations without side effects.
 const PlanCalculator = {
     findShortestPlan: function(startConfig, idealConfig, options) {
-        // Now returns a Promise to allow for asynchronous, non-blocking calculation.
         return new Promise(resolve => {
             const { isMultiplayer, allowBoat, onProgress } = options;
             const actionsToUse = this.getAvailableActions(allowBoat);
@@ -671,7 +676,7 @@ const PlanCalculator = {
 
             const processChunk = () => {
                 const startTime = Date.now();
-                while (queue.length > 0 && (Date.now() - startTime < 50)) { // Process for max 50ms
+                while (queue.length > 0 && (Date.now() - startTime < 50)) {
                     const { state, path } = queue.shift();
                     verifiedCount++;
 
@@ -698,7 +703,6 @@ const PlanCalculator = {
                         return;
                     }
                     
-                    // Multi mode actions
                     if (isMultiplayer) {
                         for (const holdAction of actionsToUse) {
                             for (const advanceAction of actionsToUse) {
@@ -727,14 +731,14 @@ const PlanCalculator = {
     
                 if (queue.length > 0) {
                     if (onProgress) onProgress(verifiedCount);
-                    setTimeout(processChunk, 0); // Schedule the next chunk
+                    setTimeout(processChunk, 0);
                 } else {
                     if (onProgress) onProgress(verifiedCount);
-                    resolve(null); // No solution found
+                    resolve(null);
                 }
             };
             
-            processChunk(); // Start the calculation
+            processChunk();
         });
     },
 
@@ -808,6 +812,4 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
-
-
 
