@@ -571,7 +571,7 @@ const TsurumiApp = {
             this.showModal('day-detail-modal');
         },
         generateDayDetailHTML: function(dayData) {
-            let html = '<p style="text-align:center; color: var(--secondary-text-color);"><strong>【重要】</strong>「歩き」や「ボート」での移動は、<strong>ルートを慎重に確認し、閑雲や放浪者のような高速移動キャラは使用しないでください。</strong></p>';
+            let html = '<p style="text-align:center; color: var(--secondary-text-color);"><strong>【重要】</strong>「歩き」や「ボート」での移動は、<strong>ルートを慎重に確認し、チャスカのような飛行系キャラは使用しないでください。</strong></p>';
             if (dayData.mode === 'ソロ') {
                 html += `<h3>ソロモードでの行動</h3>` + this.generateActionDetailsHTML(dayData.advanceAction);
             } else {
@@ -808,5 +808,6 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
 
 
