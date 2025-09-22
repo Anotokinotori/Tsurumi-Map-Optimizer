@@ -1,745 +1,752 @@
-/**
- * @file Tsurumi Island Adjustment Tool - Main Logic
- * @description This file contains the primary application logic, including state management,
- * UI interactions, event handling, and the core calculation process for finding the optimal adjustment plan.
- * All application logic is encapsulated within the `TsurumiApp` object to avoid polluting the global scope.
- */
-
-// --- Pure Calculation Module ---
-const PlanCalculator = {
-    /**
-     * Finds the shortest adjustment plan using a Breadth-First Search (BFS) algorithm.
-     * This function is "pure" and does not depend on the TsurumiApp's state or UI.
-     * @param {object} params - The parameters for the calculation.
-     * @param {string} params.startConfigStr - The initial configuration as a string.
-     * @param {string} params.endConfigStr - The target configuration as a string.
-     * @param {Array<object>} params.actionsToUse - The list of possible daily actions.
-     * @param {boolean} params.isMultiplayer - Whether to consider multiplayer (period hold) strategies.
-     * @param {function} onProgress - Callback function to report progress (receives verified count).
-     * @param {function} onComplete - Callback function to return the final plan (receives plan or null).
-     * @returns {{cancel: function}} - An object with a method to cancel the ongoing calculation.
-     */
-    findShortestPlan({ startConfigStr, endConfigStr, actionsToUse, isMultiplayer }, onProgress, onComplete) {
-        if (startConfigStr === endConfigStr) {
-            setTimeout(() => onComplete([]), 0);
-            return { cancel: () => {} };
-        }
-
-        const queue = [{ config: startConfigStr, path: [] }];
-        const visited = new Set([startConfigStr]);
-        let verifiedCount = 0;
-        let calculationTimeoutId = null;
-
-        const processChunk = () => {
-            const startTime = Date.now();
-            while (queue.length > 0 && (Date.now() - startTime < 50)) {
-                const { config, path } = queue.shift();
-                verifiedCount++;
-
-                if (path.length >= 8) continue;
-
-                let solutionPath = null;
-
-                // Solo Mode
-                for (const soloAction of actionsToUse) {
-                    let nextConfigArr = config.split('').map(Number);
-                    for (const group of soloAction.affectedGroups) {
-                        nextConfigArr[groupKeys.indexOf(group)] = (nextConfigArr[groupKeys.indexOf(group)] + 1) % 3;
-                    }
-                    const nextConfigStr = nextConfigArr.join('');
-                    if (nextConfigStr === endConfigStr) {
-                        solutionPath = [...path, { holdAction: { name: '---' }, advanceAction: soloAction, mode: 'ソロ' }];
-                        break;
-                    }
-                    if (!visited.has(nextConfigStr)) {
-                        visited.add(nextConfigStr);
-                        queue.push({ config: nextConfigStr, path: [...path, { holdAction: { name: '---' }, advanceAction: soloAction, mode: 'ソロ' }] });
-                    }
-                }
-                if (solutionPath) {
-                    onComplete(solutionPath);
-                    return;
-                }
-
-                // Multiplayer Mode
-                if (isMultiplayer) {
-                    for (const holdAction of actionsToUse) {
-                        for (const advanceAction of actionsToUse) {
-                            const effectiveAdvance = new Set([...advanceAction.affectedGroups].filter(x => !holdAction.affectedGroups.has(x)));
-                            if (effectiveAdvance.size === 0) continue;
-                            
-                            let nextConfigArr = config.split('').map(Number);
-                            for (const group of effectiveAdvance) {
-                                 nextConfigArr[groupKeys.indexOf(group)] = (nextConfigArr[groupKeys.indexOf(group)] + 1) % 3;
-                            }
-                            const nextConfigStr = nextConfigArr.join('');
-                            if (nextConfigStr === endConfigStr) {
-                                solutionPath = [...path, { holdAction, advanceAction, mode: 'マルチ' }];
-                                break;
-                            }
-                            if (!visited.has(nextConfigStr)) {
-                                visited.add(nextConfigStr);
-                                queue.push({ config: nextConfigStr, path: [...path, { holdAction, advanceAction, mode: 'マルチ' }] });
-                            }
-                        }
-                        if (solutionPath) break;
-                    }
-                }
-                if (solutionPath) {
-                    onComplete(solutionPath);
-                    return;
-                }
-            }
-
-            if (queue.length > 0) {
-                onProgress(verifiedCount);
-                calculationTimeoutId = setTimeout(processChunk, 0);
-            } else {
-                onComplete(null);
-            }
-        };
-        
-        calculationTimeoutId = setTimeout(processChunk, 0);
-
-        return {
-            cancel: () => {
-                if (calculationTimeoutId) {
-                    clearTimeout(calculationTimeoutId);
-                }
-            }
-        };
-    }
-};
-
-
-// --- Main Application Object ---
 const TsurumiApp = {
-    // --- STATE, CONSTANTS, AND CACHED ELEMENTS ---
+    // --- STATE ---
+    // Manages the dynamic data of the application.
     state: {
         currentConfig: {},
         idealConfig: {},
-        activeSelection: { configType: null, groupId: null, pattern: null },
+        activeSelection: { configType: null, groupId: null },
         lastCalculatedPlan: null,
-        calculationTask: null,
     },
-    possibleDailyActions: [],
-    constants: {
-        PATTERN_MAP: { 'A': 0, 'B': 1, 'C': 2 },
-    },
+
+    // --- ELEMENTS ---
+    // Caches frequently accessed DOM elements.
     elements: {},
 
     // --- INITIALIZATION ---
-    /**
-     * Caches frequently used DOM elements to avoid repeated queries.
-     */
-    cacheElements() {
-        this.elements = {
-            infoBanner: document.getElementById('info-banner'),
-            closeBannerBtn: document.getElementById('close-banner-btn'),
-            goToCurrentBtn: document.getElementById('go-to-current-btn'),
-            guideBtn: document.getElementById('guide-btn'),
-            creditModalTrigger: document.getElementById('credit-modal-trigger'),
-            loadPlanBtn: document.getElementById('load-plan-btn'),
-            goToIdealBtn: document.getElementById('go-to-ideal-btn'),
-            validationMessage: document.getElementById('validation-message'),
-            setRecommendedBtn: document.getElementById('set-recommended-btn'),
-            copyCurrentBtn: document.getElementById('copy-current-btn'),
-            calculatePlanBtn: document.getElementById('calculate-plan-btn'),
-            resetBtn: document.getElementById('reset-btn'),
-            savePlanBtn: document.getElementById('save-plan-btn'),
-            backToStartBtn: document.getElementById('back-to-start-btn'),
-            backToCurrentBtn: document.getElementById('back-to-current-btn'),
-            backToIdealBtn: document.getElementById('back-to-ideal-btn'),
-            currentMapTab: document.getElementById('current-map-tab'),
-            currentListTab: document.getElementById('current-list-tab'),
-            idealMapTab: document.getElementById('ideal-map-tab'),
-            idealListTab: document.getElementById('ideal-list-tab'),
-            fillAllABtn: document.getElementById('fill-all-a-btn'),
-            fillAllBBtn: document.getElementById('fill-all-b-btn'),
-            fillAllCBtn: document.getElementById('fill-all-c-btn'),
-            scrollIndicator: document.getElementById('scroll-indicator'),
-            resultPage: document.getElementById('result-page'),
-            resultTbody: document.getElementById('result-tbody'),
-            resultSummary: document.getElementById('result-summary'),
-            recalculateBtn: document.getElementById('recalculate-alternate-mode-btn'),
-            soloModeNotice: document.getElementById('solo-mode-notice'),
-            progressText: document.getElementById('progress-text'),
-            idealProgressText: document.getElementById('ideal-progress-text'),
-            loadingText: document.getElementById('loading-text'),
-            calculationProgress: document.getElementById('calculation-progress'),
-            zoomTitle: document.getElementById('zoom-title'),
-            zoomMapContainer: document.getElementById('zoom-map-container'),
-            screenshotTitle: document.getElementById('screenshot-title'),
-            screenshotImg: document.getElementById('screenshot-img'),
-            confirmPatternBtn: document.getElementById('confirm-pattern-btn'),
-            dayDetailTitle: document.getElementById('day-detail-title'),
-            dayDetailContent: document.getElementById('day-detail-content'),
-            savedPlansList: document.getElementById('saved-plans-list'),
-            noSavedPlans: document.getElementById('no-saved-plans'),
-        };
-    },
-
-    /**
-     * Initializes the application. This function is the entry point.
-     * It binds all necessary event listeners and sets up the initial state of the UI.
-     */
-    init() {
+    init: function() {
         this.cacheElements();
         this.bindEvents();
-        this.ui.ensureScrollIndicatorIsInBody();
-
-        if (localStorage.getItem('tsurumiBannerClosed') === 'true') {
-            this.elements.infoBanner.style.display = 'none';
-        }
-
-        this.initInputPage('current');
-        this.initInputPage('ideal');
-        this.generatePossibleDailyActions();
-
-        window.addEventListener('resize', () => {
-            this.ui.updateMapLayout('current-map-container');
-            this.ui.updateMapLayout('ideal-map-container');
-        });
-        document.querySelectorAll('.map-bg').forEach(img => {
-            if (img.complete) {
-                this.ui.updateMapLayout(img.closest('.map-container').id);
-            } else {
-                img.addEventListener('load', (e) => this.ui.updateMapLayout(e.target.closest('.map-container').id));
-            }
-        });
+        this.ui.initInputPage('current');
+        this.ui.initInputPage('ideal');
     },
 
-    /**
-     * Binds all event listeners for the application's interactive elements.
-     */
-    bindEvents() {
-        this.elements.closeBannerBtn.addEventListener('click', () => {
-            this.elements.infoBanner.classList.add('hidden');
-            localStorage.setItem('tsurumiBannerClosed', 'true');
-        });
+    cacheElements: function() {
+        this.elements.pages = document.querySelectorAll('.page');
+        this.elements.steps = document.querySelectorAll('.step');
+        this.elements.modals = document.querySelectorAll('.modal');
+        this.elements.allMapBgs = document.querySelectorAll('.map-bg');
+        
+        // Buttons
+        this.elements.goToCurrentBtn = document.getElementById('go-to-current-btn');
+        this.elements.guideBtn = document.getElementById('guide-btn');
+        this.elements.creditTrigger = document.getElementById('credit-modal-trigger');
+        this.elements.loadPlanBtn = document.getElementById('load-plan-btn');
+        this.elements.goToIdealBtn = document.getElementById('go-to-ideal-btn');
+        this.elements.setRecommendedBtn = document.getElementById('set-recommended-btn');
+        this.elements.copyCurrentBtn = document.getElementById('copy-current-btn');
+        this.elements.calculatePlanBtn = document.getElementById('calculate-plan-btn');
+        this.elements.resetBtn = document.getElementById('reset-btn');
+        this.elements.savePlanBtn = document.getElementById('save-plan-btn');
+        this.elements.backToStartBtn = document.getElementById('back-to-start-btn');
+        this.elements.backToCurrentBtn = document.getElementById('back-to-current-btn');
+        this.elements.backToIdealBtn = document.getElementById('back-to-ideal-btn');
+        this.elements.recalculateBtn = document.getElementById('recalculate-alternate-mode-btn');
 
+        // Input Tabs
+        this.elements.currentMapTab = document.getElementById('current-map-tab');
+        this.elements.currentListTab = document.getElementById('current-list-tab');
+        this.elements.idealMapTab = document.getElementById('ideal-map-tab');
+        this.elements.idealListTab = document.getElementById('ideal-list-tab');
+
+        // Quick Fill Buttons
+        this.elements.fillAllABtn = document.getElementById('fill-all-a-btn');
+        this.elements.fillAllBBtn = document.getElementById('fill-all-b-btn');
+        this.elements.fillAllCBtn = document.getElementById('fill-all-c-btn');
+
+        // Progress Text
+        this.elements.progressText = document.getElementById('progress-text');
+        this.elements.idealProgressText = document.getElementById('ideal-progress-text');
+        this.elements.validationMessage = document.getElementById('validation-message');
+
+        // Result Page
+        this.elements.resultTbody = document.getElementById('result-tbody');
+        this.elements.resultSummary = document.getElementById('result-summary');
+        this.elements.soloNotice = document.getElementById('solo-mode-notice');
+        this.elements.scrollIndicator = document.getElementById('scroll-indicator');
+        this.elements.resultPage = document.getElementById('result-page');
+
+        // Modals
+        this.elements.dayDetailModalContent = document.getElementById('day-detail-content');
+
+        // Checkboxes
+        this.elements.multiplayerCheckbox = document.getElementById('multiplayer-mode-checkbox');
+        this.elements.boatCheckbox = document.getElementById('boat-mode-checkbox');
+    },
+
+    bindEvents: function() {
+        // Page Navigation
         this.elements.goToCurrentBtn.addEventListener('click', () => this.ui.showPage('current-config-page'));
-        this.elements.guideBtn.addEventListener('click', () => this.ui.showModal('guide-modal'));
-        this.elements.creditModalTrigger.addEventListener('click', () => this.ui.showModal('credit-modal'));
-        this.elements.loadPlanBtn.addEventListener('click', () => this.ui.openLoadModal());
-        
-        document.querySelectorAll('.modal-close').forEach(el => el.addEventListener('click', () => this.ui.closeModal(el.dataset.target)));
-        
+        this.elements.backToStartBtn.addEventListener('click', () => this.ui.showPage('start-page'));
+        this.elements.backToCurrentBtn.addEventListener('click', () => this.ui.showPage('current-config-page'));
+        this.elements.backToIdealBtn.addEventListener('click', () => this.ui.showPage('ideal-config-page'));
+
         this.elements.goToIdealBtn.addEventListener('click', (e) => {
             if (e.currentTarget.disabled) {
-                this.ui.showValidationError('すべての配置を入力してください。');
+                this.ui.showValidationMessage('すべての配置を入力してください。', e.currentTarget);
             } else {
                 this.ui.showPage('ideal-config-page');
             }
         });
-
-        this.elements.setRecommendedBtn.addEventListener('click', () => this.setRecommendedConfig());
-        this.elements.copyCurrentBtn.addEventListener('click', () => this.copyCurrentConfigToIdeal());
-        this.elements.calculatePlanBtn.addEventListener('click', () => {
-            const isMultiplayer = document.getElementById('multiplayer-mode-checkbox').checked;
-            const allowBoat = document.getElementById('boat-mode-checkbox').checked;
-            this.calculatePlan(isMultiplayer, allowBoat);
-        });
+        
+        // Main Actions
+        this.elements.calculatePlanBtn.addEventListener('click', () => this.calculatePlan());
         this.elements.resetBtn.addEventListener('click', () => this.resetApp());
         this.elements.savePlanBtn.addEventListener('click', () => this.savePlan());
-        
-        this.elements.backToStartBtn.addEventListener('click', () => this.ui.showPage('start-page'));
-        this.elements.backToCurrentBtn.addEventListener('click', () => this.ui.showPage('current-config-page'));
-        this.elements.backToIdealBtn.addEventListener('click', () => this.ui.showPage('ideal-config-page'));
-        
+        this.elements.loadPlanBtn.addEventListener('click', () => this.ui.openLoadModal());
+
+        // Input Helpers
+        this.elements.setRecommendedBtn.addEventListener('click', () => this.setRecommendedConfig());
+        this.elements.copyCurrentBtn.addEventListener('click', () => this.copyCurrentConfigToIdeal());
+        this.elements.fillAllABtn.addEventListener('click', () => this.fillAllConfigs('A'));
+        this.elements.fillAllBBtn.addEventListener('click', () => this.fillAllConfigs('B'));
+        this.elements.fillAllCBtn.addEventListener('click', () => this.fillAllConfigs('C'));
+
+        // Tab Switching
         this.elements.currentMapTab.addEventListener('click', () => this.ui.switchInputView('current', 'map'));
         this.elements.currentListTab.addEventListener('click', () => this.ui.switchInputView('current', 'list'));
         this.elements.idealMapTab.addEventListener('click', () => this.ui.switchInputView('ideal', 'map'));
         this.elements.idealListTab.addEventListener('click', () => this.ui.switchInputView('ideal', 'list'));
 
-        this.elements.fillAllABtn.addEventListener('click', () => this.fillAllConfigs('A'));
-        this.elements.fillAllBBtn.addEventListener('click', () => this.fillAllConfigs('B'));
-        this.elements.fillAllCBtn.addEventListener('click', () => this.fillAllConfigs('C'));
-
-        this.elements.scrollIndicator.addEventListener('click', (e) => {
-            e.preventDefault();
-            const targetElement = document.getElementById('result-details') || document.getElementById('result-page');
-            targetElement.scrollIntoView({ behavior: 'smooth' });
+        // Modals
+        this.elements.guideBtn.addEventListener('click', () => this.ui.showModal('guide-modal'));
+        this.elements.creditTrigger.addEventListener('click', () => this.ui.showModal('credit-modal'));
+        document.querySelectorAll('.modal-close').forEach(el => {
+            el.addEventListener('click', () => this.ui.closeModal(el.dataset.target));
         });
 
-        this.elements.resultPage.addEventListener('scroll', () => this.ui.updateScrollIndicator());
-        window.addEventListener('scroll', () => this.ui.updateScrollIndicator(), { passive: true });
-        window.addEventListener('resize', () => this.ui.updateScrollIndicator());
-
+        // Result Page Actions
         this.elements.resultTbody.addEventListener('click', (e) => {
             if (e.target && e.target.classList.contains('btn-details')) {
                 const dayIndex = parseInt(e.target.dataset.dayIndex, 10);
-                if (this.state.lastCalculatedPlan && !isNaN(dayIndex) && this.state.lastCalculatedPlan[dayIndex]) {
-                    this.ui.showDayDetail(this.state.lastCalculatedPlan[dayIndex], dayIndex + 1);
-                }
+                this.ui.showDayDetail(dayIndex);
+            }
+        });
+        this.elements.recalculateBtn.addEventListener('click', () => {
+            const currentMode = this.elements.multiplayerCheckbox.checked;
+            this.elements.multiplayerCheckbox.checked = !currentMode;
+            this.calculatePlan();
+        });
+
+        // Window & Page Listeners
+        window.addEventListener('resize', () => {
+            this.ui.updateMapLayout('current-map-container');
+            this.ui.updateMapLayout('ideal-map-container');
+        });
+
+        this.elements.scrollIndicator.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('result-details').scrollIntoView({ behavior: 'smooth' });
+        });
+        this.elements.resultPage.addEventListener('scroll', () => this.ui.updateScrollIndicator());
+
+        // **BUG FIX**: Ensure map layout is calculated only after images are loaded.
+        this.elements.allMapBgs.forEach(img => {
+            const containerId = img.closest('.map-container').id;
+            if (img.complete && img.naturalWidth > 0) {
+                this.ui.updateMapLayout(containerId);
+            } else {
+                img.addEventListener('load', () => this.ui.updateMapLayout(containerId));
             }
         });
     },
-    
+
     // --- CORE LOGIC ---
-    initInputPage(configType) {
-        const mapContainer = document.getElementById(`${configType}-map-container`);
-        const listContainer = document.getElementById(`${configType}-config-list`);
-        mapContainer.querySelectorAll('.map-marker').forEach(marker => marker.remove());
-        listContainer.innerHTML = '';
-        
-        for (const groupId in eliteGroups) {
-            const group = eliteGroups[groupId];
-            const marker = document.createElement('div');
-            marker.className = 'map-marker glowing';
-            marker.id = `${configType}-marker-${groupId}`;
-            if (group.iconUrl) marker.style.backgroundImage = `url(${group.iconUrl})`;
-            else marker.textContent = groupId;
-            marker.addEventListener('click', () => this.openGroupSelector(configType, groupId));
-            mapContainer.appendChild(marker);
-
-            const item = document.createElement('div');
-            item.className = 'config-item';
-            item.innerHTML = `<span class="config-item-label">${group.name}</span>`;
-            const buttons = document.createElement('div');
-            buttons.className = 'pattern-buttons';
-            buttons.id = `${configType}-buttons-${groupId}`;
-            ['A', 'B', 'C'].forEach(pattern => {
-                const btn = document.createElement('button');
-                btn.textContent = pattern;
-                btn.addEventListener('click', () => this.updateConfig(configType, groupId, pattern));
-                buttons.appendChild(btn);
-            });
-            item.appendChild(buttons);
-            listContainer.appendChild(item);
-        }
-        setTimeout(() => this.ui.updateMapLayout(`${configType}-map-container`), 100);
-    },
-
-    openGroupSelector(configType, groupId) {
-        this.state.activeSelection = { configType, groupId };
-        this.ui.renderGroupSelector(groupId, this.state[configType === 'current' ? 'currentConfig' : 'idealConfig'][groupId]);
-        this.ui.showModal('zoom-view');
-    },
-            
-    selectPatternForConfirmation(pattern) {
-        this.state.activeSelection.pattern = pattern;
-        this.ui.renderScreenshotPopup(this.state.activeSelection.groupId, pattern);
-        this.elements.confirmPatternBtn.onclick = () => this.confirmPatternSelection();
-        this.ui.showModal('screenshot-popup');
-    },
-
-    confirmPatternSelection() {
-        const { configType, groupId, pattern } = this.state.activeSelection;
-        if (configType && groupId && pattern) this.updateConfig(configType, groupId, pattern);
-        this.ui.closeModal('screenshot-popup');
-        this.ui.closeModal('zoom-view');
-    },
-
     updateConfig(configType, groupId, pattern) {
-        const config = (configType === 'current') ? this.state.currentConfig : this.state.idealConfig;
-        config[groupId] = pattern;
+        const configToUpdate = (configType === 'current') ? this.state.currentConfig : this.state.idealConfig;
+        configToUpdate[groupId] = pattern;
         
-        this.ui.updateConfigDisplay(configType, groupId, pattern);
-        
-        if (configType === 'current') {
-            this.ui.updateProgress(Object.keys(this.state.currentConfig).length);
-        } else {
-            this.ui.updateIdealProgress(Object.keys(this.state.idealConfig).length);
-        }
-        this.ui.updateGuideTextVisibility(Object.keys(this.state.currentConfig).length > 0, Object.keys(this.state.idealConfig).length > 0);
+        this.ui.updateMarker(configType, groupId);
+        this.ui.updatePatternButtons(configType, groupId, pattern);
+        this.ui.updateProgress(configType);
+        this.ui.updateGuideTextVisibility();
+    },
+
+    fillAllConfigs(pattern) {
+        groupKeys.forEach(groupId => this.updateConfig('current', groupId, pattern));
     },
 
     setRecommendedConfig() {
-        for (const groupId in recommendedConfig) this.updateConfig('ideal', groupId, recommendedConfig[groupId]);
+        groupKeys.forEach(groupId => {
+            if (recommendedConfig[groupId]) {
+                this.updateConfig('ideal', groupId, recommendedConfig[groupId]);
+            }
+        });
     },
 
     copyCurrentConfigToIdeal() {
-        for (const groupId in this.state.currentConfig) {
-            this.updateConfig('ideal', groupId, this.state.currentConfig[groupId]);
-        }
+        groupKeys.forEach(groupId => {
+            if (this.state.currentConfig[groupId]) {
+                this.updateConfig('ideal', groupId, this.state.currentConfig[groupId]);
+            }
+        });
     },
 
     resetApp() {
         this.state.currentConfig = {};
         this.state.idealConfig = {};
-        this.initInputPage('current');
-        this.initInputPage('ideal');
-        this.ui.updateProgress(0);
-        this.ui.updateIdealProgress(0);
-        this.ui.updateGuideTextVisibility(false, false);
+        this.ui.initInputPage('current');
+        this.ui.initInputPage('ideal');
+        this.ui.updateProgress('current');
+        this.ui.updateProgress('ideal');
+        this.ui.updateGuideTextVisibility();
         this.ui.showPage('start-page');
     },
 
-    fillAllConfigs(pattern) {
-        for (const groupId of groupKeys) {
-            this.updateConfig('current', groupId, pattern);
-        }
-    },
+    calculatePlan() {
+        const isMultiplayer = this.elements.multiplayerCheckbox.checked;
+        const allowBoat = this.elements.boatCheckbox.checked;
 
-    configToString(config) {
-        return groupKeys.map(key => config[key]).join('');
-    },
-
-    generatePossibleDailyActions() {
-        const achievablePatterns = new Map();
-        achievablePatterns.set(JSON.stringify([]), { name: '何もしない', affectedGroups: new Set() });
-        const numActions = actionsData.length;
-        for (let i = 1; i < (1 << numActions); i++) {
-            const currentActions = [];
-            const affectedGroupsSet = new Set();
-            for (let j = 0; j < numActions; j++) {
-                if ((i >> j) & 1) {
-                    const action = actionsData[j];
-                    currentActions.push(action);
-                    action.affectedGroups.forEach(group => affectedGroupsSet.add(group));
-                }
-            }
-            const key = JSON.stringify([...affectedGroupsSet].sort());
-            if (!achievablePatterns.has(key)) {
-                achievablePatterns.set(key, { name: currentActions.map(a => a.name).join(' + '), affectedGroups: affectedGroupsSet });
-            }
-        }
-        this.possibleDailyActions = Array.from(achievablePatterns.values());
-        console.log(`Generated ${this.possibleDailyActions.length} unique daily actions.`);
-    },
-
-    /**
-     * Acts as a controller to initiate the plan calculation.
-     * It gathers data, shows the loading UI, and delegates the actual calculation
-     * to the PlanCalculator module.
-     * @param {boolean} isMultiplayer - User setting for multiplayer mode.
-     * @param {boolean} allowBoat - User setting for allowing boat actions.
-     */
-    calculatePlan(isMultiplayer, allowBoat) {
         if (Object.keys(this.state.currentConfig).length !== totalGroups || Object.keys(this.state.idealConfig).length === 0) {
             alert('全ての現在配置と、1つ以上の理想配置を入力してください。');
             return;
         }
+
+        this.ui.showModal('loading-modal');
         
-        this.ui.showLoadingModal();
-        if (this.state.calculationTask) {
-            this.state.calculationTask.cancel();
-        }
-
-        const actionsToUse = this.possibleDailyActions.filter(action => allowBoat || !action.name.includes('ボート'));
-
-        const calculationParams = {
-            startConfigStr: this.configToString(Object.fromEntries(groupKeys.map(k => [k, this.constants.PATTERN_MAP[this.state.currentConfig[k]]]))),
-            endConfigStr: this.configToString(Object.fromEntries(groupKeys.map(k => [k, this.constants.PATTERN_MAP[this.state.idealConfig[k] || this.state.currentConfig[k]]]))),
-            actionsToUse,
-            isMultiplayer,
-        };
-        
-        this.state.calculationTask = PlanCalculator.findShortestPlan(
-            calculationParams,
-            (progressCount) => {
-                // onProgress callback
-                this.ui.updateCalculationProgress(progressCount);
-            },
-            (finalPlan) => {
-                // onComplete callback
-                this.ui.displayResults(finalPlan, isMultiplayer, allowBoat);
-                this.ui.closeModal('loading-modal');
-                this.state.calculationTask = null;
-            }
-        );
-    },
-
-    // --- SAVE/LOAD LOGIC ---
-    getSavedPlans: () => {
-        try { const d = localStorage.getItem('tsurumiSavedPlans'); return d ? JSON.parse(d) : []; } 
-        catch (e) { console.error("Failed to read saved plans:", e); return []; }
+        // Use setTimeout to allow the UI to update (show modal) before starting heavy calculation
+        setTimeout(() => {
+            const plan = PlanCalculator.findShortestPlan(
+                this.state.currentConfig,
+                this.state.idealConfig,
+                { isMultiplayer, allowBoat }
+            );
+            this.state.lastCalculatedPlan = plan;
+            this.ui.displayResults(plan, isMultiplayer, allowBoat);
+            this.ui.closeModal('loading-modal');
+        }, 50);
     },
 
     savePlan() {
         const planName = prompt("この調整プランの名前を入力してください:", "マイプラン " + new Date().toLocaleDateString());
         if (!planName || planName.trim() === "") return;
+
+        const serializablePlan = this.state.lastCalculatedPlan.map(day => ({
+            ...day,
+            holdAction: { ...day.holdAction, affectedGroups: Array.from(day.holdAction.affectedGroups || []) },
+            advanceAction: { ...day.advanceAction, affectedGroups: Array.from(day.advanceAction.affectedGroups || []) }
+        }));
+
         const planData = {
-            id: Date.now().toString(), name: planName.trim(),
-            currentConfig: this.state.currentConfig, idealConfig: this.state.idealConfig,
-            plan: this.state.lastCalculatedPlan.map(d => ({...d, holdAction: {...d.holdAction, affectedGroups: [...d.holdAction.affectedGroups||[]]}, advanceAction: {...d.advanceAction, affectedGroups: [...d.advanceAction.affectedGroups||[]]}})),
-            isMultiplayer: document.getElementById('multiplayer-mode-checkbox').checked,
+            id: Date.now().toString(),
+            name: planName.trim(),
+            currentConfig: this.state.currentConfig,
+            idealConfig: this.state.idealConfig,
+            plan: serializablePlan,
+            isMultiplayer: this.elements.multiplayerCheckbox.checked,
             createdAt: new Date().toISOString()
         };
-        try { const p = this.getSavedPlans(); p.push(planData); localStorage.setItem('tsurumiSavedPlans', JSON.stringify(p)); alert(`「${planName}」を保存しました。`); } 
-        catch (e) { console.error("Failed to save plan:", e); alert("プランの保存に失敗しました。"); }
+
+        try {
+            const savedPlans = this.getSavedPlans();
+            savedPlans.push(planData);
+            localStorage.setItem('tsurumiSavedPlans', JSON.stringify(savedPlans));
+            alert(`「${planName}」を保存しました。`);
+        } catch (e) {
+            console.error("Failed to save plan:", e);
+            alert("プランの保存に失敗しました。");
+        }
     },
 
     loadPlan(planId) {
-        const planToLoad = this.getSavedPlans().find(p => p.id === planId);
-        if (!planToLoad) { alert("プランの読み込みに失敗しました。"); return; }
+        const plans = this.getSavedPlans();
+        const planToLoad = plans.find(p => p.id === planId);
+        if (!planToLoad) {
+            alert("プランの読み込みに失敗しました。");
+            return;
+        }
+
+        const deserializedPlan = planToLoad.plan.map(day => ({
+            ...day,
+            holdAction: { ...day.holdAction, affectedGroups: new Set(day.holdAction.affectedGroups || []) },
+            advanceAction: { ...day.advanceAction, affectedGroups: new Set(day.advanceAction.affectedGroups || []) }
+        }));
+
         this.state.currentConfig = planToLoad.currentConfig;
         this.state.idealConfig = planToLoad.idealConfig;
-        this.state.lastCalculatedPlan = planToLoad.plan.map(d => ({...d, holdAction: {...d.holdAction, affectedGroups: new Set(d.holdAction.affectedGroups||[])}, advanceAction: {...d.advanceAction, affectedGroups: new Set(d.advanceAction.affectedGroups||[])}}));
-        document.getElementById('multiplayer-mode-checkbox').checked = planToLoad.isMultiplayer;
-        for (const g in this.state.currentConfig) this.updateConfig('current', g, this.state.currentConfig[g]);
-        for (const g in this.state.idealConfig) this.updateConfig('ideal', g, this.state.idealConfig[g]);
-        this.ui.displayResults(this.state.lastCalculatedPlan, planToLoad.isMultiplayer, document.getElementById('boat-mode-checkbox').checked);
+        this.state.lastCalculatedPlan = deserializedPlan;
+        this.elements.multiplayerCheckbox.checked = planToLoad.isMultiplayer;
+
+        groupKeys.forEach(groupId => {
+            if (this.state.currentConfig[groupId]) this.updateConfig('current', groupId, this.state.currentConfig[groupId]);
+            if (this.state.idealConfig[groupId]) this.updateConfig('ideal', groupId, this.state.idealConfig[groupId]);
+        });
+
+        this.ui.displayResults(this.state.lastCalculatedPlan, planToLoad.isMultiplayer, this.elements.boatCheckbox.checked);
         this.ui.closeModal('load-plan-modal');
     },
 
     deletePlan(planId) {
         if (!confirm("本当にこのプランを削除しますか？")) return;
-        let plans = this.getSavedPlans().filter(p => p.id !== planId);
-        try { localStorage.setItem('tsurumiSavedPlans', JSON.stringify(plans)); this.ui.renderSavedPlans(); } 
-        catch (e) { console.error("Failed to delete plan:", e); alert("プランの削除に失敗しました。"); }
+        let plans = this.getSavedPlans();
+        plans = plans.filter(p => p.id !== planId);
+        try {
+            localStorage.setItem('tsurumiSavedPlans', JSON.stringify(plans));
+            this.ui.renderSavedPlans();
+        } catch (e) {
+            console.error("Failed to delete plan:", e);
+            alert("プランの削除に失敗しました。");
+        }
     },
-    
-    // --- UI MODULE ---
+
+    getSavedPlans() {
+        try {
+            const plansJSON = localStorage.getItem('tsurumiSavedPlans');
+            return plansJSON ? JSON.parse(plansJSON) : [];
+        } catch (e) {
+            console.error("Failed to read saved plans:", e);
+            return [];
+        }
+    },
+
+    // --- UI LOGIC ---
     ui: {
-        showPage(pageId) {
-            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-            document.querySelectorAll('.step').forEach(step => step.classList.remove('active-step'));
-            let stepNum = 1;
-            if (pageId.includes('ideal')) stepNum = 2;
-            else if (pageId.includes('result')) stepNum = 3;
-            document.querySelectorAll(`.step[data-step="${stepNum}"]`).forEach(el => el.classList.add('active-step'));
-            if (pageId.includes('config')) setTimeout(() => TsurumiApp.ui.updateMapLayout(`${pageId.split('-')[0]}-map-container`), 50);
-            TsurumiApp.ui.updateScrollIndicator();
-        },
-
-        showModal: (modalId) => document.getElementById(modalId).classList.add('active'),
-        closeModal(modalId) {
-            if (modalId === 'loading-modal' && TsurumiApp.state.calculationTask) {
-                TsurumiApp.state.calculationTask.cancel();
-                TsurumiApp.state.calculationTask = null;
-            }
-            document.getElementById(modalId).classList.remove('active');
-        },
-
-        switchInputView(configType, viewType) {
-            document.getElementById(`${configType}-map-tab`).classList.toggle('active', viewType === 'map');
-            document.getElementById(`${configType}-list-tab`).classList.toggle('active', viewType === 'list');
-            document.getElementById(`${configType}-map-view`).classList.toggle('active', viewType === 'map');
-            document.getElementById(`${configType}-list-view`).classList.toggle('active', viewType === 'list');
-            if (viewType === 'map') setTimeout(() => this.updateMapLayout(`${configType}-map-container`), 50);
-        },
-        
-        showValidationError(message) {
-            TsurumiApp.elements.validationMessage.textContent = message;
-            TsurumiApp.elements.validationMessage.classList.add('show');
-            TsurumiApp.elements.goToIdealBtn.classList.add('shake');
-            setTimeout(() => TsurumiApp.elements.validationMessage.classList.remove('show'), 2000);
-            setTimeout(() => TsurumiApp.elements.goToIdealBtn.classList.remove('shake'), 600);
-        },
-
-        renderGroupSelector(groupId, selectedPattern) {
-            TsurumiApp.elements.zoomTitle.textContent = `${eliteGroups[groupId].name} のパターンを選択`;
-            const { zoomMapContainer } = TsurumiApp.elements;
-            const zoomMapImage = zoomMapContainer.querySelector('img');
-            if (zoomMapImage && eliteGroups[groupId].zoomMapUrl) {
-                this.setupImageLoader(zoomMapImage);
-                zoomMapImage.src = eliteGroups[groupId].zoomMapUrl;
-            }
-            zoomMapContainer.querySelectorAll('.pattern-marker').forEach(m => m.remove());
-            ['A', 'B', 'C'].forEach(pattern => {
-                const pos = patternMarkerPositions[groupId]?.[pattern];
-                if (!pos) return;
+        initInputPage: function(configType) {
+            const mapContainer = document.getElementById(`${configType}-map-container`);
+            const listContainer = document.getElementById(`${configType}-config-list`);
+            mapContainer.querySelectorAll('.map-marker').forEach(marker => marker.remove());
+            listContainer.innerHTML = '';
+            
+            groupKeys.forEach(groupId => {
+                const group = eliteGroups[groupId];
+                // Map Marker
                 const marker = document.createElement('div');
-                marker.className = 'pattern-marker';
-                marker.innerHTML = `<span class="pattern-label">${pattern}</span>`;
-                if (pattern === selectedPattern) { marker.classList.add('completed'); marker.innerHTML = '✔'; }
-                const top = 100 - parseFloat(pos.bottom);
-                const left = 100 - parseFloat(pos.right);
-                marker.style.top = `${top}%`;
-                marker.style.left = `${left}%`;
-                marker.addEventListener('click', () => TsurumiApp.selectPatternForConfirmation(pattern));
-                zoomMapContainer.appendChild(marker);
+                marker.className = 'map-marker glowing';
+                marker.id = `${configType}-marker-${groupId}`;
+                marker.style.backgroundImage = `url(${group.iconUrl})`;
+                marker.addEventListener('click', () => TsurumiApp.ui.openGroupSelector(configType, groupId));
+                mapContainer.appendChild(marker);
+
+                // List Item
+                const item = document.createElement('div');
+                item.className = 'config-item';
+                item.innerHTML = `<span class="config-item-label">${group.name}</span>`;
+                const buttons = document.createElement('div');
+                buttons.className = 'pattern-buttons';
+                buttons.id = `${configType}-buttons-${groupId}`;
+                ['A', 'B', 'C'].forEach(pattern => {
+                    const btn = document.createElement('button');
+                    btn.textContent = pattern;
+                    btn.addEventListener('click', () => TsurumiApp.updateConfig(configType, groupId, pattern));
+                    buttons.appendChild(btn);
+                });
+                item.appendChild(buttons);
+                listContainer.appendChild(item);
             });
+            this.updateMapLayout(`${configType}-map-container`);
         },
 
-        renderScreenshotPopup(groupId, pattern) {
-            TsurumiApp.elements.screenshotTitle.textContent = `${eliteGroups[groupId].name} - パターン ${pattern} で合っていますか？`;
-            const imageUrl = screenshotImageUrls[groupId]?.[pattern];
-            this.setupImageLoader(TsurumiApp.elements.screenshotImg);
-            TsurumiApp.elements.screenshotImg.src = imageUrl || `https://placehold.co/500x300/ff0000/ffffff?text=Image+Not+Found`;
-        },
-        
-        updateConfigDisplay(configType, groupId, pattern) {
-            const marker = document.getElementById(`${configType}-marker-${groupId}`);
-            marker.classList.remove('glowing');
-            marker.classList.add('completed');
-            marker.innerHTML = '✔';
-            document.getElementById(`${configType}-buttons-${groupId}`).querySelectorAll('button').forEach(btn => {
-                btn.classList.toggle('selected', btn.textContent === pattern);
-            });
+        showPage: function(pageId) {
+            TsurumiApp.elements.pages.forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+
+            TsurumiApp.elements.steps.forEach(step => step.classList.remove('active-step'));
+            let activeStepNumber = 1;
+            if (pageId.includes('current')) activeStepNumber = 1;
+            else if (pageId.includes('ideal')) activeStepNumber = 2;
+            else if (pageId.includes('result')) activeStepNumber = 3;
+            
+            document.querySelectorAll(`.step[data-step="${activeStepNumber}"]`).forEach(stepEl => stepEl.classList.add('active-step'));
+            
+            // **BUG FIX**: Removed setTimeout. Layout is now handled by the 'load' event listener.
+            if (pageId.includes('config')) {
+                const containerId = `${pageId.split('-')[0]}-map-container`;
+                this.updateMapLayout(containerId);
+            }
+            this.updateScrollIndicator();
         },
 
-        updateProgress(count) {
-            TsurumiApp.elements.progressText.textContent = `入力完了: ${count} / ${totalGroups}`;
-            TsurumiApp.elements.goToIdealBtn.disabled = count !== totalGroups;
-        },
-
-        updateIdealProgress(count) {
-            TsurumiApp.elements.idealProgressText.textContent = `入力完了: ${count} / ${totalGroups}`;
-        },
-
-        updateGuideTextVisibility(isCurrentStarted, isIdealStarted) {
-            document.querySelector('#current-map-container .map-guide-text').classList.toggle('hidden', isCurrentStarted);
-            document.querySelector('#ideal-map-container .map-guide-text').classList.toggle('hidden', isIdealStarted);
-        },
-
-        updateMapLayout(containerId) {
+        updateMapLayout: function(containerId) {
             const mapContainer = document.getElementById(containerId);
             if (!mapContainer || !mapContainer.offsetParent) return;
+
             const mapImage = mapContainer.querySelector('.map-bg');
-            if (!mapImage.complete || mapImage.naturalWidth === 0) return;
-            const cRect = mapContainer.getBoundingClientRect();
-            const iRatio = mapImage.naturalWidth / mapImage.naturalHeight;
-            const cRatio = cRect.width / cRect.height;
-            let width, height, x, y;
-            if (iRatio > cRatio) { [width, height, x, y] = [cRect.width, cRect.width / iRatio, 0, (cRect.height - height) / 2]; }
-            else { [height, width, y, x] = [cRect.height, cRect.height * iRatio, 0, (cRect.width - width) / 2]; }
-            mapContainer.querySelectorAll('.map-marker').forEach(m => {
-                const gId = m.id.split('-')[2];
-                const pos = markerPositions[gId];
+            if (!mapImage || !mapImage.complete || mapImage.naturalWidth === 0) return;
+
+            const markers = mapContainer.querySelectorAll('.map-marker');
+            const containerRect = mapContainer.getBoundingClientRect();
+            const imageAspectRatio = mapImage.naturalWidth / mapImage.naturalHeight;
+            const containerAspectRatio = containerRect.width / containerRect.height;
+
+            let renderedWidth, renderedHeight, offsetX, offsetY;
+            if (imageAspectRatio > containerAspectRatio) {
+                renderedWidth = containerRect.width;
+                renderedHeight = renderedWidth / imageAspectRatio;
+                offsetX = 0;
+                offsetY = (containerRect.height - renderedHeight) / 2;
+            } else {
+                renderedHeight = containerRect.height;
+                renderedWidth = renderedHeight * imageAspectRatio;
+                offsetX = (containerRect.width - renderedWidth) / 2;
+                offsetY = 0;
+            }
+
+            markers.forEach(marker => {
+                const groupId = marker.id.split('-')[2];
+                const pos = markerPositions[groupId];
                 if (pos) {
-                    m.style.left = `${x + (width * (parseFloat(pos.left) / 100)) - m.offsetWidth / 2}px`;
-                    m.style.top = `${y + (height * (parseFloat(pos.top) / 100)) - m.offsetHeight / 2}px`;
+                    const newLeft = offsetX + (renderedWidth * (parseFloat(pos.left) / 100));
+                    const newTop = offsetY + (renderedHeight * (parseFloat(pos.top) / 100));
+                    marker.style.left = `${newLeft - marker.offsetWidth / 2}px`;
+                    marker.style.top = `${newTop - marker.offsetHeight / 2}px`;
                 }
             });
         },
-        
-        showLoadingModal() {
-            TsurumiApp.elements.loadingText.innerHTML = `<span style="display: block; font-size: 1.1em; font-weight: bold; margin-bottom: 15px;">このツールは、<a href="https://youtu.be/2xqllaCTP5c?si=m9yyxXo5GS0rwFG9" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold;">ねこしたさんの解説</a>に基づき、プログラムされました！<br>ぜひ解説動画もご覧ください。</span><span style="font-size: 0.9em; color: var(--secondary-text-color);">計算には数分かかる場合がありますので、しばらくお待ちください。</span>`;
-            this.updateCalculationProgress(0);
-            this.showModal('loading-modal');
-        },
 
-        updateCalculationProgress(count) {
-            TsurumiApp.elements.calculationProgress.textContent = `検証済みパターン: ${count} / 59049`;
-        },
+        displayResults: function(plan, isMultiplayer, allowBoat) {
+            const summaryText = !plan ? '8日以内に完了する調整プランは見つかりませんでした。'
+                              : plan.length === 0 ? '調整は不要です！'
+                              : `最短 ${plan.length} 日で調整が完了します！`;
+            
+            TsurumiApp.elements.resultSummary.innerHTML = summaryText;
+            TsurumiApp.elements.soloNotice.style.display = isMultiplayer ? 'none' : 'block';
+            
+            TsurumiApp.elements.recalculateBtn.textContent = isMultiplayer ? '周期ホールドOFFで再計算' : '周期ホールドONで再計算';
+            TsurumiApp.elements.recalculateBtn.className = isMultiplayer ? 'btn btn-primary' : 'btn btn-multi';
 
-        displayResults(plan, isMultiplayer, allowBoat) {
-            TsurumiApp.state.lastCalculatedPlan = plan;
-            const { resultTbody, resultSummary, soloModeNotice, recalculateBtn, savePlanBtn } = TsurumiApp.elements;
-            resultTbody.innerHTML = '';
-
-            if (isMultiplayer) {
-                recalculateBtn.textContent = '周期ホールドOFFで再計算';
-                recalculateBtn.onclick = () => TsurumiApp.calculatePlan(false, allowBoat);
-                recalculateBtn.className = 'btn btn-primary';
-                soloModeNotice.style.display = 'none';
-            } else {
-                recalculateBtn.textContent = '周期ホールドONで再計算';
-                recalculateBtn.onclick = () => TsurumiApp.calculatePlan(true, allowBoat);
-                recalculateBtn.className = 'btn btn-multi';
-                soloModeNotice.style.display = '';
-            }
-
-            resultSummary.textContent = plan === null ? '8日以内に完了する調整プランは見つかりませんでした。' 
-                                      : plan.length === 0 ? '調整は不要です！' 
-                                      : `最短 ${plan.length} 日で調整が完了します！`;
-            recalculateBtn.style.display = 'block';
-
-            if (plan && plan.length > 0) {
-                savePlanBtn.style.display = '';
+            TsurumiApp.elements.savePlanBtn.style.display = (plan && plan.length > 0) ? '' : 'none';
+            
+            const tbody = TsurumiApp.elements.resultTbody;
+            tbody.innerHTML = '';
+            if (plan) {
                 plan.forEach((day, index) => {
-                    const tr = resultTbody.insertRow();
+                    const tr = document.createElement('tr');
                     const modeClass = day.mode === 'ソロ' ? 'mode-solo' : 'mode-multi';
                     tr.innerHTML = `
                         <td>${index + 1}日目</td>
                         <td><span class="${modeClass}">${day.mode}</span></td>
                         <td>${day.holdAction.name}</td>
                         <td>${day.advanceAction.name}</td>
-                        <td><button class="btn btn-details" data-day-index="${index}">手順を確認</button></td>`;
+                        <td><button class="btn btn-details" data-day-index="${index}">手順を確認</button></td>
+                    `;
+                    tbody.appendChild(tr);
                 });
-            } else {
-                savePlanBtn.style.display = 'none';
-                if(plan !== null) recalculateBtn.style.display = 'none';
             }
             this.showPage('result-page');
             TsurumiApp.elements.resultPage.scrollTop = 0;
-            setTimeout(() => this.updateScrollIndicator(), 150);
         },
 
-        showDayDetail(dayData, dayNumber) {
-            TsurumiApp.elements.dayDetailTitle.textContent = `${dayNumber}日目の手順詳細`;
-            let contentHTML = '<p style="text-align:center; color: var(--secondary-text-color);"><strong>【重要】</strong>「歩き」や「ボート」での移動は、<strong>ルートを慎重に確認し、閑雲や放浪者のような高速移動キャラは使用しないでください。</strong></p>';
-            if (dayData.mode === 'ソロ') {
-                contentHTML += `<h3>ソロモードでの行動</h3>${this.generateActionDetailsHTML(dayData.advanceAction, "1P (ホスト)")}`;
-            } else {
-                const eff = new Set([...dayData.advanceAction.affectedGroups].filter(x => !dayData.holdAction.affectedGroups.has(x)));
-                contentHTML += `<h3>マルチモードでの行動</h3><h4>Step 1: 準備</h4><p>ホスト(1P)は鶴観以外の安全な場所に移動し、ゲスト(2P)を世界に招き入れます。</p><h4>Step 2: 周期のホールド (ゲストの操作)</h4>`;
-                contentHTML += (dayData.holdAction.name === '何もしない' || dayData.holdAction.name === '---') 
-                    ? `<p><strong>行動:</strong> なし</p><p>この日はゲスト(2P)の操作は不要です。</p>`
-                    : `<p><strong>[重要]</strong> まずホスト(1P)が層岩巨淵・地下鉱区など、<strong>テイワット以外のマップに移動</strong>するのを待ちます。</p><p>ホストの移動後、ゲスト(2P)は以下の行動で指定されたグループの周期を<strong>ホールド(固定)</strong>します。</p>${this.generateActionDetailsHTML(dayData.holdAction, "2P (ゲスト)")}<p><strong>[重要]</strong> ゲストは上記行動を終えたら、速やかにホストの世界から退出してください。</p>`;
-                contentHTML += `<h4 style="margin-top: 25px;">Step 3: 周期の進行 (ホストの操作)</h4>`;
-                contentHTML += (dayData.advanceAction.name === '何もしない' || dayData.advanceAction.name === '---' || eff.size === 0)
-                    ? `<p><strong>行動:</strong> なし</p><p>ホストの特別な行動は不要です。日付が変わるのを待ってください。</p>`
-                    : `<p>ゲストが退出してソロ状態に戻った後、ホスト(1P)は以下の行動で、ゲストが<strong>ホールドしなかった</strong>グループの周期を1つ<strong>進めます</strong>。</p>${this.generateActionDetailsHTML({name: dayData.advanceAction.name, affectedGroups: eff}, "1P (ホスト)")}`;
+        // Other UI methods...
+        showModal: function(modalId) { document.getElementById(modalId).classList.add('active'); },
+        closeModal: function(modalId) { document.getElementById(modalId).classList.remove('active'); },
+        switchInputView: function(configType, view) {
+            document.getElementById(`${configType}-map-tab`).classList.toggle('active', view === 'map');
+            document.getElementById(`${configType}-list-tab`).classList.toggle('active', view === 'list');
+            document.getElementById(`${configType}-map-view`).classList.toggle('active', view === 'map');
+            document.getElementById(`${configType}-list-view`).classList.toggle('active', view === 'list');
+            if (view === 'map') this.updateMapLayout(`${configType}-map-container`);
+        },
+        updateProgress: function(configType) {
+            const config = (configType === 'current') ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig;
+            const progressEl = (configType === 'current') ? TsurumiApp.elements.progressText : TsurumiApp.elements.idealProgressText;
+            const count = Object.keys(config).length;
+            progressEl.textContent = `入力完了: ${count} / ${totalGroups}`;
+            if (configType === 'current') {
+                TsurumiApp.elements.goToIdealBtn.disabled = count !== totalGroups;
             }
-            TsurumiApp.elements.dayDetailContent.innerHTML = contentHTML;
-            TsurumiApp.elements.dayDetailContent.querySelectorAll('.image-container img').forEach(img => this.setupImageLoader(img));
+        },
+        updateMarker: function(configType, groupId) {
+            const marker = document.getElementById(`${configType}-marker-${groupId}`);
+            marker.classList.remove('glowing');
+            marker.classList.add('completed');
+            marker.innerHTML = '✔';
+        },
+        updatePatternButtons: function(configType, groupId, pattern) {
+             document.getElementById(`${configType}-buttons-${groupId}`).querySelectorAll('button').forEach(btn => {
+                btn.classList.toggle('selected', btn.textContent === pattern);
+            });
+        },
+        openGroupSelector: function(configType, groupId) {
+            TsurumiApp.state.activeSelection = { configType, groupId };
+            // ... (rest of the logic is complex and remains here for now)
+            document.getElementById('zoom-title').textContent = `${eliteGroups[groupId].name} のパターンを選択`;
+            const zoomContainer = document.getElementById('zoom-map-container');
+            const zoomMapImage = zoomContainer.querySelector('img');
+            this.setupImageLoader(zoomMapImage, eliteGroups[groupId].zoomMapUrl);
+
+            zoomContainer.querySelectorAll('.pattern-marker').forEach(m => m.remove());
+            const selectedPattern = (configType === 'current' ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig)[groupId];
+
+            ['A', 'B', 'C'].forEach(pattern => {
+                const pos = patternMarkerPositions[groupId]?.[pattern];
+                if (!pos) return;
+
+                const marker = document.createElement('div');
+                marker.className = 'pattern-marker';
+                marker.innerHTML = `<span class="pattern-label">${pattern}</span>`;
+                if (pattern === selectedPattern) {
+                    marker.classList.add('completed');
+                    marker.innerHTML = '✔';
+                }
+
+                marker.style.top = `${100 - parseFloat(pos.bottom)}%`;
+                marker.style.left = `${100 - parseFloat(pos.right)}%`;
+                marker.addEventListener('click', () => this.selectPatternForConfirmation(pattern));
+                zoomContainer.appendChild(marker);
+            });
+            this.showModal('zoom-view');
+        },
+        selectPatternForConfirmation: function(pattern) {
+             TsurumiApp.state.activeSelection.pattern = pattern;
+             const { groupId } = TsurumiApp.state.activeSelection;
+             document.getElementById('screenshot-title').textContent = `${eliteGroups[groupId].name} - パターン ${pattern} で合っていますか？`;
+             const screenshotImg = document.getElementById('screenshot-img');
+             this.setupImageLoader(screenshotImg, screenshotImageUrls[groupId]?.[pattern]);
+             document.getElementById('confirm-pattern-btn').onclick = () => {
+                const { configType, groupId, pattern } = TsurumiApp.state.activeSelection;
+                if (configType && groupId && pattern) TsurumiApp.updateConfig(configType, groupId, pattern);
+                this.closeModal('screenshot-popup');
+                this.closeModal('zoom-view');
+             };
+             this.showModal('screenshot-popup');
+        },
+        setupImageLoader: function(imgElement, src) {
+            const container = imgElement.parentElement;
+            if (!container || !container.classList.contains('image-container')) return;
+            container.classList.remove('loaded');
+            imgElement.onload = () => container.classList.add('loaded');
+            imgElement.onerror = () => { container.querySelector('.image-loader').textContent = '読込失敗'; };
+            imgElement.src = src || 'https://placehold.co/1x1/ffffff/ffffff?text=';
+        },
+        showValidationMessage: function(message, targetElement) {
+            const validationMessage = TsurumiApp.elements.validationMessage;
+            validationMessage.textContent = message;
+            validationMessage.classList.add('show');
+            targetElement.classList.add('shake');
+            setTimeout(() => validationMessage.classList.remove('show'), 2000);
+            setTimeout(() => targetElement.classList.remove('shake'), 600);
+        },
+        updateGuideTextVisibility: function() {
+            const isCurrentStarted = Object.keys(TsurumiApp.state.currentConfig).length > 0;
+            const isIdealStarted = Object.keys(TsurumiApp.state.idealConfig).length > 0;
+            document.querySelector('#current-map-container .map-guide-text').classList.toggle('hidden', isCurrentStarted);
+            document.querySelector('#ideal-map-container .map-guide-text').classList.toggle('hidden', isIdealStarted);
+        },
+        updateScrollIndicator: function() {
+            const scrollIndicator = TsurumiApp.elements.scrollIndicator;
+            const resultPage = TsurumiApp.elements.resultPage;
+            if (!resultPage.classList.contains('active')) {
+                scrollIndicator.classList.add('hidden');
+                return;
+            }
+            const isScrollable = resultPage.scrollHeight > resultPage.clientHeight;
+            const isAtTop = resultPage.scrollTop < 50;
+            scrollIndicator.classList.toggle('hidden', !isScrollable || !isAtTop);
+        },
+        showDayDetail: function(dayIndex) {
+            const plan = TsurumiApp.state.lastCalculatedPlan;
+            if (!plan || isNaN(dayIndex) || !plan[dayIndex]) return;
+
+            const dayData = plan[dayIndex];
+            const dayNumber = dayIndex + 1;
+            document.getElementById('day-detail-title').textContent = `${dayNumber}日目の手順詳細`;
+            TsurumiApp.elements.dayDetailModalContent.innerHTML = this.generateDayDetailHTML(dayData);
+            TsurumiApp.elements.dayDetailModalContent.querySelectorAll('.image-container img').forEach(img => {
+                this.setupImageLoader(img, img.dataset.src);
+                img.src = img.dataset.src;
+            });
             this.showModal('day-detail-modal');
         },
-
-        generateActionDetailsHTML(actionData, playerRole) {
+        generateDayDetailHTML: function(dayData) {
+            let html = '<p style="text-align:center; color: var(--secondary-text-color);"><strong>【重要】</strong>「歩き」や「ボート」での移動は、<strong>ルートを慎重に確認し、閑雲や放浪者のような高速移動キャラは使用しないでください。</strong></p>';
+            if (dayData.mode === 'ソロ') {
+                html += `<h3>ソロモードでの行動</h3>` + this.generateActionDetailsHTML(dayData.advanceAction);
+            } else {
+                 html += `<h3>マルチモード（周期ホールド）での行動</h3>
+                        <h4>Step 1: 準備</h4>
+                        <p>ホスト(1P)は鶴観以外の安全な場所に移動し、ゲスト(2P)を世界に招き入れます。</p>
+                        <h4>Step 2: 周期のホールド (ゲストの操作)</h4>
+                        <p><strong>[重要]</strong> まずホスト(1P)が層岩巨淵・地下鉱区など、<strong>テイワット以外のマップに移動</strong>するのを待ちます。</p>
+                        <p>ホストの移動後、ゲスト(2P)は以下の行動で指定されたグループの周期を<strong>ホールド(固定)</strong>します。</p>`
+                        + this.generateActionDetailsHTML(dayData.holdAction) +
+                        `<p><strong>[重要]</strong> ゲストは上記行動を終えたら、速やかにホストの世界から退出してください。</p>
+                        <h4 style="margin-top: 25px;">Step 3: 周期の進行 (ホストの操作)</h4>
+                        <p>ゲストが退出してソロ状態に戻った後、ホスト(1P)は以下の行動で、ゲストが<strong>ホールドしなかった</strong>グループの周期を1つ<strong>進めます</strong>。</p>`
+                        + this.generateActionDetailsHTML(dayData.advanceAction, dayData.holdAction);
+            }
+            return html;
+        },
+        generateActionDetailsHTML: function(actionData, holdActionData = {affectedGroups: new Set()}) {
             if (!actionData || !actionData.name || actionData.name === '---' || actionData.name === '何もしない') return '<p>特別な行動は不要です。</p>';
+
+            const effectiveGroups = new Set([...actionData.affectedGroups].filter(x => !holdActionData.affectedGroups.has(x)));
+            if (effectiveGroups.size === 0) return '<p>特別な行動は不要です。</p>';
+            
+            const affectedGroupsList = Array.from(effectiveGroups).map(key => `「${eliteGroups[key].name}」`).join('、');
+            let html = `<p><strong>影響を受けるグループ:</strong> ${affectedGroupsList}</p><ul>`;
             const actions = actionData.name.split(' + ');
-            const affected = [...actionData.affectedGroups].map(k => `「${eliteGroups[k].name}」`).join('、');
-            let html = `<p><strong>実行する行動:</strong> ${actions.join(', ')}</p><p><strong>影響を受けるグループ:</strong> ${affected}</p><ul>`;
-            actions.forEach(name => {
-                const action = actionsData.find(a => a.name === name);
-                if (!action) return;
+            
+            actions.forEach(actionName => {
+                const action = actionsData.find(a => a.name === actionName);
+                if (!action || ![...action.affectedGroups].some(g => effectiveGroups.has(g))) return;
+
                 const details = actionDetails[action.id] || {};
-                html += `<li><strong>${name}</strong><p>${(details.note || '').replace(/\n/g, '<br>')}</p>`;
-                if (details.images) details.images.forEach(url => { html += `<div class="image-container"><div class="image-loader">読み込み中...</div><img src="${url}" alt="${name} のルート図"></div>`; });
-                if (details.videoUrl) try {
-                    const url = new URL(details.videoUrl); let vId=url.searchParams.get('v')||url.pathname.split('/').pop(); let start=url.searchParams.get('t')||(url.search.match(/[?&]t=(\d+)/)||[])[1];
-                    html += `<p style="margin-top:15px;"><strong>参考動画:</strong></p><div class="video-container"><iframe src="https://www.youtube.com/embed/${vId}${start?`?start=${start.replace('s','')}`:''}" title="YouTube" frameborder="0" allowfullscreen></iframe></div>`;
-                } catch(e) { console.error("Invalid video URL:", details.videoUrl); }
+                html += `<li><strong>${actionName}</strong><p>${(details.note || '').replace(/\n/g, '<br>')}</p>`;
+                if (details.images) {
+                    details.images.forEach(imgUrl => {
+                        html += `<div class="image-container"><div class="image-loader">読込中...</div><img data-src="${imgUrl}" alt="${actionName}のルート図"></div>`;
+                    });
+                }
+                if (details.videoUrl) html += `<div class="video-container"><iframe src="${details.videoUrl.replace('youtu.be/','youtube.com/embed/').split('?si=')[0]}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
                 html += `</li>`;
             });
             return html + '</ul>';
         },
-
-        ensureScrollIndicatorIsInBody: () => {
-          const i = TsurumiApp.elements.scrollIndicator;
-          if (i && i.parentElement !== document.body) document.body.appendChild(i);
-        },
-
-        updateScrollIndicator() {
-            const { resultPage, scrollIndicator } = TsurumiApp.elements;
-            if (!resultPage || !scrollIndicator) return;
-            if (!resultPage.classList.contains('active')) { scrollIndicator.classList.add('hidden'); return; }
-            const container = resultPage.scrollHeight > resultPage.clientHeight ? resultPage : (document.scrollingElement || document.documentElement);
-            const isScrollable = container.scrollHeight > container.clientHeight;
-            const atTop = container.scrollTop < 50;
-            scrollIndicator.classList.toggle('hidden', !(isScrollable && atTop));
-        },
-        
-        openLoadModal() {
+        openLoadModal: function() {
             this.renderSavedPlans();
             this.showModal('load-plan-modal');
         },
-
-        renderSavedPlans() {
+        renderSavedPlans: function() {
             const plans = TsurumiApp.getSavedPlans();
-            const { savedPlansList, noSavedPlans } = TsurumiApp.elements;
-            savedPlansList.innerHTML = '';
-            noSavedPlans.style.display = plans.length === 0 ? 'block' : 'none';
-            savedPlansList.style.display = plans.length > 0 ? '' : 'none';
-            if (plans.length === 0) return;
+            const listEl = document.getElementById('saved-plans-list');
+            const noPlansEl = document.getElementById('no-saved-plans');
+            listEl.innerHTML = '';
+            noPlansEl.style.display = plans.length === 0 ? 'block' : 'none';
+            listEl.style.display = plans.length > 0 ? '' : 'none';
 
             plans.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(plan => {
                 const li = document.createElement('li');
                 li.className = 'saved-plan-item';
-                li.innerHTML = `<span class="saved-plan-item-name">${plan.name}</span><div class="saved-plan-item-actions"><button class="btn btn-primary btn-load" data-plan-id="${plan.id}">読込</button><button class="btn btn-delete" data-plan-id="${plan.id}">削除</button></div>`;
-                savedPlansList.appendChild(li);
+                li.innerHTML = `<span class="saved-plan-item-name">${plan.name}</span>
+                                <div class="saved-plan-item-actions">
+                                    <button class="btn btn-primary btn-load" data-plan-id="${plan.id}">読込</button>
+                                    <button class="btn btn-delete" data-plan-id="${plan.id}">削除</button>
+                                </div>`;
+                li.querySelector('.btn-load').addEventListener('click', () => TsurumiApp.loadPlan(plan.id));
+                li.querySelector('.btn-delete').addEventListener('click', () => TsurumiApp.deletePlan(plan.id));
+                listEl.appendChild(li);
             });
-            savedPlansList.querySelectorAll('.btn-load').forEach(b => b.addEventListener('click', () => TsurumiApp.loadPlan(b.dataset.planId)));
-            savedPlansList.querySelectorAll('.btn-delete').forEach(b => b.addEventListener('click', () => TsurumiApp.deletePlan(b.dataset.planId)));
-        },
-
-        setupImageLoader(imgElement) {
-            const container = imgElement.parentElement;
-            if (!container.classList.contains('image-container')) return;
-            container.classList.remove('loaded');
-            imgElement.onload = () => container.classList.add('loaded');
-            imgElement.onerror = () => { container.querySelector('.image-loader').textContent = '画像の読込失敗'; };
-            if (imgElement.complete && imgElement.src) imgElement.onload();
         }
     }
 };
 
-// --- SCRIPT START ---
+// --- CALCULATION SERVICE ---
+// A pure object for handling complex calculations without side effects.
+const PlanCalculator = {
+    findShortestPlan: function(startConfig, idealConfig, options) {
+        const { isMultiplayer, allowBoat } = options;
+        const actionsToUse = this.getAvailableActions(allowBoat);
+        
+        const PATTERN_MAP = { 'A': 0, 'B': 1, 'C': 2 };
+        const endConfigArr = groupKeys.map(k => idealConfig[k] ? PATTERN_MAP[idealConfig[k]] : -1);
+
+        let startState = 0;
+        for (let i = 0; i < groupKeys.length; i++) {
+            startState = startState * 3 + PATTERN_MAP[startConfig[groupKeys[i]]];
+        }
+
+        if (this.isStateGoal(startState, endConfigArr)) return [];
+
+        const queue = [{ state: startState, path: [] }];
+        const visited = new Set([startState]);
+
+        while (queue.length > 0) {
+            const { state, path } = queue.shift();
+            if (path.length >= 8) continue;
+
+            const currentStateArr = this.stateToArray(state);
+
+            // Solo mode actions
+            for (const soloAction of actionsToUse) {
+                const nextStateArr = [...currentStateArr];
+                for (const group of soloAction.affectedGroups) {
+                    const idx = groupKeys.indexOf(group);
+                    nextStateArr[idx] = (nextStateArr[idx] + 1) % 3;
+                }
+                const nextState = this.arrayToState(nextStateArr);
+                if (!visited.has(nextState)) {
+                    const newPath = [...path, { holdAction: { name: '---' }, advanceAction: soloAction, mode: 'ソロ' }];
+                    if (this.isStateGoal(nextState, endConfigArr)) return newPath;
+                    visited.add(nextState);
+                    queue.push({ state: nextState, path: newPath });
+                }
+            }
+            
+            // Multi mode actions
+            if (isMultiplayer) {
+                for (const holdAction of actionsToUse) {
+                    for (const advanceAction of actionsToUse) {
+                        const effectiveAdvance = new Set([...advanceAction.affectedGroups].filter(x => !holdAction.affectedGroups.has(x)));
+                        if (effectiveAdvance.size === 0) continue;
+
+                        const nextStateArr = [...currentStateArr];
+                        for (const group of effectiveAdvance) {
+                            const idx = groupKeys.indexOf(group);
+                            nextStateArr[idx] = (nextStateArr[idx] + 1) % 3;
+                        }
+                        const nextState = this.arrayToState(nextStateArr);
+                        
+                        if (!visited.has(nextState)) {
+                             const newPath = [...path, { holdAction, advanceAction, mode: 'マルチ' }];
+                             if (this.isStateGoal(nextState, endConfigArr)) return newPath;
+                             visited.add(nextState);
+                             queue.push({ state: nextState, path: newPath });
+                        }
+                    }
+                }
+            }
+        }
+        return null; // No solution found
+    },
+    
+    stateToArray: function(state) {
+        const arr = [];
+        for (let i = groupKeys.length - 1; i >= 0; i--) {
+            arr[i] = state % 3;
+            state = Math.floor(state / 3);
+        }
+        return arr;
+    },
+
+    arrayToState: function(arr) {
+        let state = 0;
+        for (let i = 0; i < arr.length; i++) {
+            state = state * 3 + arr[i];
+        }
+        return state;
+    },
+
+    isStateGoal: function(state, endConfigArr) {
+        const currentStateArr = this.stateToArray(state);
+        for (let i = 0; i < groupKeys.length; i++) {
+            if (endConfigArr[i] !== -1 && endConfigArr[i] !== currentStateArr[i]) {
+                return false;
+            }
+        }
+        return true;
+    },
+
+    getAvailableActions: function(allowBoat) {
+        let actions = actionsData;
+        if (!allowBoat) {
+            actions = actions.filter(action => !action.name.includes('ボート'));
+        }
+
+        const achievablePatterns = new Map();
+        achievablePatterns.set(JSON.stringify([]), { name: '何もしない', affectedGroups: new Set() });
+        
+        for (let i = 1; i < (1 << actions.length); i++) {
+            const currentActions = [];
+            const affectedGroupsSet = new Set();
+            for (let j = 0; j < actions.length; j++) {
+                if ((i >> j) & 1) {
+                    const action = actions[j];
+                    currentActions.push(action);
+                    action.affectedGroups.forEach(group => affectedGroupsSet.add(group));
+                }
+            }
+            const key = JSON.stringify([...affectedGroupsSet].sort());
+            if (!achievablePatterns.has(key)) {
+                achievablePatterns.set(key, {
+                    name: currentActions.map(a => a.name).join(' + '),
+                    affectedGroups: affectedGroupsSet
+                });
+            }
+        }
+        return Array.from(achievablePatterns.values());
+    }
+};
+
+
+// --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
 
