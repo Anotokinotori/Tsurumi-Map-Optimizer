@@ -1088,13 +1088,13 @@ main {
     line-height: 1.6;
 }
 .solo-notice a {
-    color: var(--accent-color);
-    font-weight: bold;
-    text-decoration: underline;
+    color: var(--accent-hover-color);
 }
+
 .scroll-indicator {
+    /* This is now the base style for DESKTOP view */
     display: none;
-    position: absolute;
+    position: absolute; /* Relative to the .result-page */
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
@@ -1108,6 +1108,7 @@ main {
     justify-content: center;
     transition: opacity 0.3s ease, visibility 0.3s ease;
 }
+
 .scroll-indicator.hidden {
     opacity: 0;
     visibility: hidden;
@@ -1241,57 +1242,5 @@ main {
 /* --- Small Mobile --- */
 @media (max-width: 480px) {
     #start-page h1 { font-size: 2em; }
-    .steps-container { gap: 5px; margin-top: 15px; margin-bottom: 10px;}
-    .step-icon { width: 40px; height: 40px; font-size: 1em; }
-    .step-label { font-size: 0.7em; margin-top: 8px; }
-    .step-arrow { font-size: 1.5em; }
-    .btn { font-size: 1em; padding: 12px 24px; }
-    #go-to-current-btn { padding: 18px 36px; font-size: 1.3em; }
-    .page { padding: 15px; }
-    .config-item-label { font-size: 1em; }
-    .pattern-buttons button { width: 40px; height: 40px; padding: 5px; font-size: 0.9em;}
-    .page-footer { 
-        flex-direction: row; 
-        flex-wrap: wrap;
-        gap: 10px;
-        padding-bottom: 15px;
-    }
-    .page-footer .left-action, .page-footer .right-action {
-        flex-basis: auto;
-        flex-grow: 0;
-    }
-    .page-footer .center-action {
-        flex-basis: 100%;
-        order: 3;
-    }
-    .page-footer .right-action {
-        margin-left: auto;
-    }
-    .page-footer .btn { font-size: 0.9em; padding: 10px 20px; }
-    .page-footer .btn-secondary-link { font-size: 0.9em; padding: 10px; }
-}
-
-/* --- Height Constrained Desktop --- */
-@media (max-height: 800px) and (min-width: 769px) {
-    .page {
-        padding-top: 1vw;
-        padding-bottom: 1vw;
-    }
-    .page-header { margin-bottom: 8px; }
-    .btn-back, .header-placeholder { width: 32px; height: 32px; }
-    .steps-container { gap: 10px; }
-    .step-icon { width: 40px; height: 40px; font-size: 1.1em; }
-    .step-label { margin-top: 5px; font-size: 0.8em; }
-    .step-arrow { font-size: 1.5em; }
-    .view-switcher { margin-bottom: 8px; }
-    .view-tab { padding: 6px 12px; font-size: 0.9em; }
-    .page-footer { margin-top: 10px; }
-    #start-page .start-footer {
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 20px;
-    }
-}
+/* ... existing
 
