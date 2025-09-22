@@ -153,6 +153,7 @@ const TsurumiApp = {
         window.addEventListener('resize', () => {
             this.ui.updateMapLayout('current-map-container');
             this.ui.updateMapLayout('ideal-map-container');
+            this.ui.updateScrollIndicator();
         });
 
         this.elements.allMapBgs.forEach(img => {
@@ -168,7 +169,10 @@ const TsurumiApp = {
             e.preventDefault();
             document.getElementById('result-details').scrollIntoView({ behavior: 'smooth' });
         });
+
+        // Scroll event listeners
         this.elements.resultPage.addEventListener('scroll', () => this.ui.updateScrollIndicator());
+        window.addEventListener('scroll', () => this.ui.updateScrollIndicator());
     },
 
     // --- CORE LOGIC ---
@@ -205,6 +209,7 @@ const TsurumiApp = {
     resetApp() {
         this.state.currentConfig = {};
         this.state.idealConfig = {};
+        this.state.lastCalculatedPlan = null;
         this.ui.initInputPage('current');
         this.ui.initInputPage('ideal');
         this.ui.updateProgress('current');
@@ -384,7 +389,8 @@ const TsurumiApp = {
                 const containerId = `${pageId.split('-')[0]}-map-container`;
                 this.updateMapLayout(containerId);
             }
-            this.updateScrollIndicator();
+            // ページ表示時に必ず矢印の状態を更新
+            setTimeout(() => this.updateScrollIndicator(), 100);
         },
 
         updateMapLayout: function(containerId) {
@@ -551,17 +557,31 @@ const TsurumiApp = {
             document.querySelector('#current-map-container .map-guide-text').classList.toggle('hidden', isCurrentStarted);
             document.querySelector('#ideal-map-container .map-guide-text').classList.toggle('hidden', isIdealStarted);
         },
+        
+        // ==================================================================
+        // BUG FIX: The logic for the scroll arrow has been corrected.
+        // It now correctly identifies the scrolling element for both desktop (result page)
+        // and mobile (window) views, ensuring it appears only when needed.
+        // ==================================================================
         updateScrollIndicator: function() {
             const scrollIndicator = TsurumiApp.elements.scrollIndicator;
             const resultPage = TsurumiApp.elements.resultPage;
+
             if (!resultPage.classList.contains('active')) {
                 scrollIndicator.classList.add('hidden');
                 return;
             }
-            const isScrollable = resultPage.scrollHeight > resultPage.clientHeight;
-            const isAtTop = resultPage.scrollTop < 50;
+
+            // Determine which element is scrolling based on window width
+            const isMobileView = window.innerWidth <= 768;
+            const scrollContainer = isMobileView ? document.documentElement : resultPage;
+            
+            const isScrollable = scrollContainer.scrollHeight > scrollContainer.clientHeight;
+            const isAtTop = scrollContainer.scrollTop < 50;
+
             scrollIndicator.classList.toggle('hidden', !isScrollable || !isAtTop);
         },
+
         showDayDetail: function(dayIndex) {
             const plan = TsurumiApp.state.lastCalculatedPlan;
             if (!plan || isNaN(dayIndex) || !plan[dayIndex]) return;
