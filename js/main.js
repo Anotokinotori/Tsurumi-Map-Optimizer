@@ -356,39 +356,47 @@ const TsurumiApp = {
         },
 
         updateMapLayout: function(containerId) {
-            const mapContainer = document.getElementById(containerId);
-            if (!mapContainer || !mapContainer.offsetParent) return;
-
-            const mapImage = mapContainer.querySelector('.map-bg');
-            if (!mapImage || !mapImage.complete || mapImage.naturalWidth === 0) return;
-
-            const markers = mapContainer.querySelectorAll('.map-marker');
-            const containerRect = mapContainer.getBoundingClientRect();
-            const imageAspectRatio = mapImage.naturalWidth / mapImage.naturalHeight;
-            const containerAspectRatio = containerRect.width / containerRect.height;
-
-            let renderedWidth, renderedHeight, offsetX, offsetY;
-            if (imageAspectRatio > containerAspectRatio) {
-                renderedWidth = containerRect.width;
-                renderedHeight = renderedWidth / imageAspectRatio;
-                offsetX = 0;
-                offsetY = (containerRect.height - renderedHeight) / 2;
-            } else {
-                renderedHeight = containerRect.height;
-                renderedWidth = renderedHeight * imageAspectRatio;
-                offsetX = (containerRect.width - renderedWidth) / 2;
-                offsetY = 0;
-            }
-
-            markers.forEach(marker => {
-                const groupId = marker.id.split('-')[2];
-                const pos = markerPositions[groupId];
-                if (pos) {
-                    const newLeft = offsetX + (renderedWidth * (parseFloat(pos.left) / 100));
-                    const newTop = offsetY + (renderedHeight * (parseFloat(pos.top) / 100));
-                    marker.style.left = `${newLeft - marker.offsetWidth / 2}px`;
-                    marker.style.top = `${newTop - marker.offsetHeight / 2}px`;
+            // ==================================================================
+            //  BUG FIX: Wrap in requestAnimationFrame
+            //  This ensures layout calculations happen only when the browser is
+            //  ready to paint, preventing a race condition where container
+            //  dimensions are read as 0 during CSS transitions.
+            // ==================================================================
+            requestAnimationFrame(() => {
+                const mapContainer = document.getElementById(containerId);
+                if (!mapContainer || !mapContainer.offsetParent) return;
+    
+                const mapImage = mapContainer.querySelector('.map-bg');
+                if (!mapImage || !mapImage.complete || mapImage.naturalWidth === 0) return;
+    
+                const markers = mapContainer.querySelectorAll('.map-marker');
+                const containerRect = mapContainer.getBoundingClientRect();
+                const imageAspectRatio = mapImage.naturalWidth / mapImage.naturalHeight;
+                const containerAspectRatio = containerRect.width / containerRect.height;
+    
+                let renderedWidth, renderedHeight, offsetX, offsetY;
+                if (imageAspectRatio > containerAspectRatio) {
+                    renderedWidth = containerRect.width;
+                    renderedHeight = renderedWidth / imageAspectRatio;
+                    offsetX = 0;
+                    offsetY = (containerRect.height - renderedHeight) / 2;
+                } else {
+                    renderedHeight = containerRect.height;
+                    renderedWidth = renderedHeight * imageAspectRatio;
+                    offsetX = (containerRect.width - renderedWidth) / 2;
+                    offsetY = 0;
                 }
+    
+                markers.forEach(marker => {
+                    const groupId = marker.id.split('-')[2];
+                    const pos = markerPositions[groupId];
+                    if (pos) {
+                        const newLeft = offsetX + (renderedWidth * (parseFloat(pos.left) / 100));
+                        const newTop = offsetY + (renderedHeight * (parseFloat(pos.top) / 100));
+                        marker.style.left = `${newLeft - marker.offsetWidth / 2}px`;
+                        marker.style.top = `${newTop - marker.offsetHeight / 2}px`;
+                    }
+                });
             });
         },
 
@@ -749,4 +757,5 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
 
