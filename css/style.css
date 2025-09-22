@@ -340,6 +340,11 @@ main {
 .image-loader {
     color: var(--secondary-text-color);
     font-weight: bold;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
 }
 .image-container img {
     width: 100%;
@@ -962,6 +967,11 @@ main {
     transform: translate(-50%, -50%);
     background-size: cover;
     background-position: center;
+}
+.pattern-marker .pattern-label {
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
 }
 .pattern-marker.completed {
     background-color: #10B981;
