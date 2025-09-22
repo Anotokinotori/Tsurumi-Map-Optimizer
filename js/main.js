@@ -15,9 +15,11 @@ const TsurumiApp = {
     // --- INITIALIZATION ---
     init: function() {
         this.cacheElements();
-        this.bindEvents();
+        // First, create the UI elements (icons, list items).
         this.ui.initInputPage('current');
         this.ui.initInputPage('ideal');
+        // Then, bind all events, including the ones that position the created elements.
+        this.bindEvents();
     },
 
     cacheElements: function() {
@@ -127,27 +129,32 @@ const TsurumiApp = {
             this.calculatePlan();
         });
 
-        // Window & Page Listeners
+        // ==================================================================
+        // BUG FIX: Reverted to the original, stable logic for layout updates.
+        // This ensures marker positions are calculated ONLY after the map image
+        // has fully loaded, preventing all timing-related layout bugs.
+        // ==================================================================
         window.addEventListener('resize', () => {
             this.ui.updateMapLayout('current-map-container');
             this.ui.updateMapLayout('ideal-map-container');
         });
 
+        this.elements.allMapBgs.forEach(img => {
+            const containerId = img.closest('.map-container').id;
+            // If image is already loaded (e.g., from browser cache), update layout immediately.
+            if (img.complete && img.naturalWidth > 0) {
+                this.ui.updateMapLayout(containerId);
+            } else {
+                // Otherwise, wait for the 'load' event to fire.
+                img.addEventListener('load', () => this.ui.updateMapLayout(containerId));
+            }
+        });
+        
         this.elements.scrollIndicator.addEventListener('click', (e) => {
             e.preventDefault();
             document.getElementById('result-details').scrollIntoView({ behavior: 'smooth' });
         });
         this.elements.resultPage.addEventListener('scroll', () => this.ui.updateScrollIndicator());
-
-        // **BUG FIX**: Ensure map layout is calculated only after images are loaded.
-        this.elements.allMapBgs.forEach(img => {
-            const containerId = img.closest('.map-container').id;
-            if (img.complete && img.naturalWidth > 0) {
-                this.ui.updateMapLayout(containerId);
-            } else {
-                img.addEventListener('load', () => this.ui.updateMapLayout(containerId));
-            }
-        });
     },
 
     // --- CORE LOGIC ---
@@ -203,7 +210,6 @@ const TsurumiApp = {
 
         this.ui.showModal('loading-modal');
         
-        // Use setTimeout to allow the UI to update (show modal) before starting heavy calculation
         setTimeout(() => {
             const plan = PlanCalculator.findShortestPlan(
                 this.state.currentConfig,
@@ -332,7 +338,8 @@ const TsurumiApp = {
                 item.appendChild(buttons);
                 listContainer.appendChild(item);
             });
-            this.updateMapLayout(`${configType}-map-container`);
+            // NOTE: The call to updateMapLayout was removed from here.
+            // It is now handled reliably by the 'load' and 'resize' events in bindEvents.
         },
 
         showPage: function(pageId) {
@@ -347,7 +354,6 @@ const TsurumiApp = {
             
             document.querySelectorAll(`.step[data-step="${activeStepNumber}"]`).forEach(stepEl => stepEl.classList.add('active-step'));
             
-            // **BUG FIX**: Removed setTimeout. Layout is now handled by the 'load' event listener.
             if (pageId.includes('config')) {
                 const containerId = `${pageId.split('-')[0]}-map-container`;
                 this.updateMapLayout(containerId);
@@ -356,47 +362,40 @@ const TsurumiApp = {
         },
 
         updateMapLayout: function(containerId) {
-            // ==================================================================
-            //  BUG FIX: Wrap in requestAnimationFrame
-            //  This ensures layout calculations happen only when the browser is
-            //  ready to paint, preventing a race condition where container
-            //  dimensions are read as 0 during CSS transitions.
-            // ==================================================================
-            requestAnimationFrame(() => {
-                const mapContainer = document.getElementById(containerId);
-                if (!mapContainer || !mapContainer.offsetParent) return;
-    
-                const mapImage = mapContainer.querySelector('.map-bg');
-                if (!mapImage || !mapImage.complete || mapImage.naturalWidth === 0) return;
-    
-                const markers = mapContainer.querySelectorAll('.map-marker');
-                const containerRect = mapContainer.getBoundingClientRect();
-                const imageAspectRatio = mapImage.naturalWidth / mapImage.naturalHeight;
-                const containerAspectRatio = containerRect.width / containerRect.height;
-    
-                let renderedWidth, renderedHeight, offsetX, offsetY;
-                if (imageAspectRatio > containerAspectRatio) {
-                    renderedWidth = containerRect.width;
-                    renderedHeight = renderedWidth / imageAspectRatio;
-                    offsetX = 0;
-                    offsetY = (containerRect.height - renderedHeight) / 2;
-                } else {
-                    renderedHeight = containerRect.height;
-                    renderedWidth = renderedHeight * imageAspectRatio;
-                    offsetX = (containerRect.width - renderedWidth) / 2;
-                    offsetY = 0;
+            const mapContainer = document.getElementById(containerId);
+            if (!mapContainer || !mapContainer.offsetParent) return;
+
+            const mapImage = mapContainer.querySelector('.map-bg');
+            // This check is now robust because it's only called after 'load' or on 'resize'.
+            if (!mapImage || !mapImage.complete || mapImage.naturalWidth === 0) return;
+
+            const markers = mapContainer.querySelectorAll('.map-marker');
+            const containerRect = mapContainer.getBoundingClientRect();
+            const imageAspectRatio = mapImage.naturalWidth / mapImage.naturalHeight;
+            const containerAspectRatio = containerRect.width / containerRect.height;
+
+            let renderedWidth, renderedHeight, offsetX, offsetY;
+            if (imageAspectRatio > containerAspectRatio) {
+                renderedWidth = containerRect.width;
+                renderedHeight = renderedWidth / imageAspectRatio;
+                offsetX = 0;
+                offsetY = (containerRect.height - renderedHeight) / 2;
+            } else {
+                renderedHeight = containerRect.height;
+                renderedWidth = renderedHeight * imageAspectRatio;
+                offsetX = (containerRect.width - renderedWidth) / 2;
+                offsetY = 0;
+            }
+
+            markers.forEach(marker => {
+                const groupId = marker.id.split('-')[2];
+                const pos = markerPositions[groupId];
+                if (pos) {
+                    const newLeft = offsetX + (renderedWidth * (parseFloat(pos.left) / 100));
+                    const newTop = offsetY + (renderedHeight * (parseFloat(pos.top) / 100));
+                    marker.style.left = `${newLeft - marker.offsetWidth / 2}px`;
+                    marker.style.top = `${newTop - marker.offsetHeight / 2}px`;
                 }
-    
-                markers.forEach(marker => {
-                    const groupId = marker.id.split('-')[2];
-                    const pos = markerPositions[groupId];
-                    if (pos) {
-                        const newLeft = offsetX + (renderedWidth * (parseFloat(pos.left) / 100));
-                        const newTop = offsetY + (renderedHeight * (parseFloat(pos.top) / 100));
-                        marker.style.left = `${newLeft - marker.offsetWidth / 2}px`;
-                        marker.style.top = `${newTop - marker.offsetHeight / 2}px`;
-                    }
-                });
             });
         },
 
@@ -465,7 +464,6 @@ const TsurumiApp = {
         },
         openGroupSelector: function(configType, groupId) {
             TsurumiApp.state.activeSelection = { configType, groupId };
-            // ... (rest of the logic is complex and remains here for now)
             document.getElementById('zoom-title').textContent = `${eliteGroups[groupId].name} のパターンを選択`;
             const zoomContainer = document.getElementById('zoom-map-container');
             const zoomMapImage = zoomContainer.querySelector('img');
@@ -757,5 +755,4 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
-
 
