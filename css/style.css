@@ -1203,6 +1203,9 @@ main {
     .result-layout-container {
         order: 2;
     }
+    .result-footer-link {
+        display: none;
+    }
 }
 
 /* --- Small Mobile --- */
@@ -1261,5 +1264,4 @@ main {
         gap: 20px;
     }
 }
-
 
