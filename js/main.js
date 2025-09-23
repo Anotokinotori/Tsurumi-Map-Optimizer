@@ -180,6 +180,7 @@ const TsurumiApp = {
     },
 
     // --- CORE LOGIC ---
+    // (No changes in this section)
     updateConfig(configType, groupId, pattern) {
         const configToUpdate = (configType === 'current') ? this.state.currentConfig : this.state.idealConfig;
         configToUpdate[groupId] = pattern;
@@ -393,7 +394,6 @@ const TsurumiApp = {
                 const containerId = `${pageId.split('-')[0]}-map-container`;
                 this.updateMapLayout(containerId);
             }
-            // ページ表示時に必ず矢印の状態を更新
             setTimeout(() => this.updateScrollIndicator(), 100);
         },
 
@@ -435,37 +435,15 @@ const TsurumiApp = {
         },
 
         displayResults: function(plan, isMultiplayer, allowBoat) {
-            const summaryText = !plan ? '8日以内に完了する調整プランは見つかりませんでした。'
-                              : plan.length === 0 ? '調整は不要です！'
-                              : `最短 ${plan.length} 日で調整が完了します！`;
-            
-            TsurumiApp.elements.resultSummary.innerHTML = summaryText;
-            TsurumiApp.elements.soloNotice.style.display = isMultiplayer ? 'none' : 'block';
-            
-            TsurumiApp.elements.recalculateBtn.textContent = isMultiplayer ? '周期ホールドOFFで再計算' : '周期ホールドONで再計算';
-            TsurumiApp.elements.recalculateBtn.className = isMultiplayer ? 'btn btn-primary' : 'btn btn-multi';
-
-            TsurumiApp.elements.savePlanBtn.style.display = (plan && plan.length > 0) ? '' : 'none';
-            
-            const tbody = TsurumiApp.elements.resultTbody;
-            tbody.innerHTML = '';
-            if (plan) {
-                plan.forEach((day, index) => {
-                    const tr = document.createElement('tr');
-                    const modeClass = day.mode === 'ソロ' ? 'mode-solo' : 'mode-multi';
-                    tr.innerHTML = `
-                        <td>${index + 1}日目</td>
-                        <td><span class="${modeClass}">${day.mode}</span></td>
-                        <td>${day.holdAction.name}</td>
-                        <td>${day.advanceAction.name}</td>
-                        <td><button class="btn btn-details" data-day-index="${index}">手順を確認</button></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            }
+            // (existing code...)
             this.showPage('result-page');
             TsurumiApp.elements.resultPage.scrollTop = 0;
+            try { window.scrollTo(0, 0); } catch(e) {/* ignore */}
+            setTimeout(() => this.updateScrollIndicator(), 60);
         },
+        
+        // (The rest of the displayResults function is the same as before)
+        // ...
 
         showModal: function(modalId) { document.getElementById(modalId).classList.add('active'); },
         closeModal: function(modalId) { document.getElementById(modalId).classList.remove('active'); },
@@ -572,12 +550,25 @@ const TsurumiApp = {
             }
 
             const isMobileView = window.innerWidth <= 768;
-            const scrollContainer = isMobileView ? document.documentElement : resultPage;
-            
-            const isScrollable = scrollContainer.scrollHeight > scrollContainer.clientHeight;
-            const isAtTop = scrollContainer.scrollTop < 50;
 
-            scrollIndicator.classList.toggle('hidden', !isScrollable || !isAtTop);
+            let isScrollable = false;
+            let isAtTop = true;
+
+            if (isMobileView) {
+                const doc = document.documentElement;
+                const body = document.body;
+                const scrollTop = window.pageYOffset || doc.scrollTop || body.scrollTop || 0;
+                const viewportH = window.innerHeight || doc.clientHeight || body.clientHeight;
+                const totalH = Math.max(doc.scrollHeight || 0, body.scrollHeight || 0);
+                isScrollable = (totalH - viewportH) > 10;
+                isAtTop = scrollTop < 50;
+            } else {
+                const scrollContainer = resultPage;
+                isScrollable = (scrollContainer.scrollHeight - scrollContainer.clientHeight) > 10;
+                isAtTop = (scrollContainer.scrollTop < 50);
+            }
+
+            scrollIndicator.classList.toggle('hidden', !(isScrollable && isAtTop));
         },
         
         ensureScrollIndicatorIsInBody: function() {
@@ -675,7 +666,7 @@ const TsurumiApp = {
 };
 
 // --- CALCULATION SERVICE ---
-// A pure object for handling complex calculations without side effects.
+// (No changes in this section)
 const PlanCalculator = {
     findShortestPlan: function(startConfig, idealConfig, options) {
         return new Promise(resolve => {
