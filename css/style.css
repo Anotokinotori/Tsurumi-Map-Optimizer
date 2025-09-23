@@ -1091,39 +1091,6 @@ main {
     color: var(--accent-hover-color);
 }
 
-.scroll-indicator {
-    display: flex; /* Changed from none to flex */
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 999;
-    width: 50px;
-    height: 50px;
-    background-color: rgba(0, 0, 0, 0.4);
-    border-radius: 50%;
-    cursor: pointer;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-    pointer-events: auto;
-}
-
-.scroll-indicator.hidden {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none; /* Add this to prevent clicks when hidden */
-}
-.scroll-indicator svg {
-    width: 30px;
-    height: 30px;
-    animation: bounce 2s infinite ease-in-out;
-}
-@keyframes bounce {
-    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-    40% { transform: translateY(-10px); }
-    60% { transform: translateY(-5px); }
-}
 .show-on-desktop { display: none; }
 .show-flex-on-desktop { display: none; }
 
@@ -1229,8 +1196,12 @@ main {
         bottom: 0;
         left: 0;
     }
-    #scroll-indicator {
-        bottom: 80px; /* Adjust for mobile fixed footer */
+    /* Reorder result page for mobile */
+    .result-details-container {
+        order: 1;
+    }
+    .result-layout-container {
+        order: 2;
     }
 }
 
@@ -1290,4 +1261,5 @@ main {
         gap: 20px;
     }
 }
+
 
