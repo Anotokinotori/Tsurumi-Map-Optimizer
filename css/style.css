@@ -577,13 +577,13 @@ main {
 }
 .result-actions-container .btn {
     width: 100%;
-    max-width: 300px;
+    max-width: 400px;
 }
 .result-actions-row {
     display: flex;
     gap: 15px;
     width: 100%;
-    max-width: 300px;
+    max-width: 400px;
 }
 .result-actions-row .btn {
     flex: 1;
@@ -1289,4 +1289,5 @@ main {
         gap: 20px;
     }
 }
+
 
