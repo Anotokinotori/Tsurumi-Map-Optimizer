@@ -440,7 +440,12 @@ const TsurumiApp = {
                               : `最短 ${plan.length} 日で調整が完了します！`;
             
             TsurumiApp.elements.resultSummary.innerHTML = summaryText;
-            TsurumiApp.elements.soloNotice.style.display = isMultiplayer ? 'none' : 'block';
+            
+            // --- BUG FIX ---
+            // Remove direct style manipulation and let CSS classes handle visibility.
+            // If multiplayer, set display to 'none'. If solo, remove inline style ('') 
+            // so the stylesheet (.show-on-desktop) can take control.
+            TsurumiApp.elements.soloNotice.style.display = isMultiplayer ? 'none' : '';
             
             TsurumiApp.elements.recalculateBtn.textContent = isMultiplayer ? '周期ホールドOFFで再計算' : '周期ホールドONで再計算';
             TsurumiApp.elements.recalculateBtn.className = isMultiplayer ? 'btn btn-primary' : 'btn btn-multi';
@@ -464,7 +469,7 @@ const TsurumiApp = {
                 });
             }
             this.showPage('result-page');
-
+            
             // --- BUG FIX ---
             // Reset both the element's scroll and the window's scroll
             TsurumiApp.elements.resultPage.scrollTop = 0;
@@ -568,8 +573,6 @@ const TsurumiApp = {
             document.querySelector('#ideal-map-container .map-guide-text').classList.toggle('hidden', isIdealStarted);
         },
         
-        // --- BUG FIX ---
-        // This function is now more robust for mobile devices.
         updateScrollIndicator: function() {
             const scrollIndicator = TsurumiApp.elements.scrollIndicator;
             const resultPage = TsurumiApp.elements.resultPage;
@@ -584,24 +587,19 @@ const TsurumiApp = {
             let isAtTop = true;
 
             if (isMobileView) {
-                // For mobile, use window/document properties for a stable calculation
                 const doc = document.documentElement;
                 const body = document.body;
                 const scrollTop = window.pageYOffset || doc.scrollTop || body.scrollTop || 0;
                 const viewportH = window.innerHeight || doc.clientHeight || body.clientHeight;
                 const totalH = Math.max(doc.scrollHeight || 0, body.scrollHeight || 0);
-
-                // Check if there is content to scroll, with a small buffer
                 isScrollable = (totalH - viewportH) > 10;
                 isAtTop = scrollTop < 50;
             } else {
-                // For desktop, use the resultPage element for scrolling check (as before)
                 const scrollContainer = resultPage;
                 isScrollable = (scrollContainer.scrollHeight - scrollContainer.clientHeight) > 10;
                 isAtTop = (scrollContainer.scrollTop < 50);
             }
 
-            // Show arrow only if scrollable AND at the top
             scrollIndicator.classList.toggle('hidden', !(isScrollable && isAtTop));
         },
         
