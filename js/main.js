@@ -429,7 +429,10 @@ const TsurumiApp = {
 
             TsurumiApp.elements.soloNotice.style.display = isMultiplayer ? 'none' : '';
             
-            TsurumiApp.elements.recalculateBtn.textContent = isMultiplayer ? '周期ホールドOFFで再計算' : '周期ホールドONで再計算';
+            const recalcBtnText = document.getElementById('recalculate-btn-text');
+            if (recalcBtnText) {
+                recalcBtnText.textContent = isMultiplayer ? '周期ホールドOFFで再計算' : '周期ホールドONで再計算';
+            }
             TsurumiApp.elements.recalculateBtn.className = isMultiplayer ? 'btn btn-primary' : 'btn btn-multi';
             
             const showSaveButtons = plan && plan.length > 0;
