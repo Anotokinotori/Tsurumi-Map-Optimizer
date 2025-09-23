@@ -1092,8 +1092,8 @@ main {
 }
 
 .scroll-indicator {
-    display: none;
-    position: fixed; /* Changed to fixed to be viewport-relative */
+    display: flex; /* Changed from none to flex */
+    position: fixed;
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
@@ -1112,6 +1112,7 @@ main {
 .scroll-indicator.hidden {
     opacity: 0;
     visibility: hidden;
+    pointer-events: none; /* Add this to prevent clicks when hidden */
 }
 .scroll-indicator svg {
     width: 30px;
