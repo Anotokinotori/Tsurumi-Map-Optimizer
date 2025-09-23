@@ -577,13 +577,13 @@ main {
 }
 .result-actions-container .btn {
     width: 100%;
-    max-width: 440px;
+    max-width: 450px;
 }
 .result-actions-row {
     display: flex;
     gap: 15px;
     width: 100%;
-    max-width: 440px;
+    max-width: 450px;
 }
 .result-actions-row .btn {
     flex: 1;
@@ -1111,7 +1111,7 @@ main {
     padding: 12px 15px;
     border-radius: 8px;
     margin-bottom: 15px;
-    max-width: 300px;
+    max-width: 450px;
     width: 100%;
     box-sizing: border-box;
     text-align: center;
@@ -1294,6 +1294,7 @@ main {
         gap: 20px;
     }
 }
+
 
 
 
