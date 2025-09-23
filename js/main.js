@@ -247,7 +247,7 @@ const TsurumiApp = {
     },
 
     savePlan() {
-        const planName = prompt("この調整プランの名前を入力してください:", "マイプラン " + new Date().toLocaleDateString());
+        const planName = prompt("結果を保存します。名前を入力してください:", "マイプラン " + new Date().toLocaleDateString());
         if (!planName || planName.trim() === "") return;
 
         const serializablePlan = this.state.lastCalculatedPlan.map(day => ({
@@ -803,4 +803,5 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
 
