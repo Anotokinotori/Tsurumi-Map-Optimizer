@@ -18,7 +18,7 @@ const TsurumiApp = {
         this.ui.initInputPage('current');
         this.ui.initInputPage('ideal');
         this.bindEvents();
-        this.ui.ensureScrollIndicatorIsInBody(); // Ensure arrow is a child of body
+        this.ui.ensureScrollIndicatorIsInBody(); // Ensure arrow is a direct child of body
     },
 
     cacheElements: function() {
@@ -168,7 +168,10 @@ const TsurumiApp = {
         
         this.elements.scrollIndicator.addEventListener('click', (e) => {
             e.preventDefault();
-            document.getElementById('result-details').scrollIntoView({ behavior: 'smooth' });
+            const resultDetails = document.getElementById('result-details');
+            if (resultDetails) {
+                resultDetails.scrollIntoView({ behavior: 'smooth' });
+            }
         });
 
         // Scroll event listeners
@@ -569,7 +572,7 @@ const TsurumiApp = {
             }
 
             const isMobileView = window.innerWidth <= 768;
-            const scrollContainer = isMobileView ? document.documentElement : TsurumiApp.elements.resultPage;
+            const scrollContainer = isMobileView ? document.documentElement : resultPage;
             
             const isScrollable = scrollContainer.scrollHeight > scrollContainer.clientHeight;
             const isAtTop = scrollContainer.scrollTop < 50;
@@ -578,9 +581,8 @@ const TsurumiApp = {
         },
         
         ensureScrollIndicatorIsInBody: function() {
-            const indicator = this.scrollIndicator;
-            if (!indicator) return;
-            if (indicator.parentElement !== document.body) {
+            const indicator = TsurumiApp.elements.scrollIndicator;
+            if (indicator && indicator.parentElement !== document.body) {
                 document.body.appendChild(indicator);
             }
         },
