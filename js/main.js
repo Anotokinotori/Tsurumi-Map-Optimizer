@@ -37,6 +37,7 @@ const TsurumiApp = {
         this.elements.calculatePlanBtn = document.getElementById('calculate-plan-btn');
         this.elements.resetBtn = document.getElementById('reset-btn');
         this.elements.savePlanBtn = document.getElementById('save-plan-btn');
+        this.elements.savePlanIconBtn = document.getElementById('save-plan-icon-btn');
         this.elements.backToStartBtn = document.getElementById('back-to-start-btn');
         this.elements.backToCurrentBtn = document.getElementById('back-to-current-btn');
         this.elements.backToIdealBtn = document.getElementById('back-to-ideal-btn');
@@ -91,6 +92,7 @@ const TsurumiApp = {
         this.elements.calculatePlanBtn.addEventListener('click', () => this.calculatePlan());
         this.elements.resetBtn.addEventListener('click', () => this.resetApp());
         this.elements.savePlanBtn.addEventListener('click', () => this.savePlan());
+        this.elements.savePlanIconBtn.addEventListener('click', () => this.savePlan());
         this.elements.loadPlanBtn.addEventListener('click', () => this.ui.openLoadModal());
 
         // Input Helpers
@@ -424,9 +426,7 @@ const TsurumiApp = {
                               : `最短 ${plan.length} 日で調整可能！`;
             
             summaryEl.textContent = summaryText;
-            
-            // --- BUG FIX ---
-            // Remove direct style manipulation and let CSS classes handle visibility.
+
             TsurumiApp.elements.soloNotice.style.display = isMultiplayer ? 'none' : '';
             
             TsurumiApp.elements.recalculateBtn.textContent = isMultiplayer ? '周期ホールドOFFで再計算' : '周期ホールドONで再計算';
@@ -453,7 +453,7 @@ const TsurumiApp = {
                 });
             }
             this.showPage('result-page');
-            
+
             TsurumiApp.elements.resultPage.scrollTop = 0;
             try { window.scrollTo(0, 0); } catch(e) {/* ignore */}
         },
@@ -552,7 +552,7 @@ const TsurumiApp = {
             document.querySelector('#current-map-container .map-guide-text').classList.toggle('hidden', isCurrentStarted);
             document.querySelector('#ideal-map-container .map-guide-text').classList.toggle('hidden', isIdealStarted);
         },
-
+        
         showDayDetail: function(dayIndex) {
             const plan = TsurumiApp.state.lastCalculatedPlan;
             if (!plan || isNaN(dayIndex) || !plan[dayIndex]) return;
