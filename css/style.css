@@ -553,7 +553,7 @@ main {
 .result-layout-container {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 15px;
     width: 100%;
 }
 .result-map-container {
@@ -578,15 +578,6 @@ main {
 .result-actions-container .btn {
     width: 100%;
     max-width: 450px;
-}
-.result-actions-row {
-    display: flex;
-    gap: 15px;
-    width: 100%;
-    max-width: 450px;
-}
-.result-actions-row .btn {
-    flex: 1;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -633,6 +624,7 @@ main {
     top: 50%;
     right: 15px;
     transform: translateY(-50%);
+    display: none; /* Hide by default */
 }
 .save-icon-btn:hover {
     opacity: 1;
@@ -1148,6 +1140,10 @@ main {
     -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='23 4 23 10 17 10'%3E%3C/polyline%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'%3E%3C/path%3E%3C/svg%3E");
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='23 4 23 10 17 10'%3E%3C/polyline%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'%3E%3C/path%3E%3C/svg%3E");
 }
+.icon-recalc {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='2' width='16' height='20' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='8' y1='6' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='16' y1='14' x2='8' y2='14'%3E%3C/line%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='2' width='16' height='20' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='8' y1='6' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='16' y1='14' x2='8' y2='14'%3E%3C/line%3E%3C/svg%3E");
+}
 
 
 /* =================================================================== */
@@ -1260,6 +1256,9 @@ main {
     }
     .result-footer-link {
         display: none;
+    }
+    .save-icon-btn {
+        display: block; /* Show on mobile */
     }
 }
 
