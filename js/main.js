@@ -580,7 +580,7 @@ const TsurumiApp = {
                         <p>ホスト(1P)は鶴観以外の安全な場所に移動し、ゲスト(2P)を世界に招き入れます。</p>
                         <h4>Step 2: 周期のホールド (ゲストの操作)</h4>
                         <p><strong>[重要]</strong> まずホスト(1P)が層岩巨淵・地下鉱区など、<strong>テイワット以外のマップに移動</strong>するのを待ちます。</p>
-                        <p>ホストの移動後、ゲスト(2P)は以下の行動で指定されたグループの周期を<strong>ホールド(固定)</strong>します。</p>`
+                        <p>ホストの移動後、ゲスト(2P)は以下の行動で指定されたグループの周期を読み込みます。</p>`
                         + this.generateActionDetailsHTML(dayData.holdAction) +
                         `<p><strong>[重要]</strong> ゲストは上記行動を終えたら、速やかにホストの世界から退出してください。</p>
                         <h4 style="margin-top: 25px;">Step 3: 周期の進行 (ホストの操作)</h4>
