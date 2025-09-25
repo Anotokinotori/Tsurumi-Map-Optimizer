@@ -584,7 +584,7 @@ const TsurumiApp = {
                         + this.generateActionDetailsHTML(dayData.holdAction) +
                         `<p><strong>[重要]</strong> ゲストは上記行動を終えたら、速やかにホストの世界から退出してください。</p>
                         <h4 style="margin-top: 25px;">Step 3: 周期の進行 (ホストの操作)</h4>
-                        <p>ゲストが退出してソロ状態に戻った後、ホスト(1P)は以下の行動で、ゲストが<strong>ホールドしなかった</strong>グループの周期を1つ<strong>進めます</strong>。</p>`
+                        <p>ゲストが退出してソロ状態に戻った後、ホスト(1P)は以下の行動で、ゲストが<strong>読み込まなかった</strong>グループの周期を1つ<strong>進めます</strong>。</p>`
                         + this.generateActionDetailsHTML(dayData.advanceAction, dayData.holdAction);
             }
             return html;
@@ -806,5 +806,4 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
-
 
