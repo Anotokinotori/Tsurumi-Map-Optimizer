@@ -38,6 +38,7 @@ const TsurumiApp = {
         // Buttons
         this.elements.goToCurrentBtn = document.getElementById('go-to-current-btn');
         this.elements.guideBtn = document.getElementById('guide-btn');
+        this.elements.disclaimerLink = document.getElementById('disclaimer-link');
         this.elements.creditTrigger = document.getElementById('credit-modal-trigger');
         this.elements.loadPlanBtn = document.getElementById('load-plan-btn');
         this.elements.goToIdealBtn = document.getElementById('go-to-ideal-btn');
@@ -125,6 +126,7 @@ const TsurumiApp = {
 
         // Modals
         this.elements.guideBtn.addEventListener('click', () => this.ui.showModal('guide-modal'));
+        this.elements.disclaimerLink.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
         this.elements.creditTrigger.addEventListener('click', () => this.ui.showModal('credit-modal'));
         document.querySelectorAll('.modal-close').forEach(el => {
             el.addEventListener('click', () => this.ui.closeModal(el.dataset.target));
@@ -821,4 +823,5 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
 
