@@ -1154,7 +1154,7 @@ main {
 @media (min-width: 992px) {
     body {
         background-color: #000; /* Fallback for older browsers */
-        background-image: url('https://api.mg-dev.net/api/v1/genshin/backgrounds/Tsurumi%20Island');
+        background-image: url('https://github.com/Anotokinotori/Tsurumi-Map-Optimizer/blob/main/20250926155409.png?raw=true');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
@@ -1318,5 +1318,4 @@ main {
     .page-footer .btn { font-size: 0.9em; padding: 10px 20px; }
     .page-footer .btn-secondary-link { font-size: 0.9em; padding: 10px; }
 }
-
 
