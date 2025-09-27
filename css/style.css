@@ -1326,3 +1326,38 @@ main {
     .page-footer .btn-secondary-link { font-size: 0.9em; padding: 10px; }
 }
 
+/* --- Height Constrained Desktop --- */
+@media (min-width: 992px) and (max-height: 800px) {
+    .page {
+        padding-top: 1vw;
+        padding-bottom: 1vw;
+    }
+    .page-header { margin-bottom: 8px; }
+    .btn-back, .header-placeholder { width: 32px; height: 32px; }
+    .steps-container { gap: 10px; }
+    #current-config-page .step-icon,
+    #ideal-config-page .step-icon,
+    #result-page .step-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.2em;
+    }
+    #current-config-page .step-label,
+    #ideal-config-page .step-label,
+    #result-page .step-label {
+        margin-top: 10px;
+        font-size: 0.9em;
+    }
+    .step-arrow { font-size: 1.5em; }
+    .view-switcher { margin-bottom: 8px; }
+    .view-tab { padding: 6px 12px; font-size: 0.9em; }
+    .page-footer { margin-top: 10px; }
+    #start-page .start-footer {
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+}
+
