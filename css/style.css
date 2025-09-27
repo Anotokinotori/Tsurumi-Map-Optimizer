@@ -659,7 +659,8 @@ main {
     top: 0; 
     z-index: 1; 
 }
-.result-footer-link {
+.result-footer-link,
+.result-disclaimer-desktop {
     text-align: center;
     margin-top: 25px;
     padding: 10px;
@@ -1189,20 +1190,7 @@ main {
     }
     .show-on-desktop { display: block; }
     .show-flex-on-desktop { display: flex; }
-
-    #current-config-page .step-icon,
-    #ideal-config-page .step-icon,
-    #result-page .step-icon {
-        width: 45px;
-        height: 45px;
-        font-size: 1.2em;
-    }
-    #current-config-page .step-label,
-    #ideal-config-page .step-label,
-    #result-page .step-label {
-        margin-top: 10px;
-        font-size: 0.9em;
-    }
+    #disclaimer-link-result-mobile { display: none; }
 }
 
 /* --- Tablet & Mobile --- */
@@ -1290,6 +1278,9 @@ main {
         order: 2;
     }
     .result-footer-link {
+        display: none;
+    }
+    .result-disclaimer-desktop {
         display: none;
     }
     .save-icon-btn {
