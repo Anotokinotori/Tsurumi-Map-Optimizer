@@ -38,12 +38,13 @@ const TsurumiApp = {
         // Buttons
         this.elements.goToCurrentBtn = document.getElementById('go-to-current-btn');
         this.elements.guideBtn = document.getElementById('guide-btn');
-        this.elements.startTsurumiInfoBtn = document.getElementById('start-tsurumi-info-btn');
+        this.elements.tsurumiInfoBtn = document.getElementById('tsurumi-info-btn');
         this.elements.cycleHoldInfoBtn = document.getElementById('cycle-hold-info-btn');
         this.elements.disclaimerLink = document.getElementById('disclaimer-link');
         this.elements.disclaimerLinkResultPC = document.getElementById('disclaimer-link-result-pc');
         this.elements.disclaimerLinkResultMobile = document.getElementById('disclaimer-link-result-mobile');
         this.elements.creditTrigger = document.getElementById('credit-modal-trigger');
+        this.elements.logicModalTrigger = document.getElementById('logic-modal-trigger'); // Added
         this.elements.loadPlanBtn = document.getElementById('load-plan-btn');
         this.elements.goToIdealBtn = document.getElementById('go-to-ideal-btn');
         this.elements.setRecommendedBtn = document.getElementById('set-recommended-btn');
@@ -130,12 +131,13 @@ const TsurumiApp = {
 
         // Modals
         this.elements.guideBtn.addEventListener('click', () => this.ui.showModal('guide-modal'));
-        this.elements.startTsurumiInfoBtn.addEventListener('click', () => this.ui.showModal('tsurumi-info-modal'));
+        this.elements.tsurumiInfoBtn.addEventListener('click', () => this.ui.showModal('tsurumi-info-modal'));
         this.elements.cycleHoldInfoBtn.addEventListener('click', () => this.ui.showModal('cycle-hold-info-modal'));
         this.elements.disclaimerLink.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
         this.elements.disclaimerLinkResultPC.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
         this.elements.disclaimerLinkResultMobile.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
         this.elements.creditTrigger.addEventListener('click', () => this.ui.showModal('credit-modal'));
+        this.elements.logicModalTrigger.addEventListener('click', () => this.ui.showModal('logic-modal')); // Added
         document.querySelectorAll('.modal-close').forEach(el => {
             el.addEventListener('click', () => this.ui.closeModal(el.dataset.target));
         });
@@ -238,12 +240,8 @@ const TsurumiApp = {
         const isMultiplayer = this.elements.multiplayerCheckbox.checked;
         const allowBoat = this.elements.boatCheckbox.checked;
 
-        if (Object.keys(this.state.currentConfig).length !== totalGroups) {
-             this.ui.showValidationMessage('全ての現在配置を入力してください。', this.elements.goToIdealBtn);
-             return;
-        }
-        if (Object.keys(this.state.idealConfig).length === 0) {
-            this.ui.showValidationMessage('1つ以上の理想配置を入力してください。', this.elements.calculatePlanBtn);
+        if (Object.keys(this.state.currentConfig).length !== totalGroups || Object.keys(this.state.idealConfig).length === 0) {
+            this.ui.showValidationMessage('全ての現在配置と、1つ以上の理想配置を入力してください。', this.elements.calculatePlanBtn);
             return;
         }
 
@@ -276,8 +274,8 @@ const TsurumiApp = {
     },
 
     savePlan() {
-        // Using a simple fixed name instead of prompt
-        const planName = "マイプラン " + new Date().toLocaleString(); 
+        const planName = window.prompt("結果を保存します。名前を入力してください:", "マイプラン " + new Date().toLocaleDateString());
+        if (!planName || planName.trim() === "") return;
 
         const serializablePlan = this.state.lastCalculatedPlan.map(day => ({
             ...day,
@@ -299,8 +297,6 @@ const TsurumiApp = {
             const savedPlans = this.getSavedPlans();
             savedPlans.push(planData);
             localStorage.setItem('tsurumiSavedPlans', JSON.stringify(savedPlans));
-            // Instead of alert, we can maybe show a temporary message on the UI in the future
-            console.log(`「${planName}」を保存しました。`);
         } catch (e) {
             console.error("Failed to save plan:", e);
         }
@@ -310,7 +306,6 @@ const TsurumiApp = {
         const plans = this.getSavedPlans();
         const planToLoad = plans.find(p => p.id === planId);
         if (!planToLoad) {
-            console.error("プランの読み込みに失敗しました。");
             return;
         }
 
@@ -335,11 +330,10 @@ const TsurumiApp = {
     },
 
     deletePlan(planId) {
-        // Removed confirm dialog for safer execution
-        let plans = this.getSavedPlans();
-        plans = plans.filter(p => p.id !== planId);
+        const plans = this.getSavedPlans();
+        const updatedPlans = plans.filter(p => p.id !== planId);
         try {
-            localStorage.setItem('tsurumiSavedPlans', JSON.stringify(plans));
+            localStorage.setItem('tsurumiSavedPlans', JSON.stringify(updatedPlans));
             this.ui.renderSavedPlans();
         } catch (e) {
             console.error("Failed to delete plan:", e);
@@ -834,5 +828,4 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
-
 
