@@ -60,7 +60,6 @@ h1, h2, h3 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative; /* For title centering */
 }
 
 .site-credit-footer {
@@ -373,18 +372,25 @@ main {
      flex-direction: column;
      gap: 2vh;
 }
+.start-title-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    position: relative;
+}
 #start-page h1 {
     font-size: clamp(2.5em, 5vw, 4.5em);
     font-weight: 700;
     color: #1E3A8A;
-    margin-bottom: 10px;
+    margin: 0;
 }
 #start-page .subtitle {
     font-size: clamp(1em, 1.5vw, 1.2em);
     color: var(--secondary-text-color);
     max-width: 600px;
     margin: 0 auto;
-    margin-bottom: 10px;
+    margin-top: 10px;
 }
 .start-buttons {
     margin-top: 50px;
@@ -426,25 +432,25 @@ main {
     font-size: 1em;
     cursor: pointer;
 }
-.help-icon {
+.help-icon, .title-help-icon {
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     background-color: #ccc;
     color: white;
     font-weight: bold;
     text-decoration: none;
-    font-size: 0.9em;
+    font-size: 1em;
     margin-left: 5px;
     transition: background-color 0.2s;
-    border: none; /* For button reset */
-    cursor: pointer; /* For button */
-    padding: 0; /* For button reset */
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
 }
-.help-icon:hover {
+.help-icon:hover, .title-help-icon:hover {
     background-color: #999;
 }
 .footer-links {
@@ -750,46 +756,22 @@ main {
 }
 
 /* --- Header & Footer Details --- */
-.site-title-wrapper {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
 .site-header h1 {
     margin: 0;
     font-size: clamp(1.2em, 2vw, 1.5em);
     color: white;
 }
-.title-help-icon {
-    background: none;
-    border: 2px solid #ccc;
-    color: #ccc;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    font-weight: bold;
-    font-size: 0.9em;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-.title-help-icon:hover {
-    background-color: #ccc;
-    color: var(--header-bg-color);
+.site-header {
+    justify-content: flex-start;
+    gap: 15px;
 }
 .header-info {
+    margin-left: auto;
     display: flex;
     align-items: center;
     gap: 15px;
     font-size: clamp(0.8em, 1.5vw, 0.9em);
     color: #ccc;
-    margin-left: auto; /* Push to the right */
 }
 .header-info a {
     color: #fff;
@@ -1005,6 +987,21 @@ main {
 .mode-multi { color: var(--multiplayer-accent-color); font-weight: bold; }
 
 /* --- Modals Content --- */
+.analogy-box {
+    background-color: #f3f4f6;
+    border-left: 5px solid var(--accent-color);
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 10px;
+    text-align: left;
+}
+.analogy-box ul {
+    list-style: none;
+    padding-left: 10px;
+}
+.analogy-box li {
+    margin-bottom: 5px;
+}
 #guide-modal .modal-content h2 { font-size: 2.2em; margin-bottom: 15px; }
 #guide-modal .modal-content h3 { font-size: 1.6em; margin-top: 10px; margin-bottom: 15px; }
 #guide-modal .modal-content hr {
@@ -1013,18 +1010,6 @@ main {
     background-color: #adb5bd;
     border-radius: 2px;
     margin: 30px 0;
-}
-.analogy-box {
-    background-color: #f3f4f6;
-    border-left: 5px solid #60a5fa;
-    padding: 15px;
-    border-radius: 8px;
-    margin-top: 10px;
-    text-align: left;
-}
-.analogy-box ul {
-    list-style-position: inside;
-    padding-left: 10px;
 }
 #zoom-view .modal-content { overflow: hidden; }
 #zoom-map-container {
@@ -1290,13 +1275,7 @@ main {
         min-height: 0; 
         flex-grow: 1; 
     }
-    .site-header {
-        padding: 10px 20px;
-        justify-content: center; /* Center title on mobile */
-    }
-    .header-info {
-        display: none; /* Hide credits on mobile header */
-    }
+    .site-header, .site-credit-footer { padding: 10px 20px; }
     .title-long { display: none; }
     .title-short { display: inline; }
     .header-version,
@@ -1395,3 +1374,4 @@ main {
         font-size: 0.9em;
     }
 }
+
