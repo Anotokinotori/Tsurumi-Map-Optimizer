@@ -384,9 +384,6 @@ main {
     max-width: 600px;
     margin: 0 auto;
 }
-#disclaimer-link {
-    margin-top: 10px;
-}
 .start-buttons {
     margin-top: 50px;
     display: flex;
@@ -408,7 +405,7 @@ main {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
     margin-top: 20px;
 }
 .multi-mode-toggle {
@@ -445,6 +442,17 @@ main {
 .help-icon:hover {
     background-color: #999;
 }
+.footer-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+.link-separator {
+    color: var(--secondary-text-color);
+    opacity: 0.5;
+}
+
 
 /* --- Input Pages (Shared) --- */
 .page-header {
@@ -1321,4 +1329,5 @@ main {
     .page-footer .btn { font-size: 0.9em; padding: 10px 20px; }
     .page-footer .btn-secondary-link { font-size: 0.9em; padding: 10px; }
 }
+
 
