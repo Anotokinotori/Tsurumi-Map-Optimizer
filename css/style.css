@@ -1152,6 +1152,16 @@ main {
 
 /* --- Desktop (Large Screens) --- */
 @media (min-width: 992px) {
+    body {
+        background-color: #000; /* Fallback for older browsers */
+        background-image: url('https://api.mg-dev.net/api/v1/genshin/backgrounds/Tsurumi%20Island');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
+    main {
+        background: none;
+    }
     .result-grid {
         grid-template-columns: minmax(350px, 4fr) 6fr;
         gap: 40px;
@@ -1171,7 +1181,7 @@ main {
 }
 
 /* --- Tablet & Mobile --- */
-@media (max-width: 768px) {
+@media (max-width: 991px) {
     body {
         overflow: auto;
         height: auto;
@@ -1296,7 +1306,7 @@ main {
 }
 
 /* --- Height Constrained Desktop --- */
-@media (max-height: 800px) and (min-width: 769px) {
+@media (max-height: 800px) and (min-width: 992px) {
     .page {
         padding-top: 1vw;
         padding-bottom: 1vw;
@@ -1304,8 +1314,15 @@ main {
     .page-header { margin-bottom: 8px; }
     .btn-back, .header-placeholder { width: 32px; height: 32px; }
     .steps-container { gap: 10px; }
-    .step-icon { width: 40px; height: 40px; font-size: 1.1em; }
-    .step-label { margin-top: 5px; font-size: 0.8em; }
+    #current-config-page .step-icon, #ideal-config-page .step-icon, #result-page .step-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.2em;
+    }
+    #current-config-page .step-label, #ideal-config-page .step-label, #result-page .step-label {
+        margin-top: 10px;
+        font-size: 0.9em;
+    }
     .step-arrow { font-size: 1.5em; }
     .view-switcher { margin-bottom: 8px; }
     .view-tab { padding: 6px 12px; font-size: 0.9em; }
