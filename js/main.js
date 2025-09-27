@@ -38,7 +38,6 @@ const TsurumiApp = {
         // Buttons
         this.elements.goToCurrentBtn = document.getElementById('go-to-current-btn');
         this.elements.guideBtn = document.getElementById('guide-btn');
-        this.elements.headerTsurumiInfoBtn = document.getElementById('header-tsurumi-info-btn');
         this.elements.startTsurumiInfoBtn = document.getElementById('start-tsurumi-info-btn');
         this.elements.cycleHoldInfoBtn = document.getElementById('cycle-hold-info-btn');
         this.elements.disclaimerLink = document.getElementById('disclaimer-link');
@@ -131,7 +130,6 @@ const TsurumiApp = {
 
         // Modals
         this.elements.guideBtn.addEventListener('click', () => this.ui.showModal('guide-modal'));
-        this.elements.headerTsurumiInfoBtn.addEventListener('click', () => this.ui.showModal('tsurumi-info-modal'));
         this.elements.startTsurumiInfoBtn.addEventListener('click', () => this.ui.showModal('tsurumi-info-modal'));
         this.elements.cycleHoldInfoBtn.addEventListener('click', () => this.ui.showModal('cycle-hold-info-modal'));
         this.elements.disclaimerLink.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
