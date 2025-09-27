@@ -18,6 +18,11 @@ const TsurumiApp = {
         this.ui.initInputPage('current');
         this.ui.initInputPage('ideal');
         this.bindEvents();
+
+        // Check if the info banner was previously closed
+        if (localStorage.getItem('tsurumiBannerClosed') === 'true') {
+            this.elements.infoBanner.style.display = 'none';
+        }
     },
 
     cacheElements: function() {
@@ -25,6 +30,10 @@ const TsurumiApp = {
         this.elements.steps = document.querySelectorAll('.step');
         this.elements.modals = document.querySelectorAll('.modal');
         this.elements.allMapBgs = document.querySelectorAll('.map-bg');
+        
+        // Banner
+        this.elements.infoBanner = document.getElementById('info-banner');
+        this.elements.closeBannerBtn = document.getElementById('close-banner-btn');
         
         // Buttons
         this.elements.goToCurrentBtn = document.getElementById('go-to-current-btn');
@@ -74,6 +83,12 @@ const TsurumiApp = {
     },
 
     bindEvents: function() {
+        // Banner close button
+        this.elements.closeBannerBtn.addEventListener('click', () => {
+            this.elements.infoBanner.classList.add('hidden');
+            localStorage.setItem('tsurumiBannerClosed', 'true');
+        });
+        
         // Page Navigation
         this.elements.goToCurrentBtn.addEventListener('click', () => this.ui.showPage('current-config-page'));
         this.elements.backToStartBtn.addEventListener('click', () => this.ui.showPage('start-page'));
