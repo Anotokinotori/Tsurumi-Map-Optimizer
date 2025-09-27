@@ -238,8 +238,12 @@ const TsurumiApp = {
         const isMultiplayer = this.elements.multiplayerCheckbox.checked;
         const allowBoat = this.elements.boatCheckbox.checked;
 
-        if (Object.keys(this.state.currentConfig).length !== totalGroups || Object.keys(this.state.idealConfig).length === 0) {
-            alert('全ての現在配置と、1つ以上の理想配置を入力してください。');
+        if (Object.keys(this.state.currentConfig).length !== totalGroups) {
+             this.ui.showValidationMessage('全ての現在配置を入力してください。', this.elements.goToIdealBtn);
+             return;
+        }
+        if (Object.keys(this.state.idealConfig).length === 0) {
+            this.ui.showValidationMessage('1つ以上の理想配置を入力してください。', this.elements.calculatePlanBtn);
             return;
         }
 
@@ -272,8 +276,8 @@ const TsurumiApp = {
     },
 
     savePlan() {
-        const planName = prompt("結果を保存します。名前を入力してください:", "マイプラン " + new Date().toLocaleDateString());
-        if (!planName || planName.trim() === "") return;
+        // Using a simple fixed name instead of prompt
+        const planName = "マイプラン " + new Date().toLocaleString(); 
 
         const serializablePlan = this.state.lastCalculatedPlan.map(day => ({
             ...day,
@@ -295,10 +299,10 @@ const TsurumiApp = {
             const savedPlans = this.getSavedPlans();
             savedPlans.push(planData);
             localStorage.setItem('tsurumiSavedPlans', JSON.stringify(savedPlans));
-            alert(`「${planName}」を保存しました。`);
+            // Instead of alert, we can maybe show a temporary message on the UI in the future
+            console.log(`「${planName}」を保存しました。`);
         } catch (e) {
             console.error("Failed to save plan:", e);
-            alert("プランの保存に失敗しました。");
         }
     },
 
@@ -306,7 +310,7 @@ const TsurumiApp = {
         const plans = this.getSavedPlans();
         const planToLoad = plans.find(p => p.id === planId);
         if (!planToLoad) {
-            alert("プランの読み込みに失敗しました。");
+            console.error("プランの読み込みに失敗しました。");
             return;
         }
 
@@ -331,7 +335,7 @@ const TsurumiApp = {
     },
 
     deletePlan(planId) {
-        if (!confirm("本当にこのプランを削除しますか？")) return;
+        // Removed confirm dialog for safer execution
         let plans = this.getSavedPlans();
         plans = plans.filter(p => p.id !== planId);
         try {
@@ -339,7 +343,6 @@ const TsurumiApp = {
             this.ui.renderSavedPlans();
         } catch (e) {
             console.error("Failed to delete plan:", e);
-            alert("プランの削除に失敗しました。");
         }
     },
 
@@ -831,4 +834,5 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
 
