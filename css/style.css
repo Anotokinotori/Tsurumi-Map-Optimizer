@@ -1132,6 +1132,8 @@ main {
 
 .show-on-desktop { display: none; }
 .show-flex-on-desktop { display: none; }
+#disclaimer-link-result-mobile { display: none; }
+
 .btn-icon {
     display: inline-block;
     width: 1.2em;
@@ -1283,6 +1285,9 @@ main {
     .result-disclaimer-desktop {
         display: none;
     }
+    #disclaimer-link-result-mobile {
+        display: inline-block;
+    }
     .save-icon-btn {
         display: block; /* Show on mobile */
     }
@@ -1320,5 +1325,4 @@ main {
     .page-footer .btn { font-size: 0.9em; padding: 10px 20px; }
     .page-footer .btn-secondary-link { font-size: 0.9em; padding: 10px; }
 }
-
 
