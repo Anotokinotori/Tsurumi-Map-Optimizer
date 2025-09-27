@@ -761,12 +761,7 @@ main {
     font-size: clamp(1.2em, 2vw, 1.5em);
     color: white;
 }
-.site-header {
-    justify-content: flex-start;
-    gap: 15px;
-}
 .header-info {
-    margin-left: auto;
     display: flex;
     align-items: center;
     gap: 15px;
