@@ -9,14 +9,17 @@
 </head>
 <body>
     <header class="site-header backdrop-blur">
-        <h1>
-            <span class="title-long">鶴観調整プランナー（周期ホールド対応）</span>
-            <span class="title-short">鶴観調整プランナー</span>
-        </h1>
+        <div class="header-title-container">
+            <h1>
+                <span class="title-long">鶴観調整プランナー（周期ホールド対応）</span>
+                <span class="title-short">鶴観調整プランナー</span>
+            </h1>
+        </div>
         <div class="header-info">
             <span class="header-version">Ver. 1.2.2</span>
             <span class="credit-separator">|</span>
-            <span>製作者: <a href="https://x.com/PIpXlMz1tB5ASjF" target="_blank" rel="noopener noreferrer">あの時の鳥です</a></span>
+            <!-- 製作者リンクをボタンに変更 -->
+            <button id="logic-modal-trigger" class="header-link-btn">製作者: あの時の鳥です</button>
         </div>
     </header>
 
@@ -33,8 +36,8 @@
                 <div class="page-content-wrapper">
                     <div class="start-header">
                         <div class="start-title-container">
-                            <h1>鶴観調整プランナー</h1>
-                            <button id="start-tsurumi-info-btn" class="title-help-icon" title="鶴観調整とは？">？</button>
+                             <h1>鶴観調整プランナー</h1>
+                             <button id="tsurumi-info-btn" class="info-btn" title="鶴観調整とは？">？</button>
                         </div>
                         <p class="subtitle">現在と理想の配置を入力すると、最短調整スケジュールを計算します</p>
                     </div>
@@ -60,7 +63,7 @@
                         <div class="multi-mode-toggle">
                             <input type="checkbox" id="multiplayer-mode-checkbox">
                             <label for="multiplayer-mode-checkbox">周期ホールドを有効化</label>
-                            <button id="cycle-hold-info-btn" class="help-icon" title="周期ホールドとは？">？</button>
+                            <button id="cycle-hold-info-btn" class="help-icon" title="周期ホールドとは？">?</button>
                         </div>
                          <div class="footer-links">
                              <button id="guide-btn" class="btn btn-secondary-link">使い方ガイド</button>
@@ -274,6 +277,102 @@
             </p>
         </div>
     </div>
+    
+    <div id="tsurumi-info-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="tsurumi-info-modal">&times;</span>
+            <h2>鶴観調整とは？</h2>
+            <p>
+                鶴観調整とは、鶴観マップの一部の精鋭エネミーの「出現パターン」を、プレイヤーが意図的にコントロールするテクニックのことです。
+            </p>
+            <p>
+                この「鶴観調整プランナー」は、その複雑な調整計画の立案をサポートし、あなたの現在地から理想の配置へ至る最短スケジュールを自動で算出することを目的としています。
+            </p>
+            
+            <hr>
+        
+            <h3>調整の基本的な仕組み</h3>
+            <ul>
+                <li>
+                    <strong>3つの配置パターン:</strong> 調整対象のエネミーには「A」「B」「C」の3つの出現パターンがあり、それぞれ数や位置が異なります。このパターンは10箇所のエネミーグループごとに独立しています。
+                </li>
+                <li>
+                    <strong>「ロード」による周期の進行:</strong> エネミーのパターンは、ワープや移動でそのエネミーに近づき、<strong>ゲーム内に「ロード」された時にだけ</strong>次のパターンへ1つ進みます。逆を言えば、ロードしなければパターンは変わりません。
+                </li>
+                <li>
+                    <strong>選択的なロード:</strong> 特定の場所へワープしたり、決まったルートを移動したりすることで、一部のエネミーだけを狙ってロードし、周期を進めることができます。これが「調整」の基本となります。
+                </li>
+            </ul>
+        
+            <h4><strong>【重要】調整作業における注意点</strong></h4>
+            <p style="text-align: left;">
+                鶴観調整は、配置の確認から計画の実行まで、<strong>すべての工程で精密な計画と慎重な操作が求められます。</strong><br>
+                特に、意図しないエネミーをロードしてしまうと計画が大きく崩れる可能性があります。当プランナーを利用する際も、ご自身の現在の配置を正確に入力し、算出されたスケジュールを慎重に実行してください。
+            </p>
+        
+            <hr>
+        
+            <p style="text-align: center;">
+                鶴観の精鋭の仕組みについて、より深く、正確に知りたい方は、<br>ぜひ、ねこしたさんのこちらの解説動画をご覧ください。<br>
+                <a href="https://youtu.be/2xqllaCTP5c?si=Pp_a3tTTLpFmB54B" target="_blank" rel="noopener noreferrer"><strong>【原神】鶴観の精鋭の仕組みと調整方法</strong></a>
+            </p>
+        </div>
+    </div>
+
+    <div id="cycle-hold-info-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="cycle-hold-info-modal">&times;</span>
+            <h2>周期ホールドとは？</h2>
+            <p>
+                周期ホールドとは、<strong>マルチプレイを利用して</strong>鶴観調整をより効率的に行うための<strong>高度なテクニック</strong>です。
+            </p>
+            <p>
+                このプランナーで「周期ホールドを有効化」すると、このテクニックを利用した、より短期間で調整を完了できる可能性のあるスケジュールを計算します。
+            </p>
+            
+            <hr>
+        
+            <h3>周期ホールドの仕組み</h3>
+            <p>
+                通常、エネミーをロードすると周期は1つ進みますが、周期ホールドを使うと<strong>「ロードしたにもかかわらず、周期を進めない」</strong>という特殊な状況を作り出せます。
+            </p>
+            <p>
+                これにより、調整したくないエネミーの周期を「ホールド（維持）」したまま、目的のエネミーの周期だけを進める、という精密な操作が可能になります。
+            </p>
+        
+            <h4>🎨 たとえ話：2人での壁塗り</h4>
+            <p>
+                このテクニックは、2人で行う壁塗りのようなものです。
+            </p>
+            <ul>
+                <li>
+                    <strong>壁:</strong> 鶴観の10ヶ所の精鋭グループ
+                </li>
+                <li>
+                    <strong>1P (ホスト):</strong> 壁を青く塗る<strong>「ペイント役」</strong>。周期を進めたい人です。
+                </li>
+                <li>
+                    <strong>2P (ゲスト/ホールド役):</strong> 壁が塗られないよう保護する<strong>「マスキングテープ役」</strong>。周期を進めたくない人です。
+                </li>
+            </ul>
+            <p style="text-align: left;">
+                ソロ調整は、ペイント役が1人で作業するのと同じです。塗ろうとした場所はすべて青くなります（周期が進みます）。<br>
+                一方、周期ホールド（マルチ調整）では、まず2Pがマスキングテープで壁を保護します。その後、1Pが塗装をすると、最終的に青く塗られるのは<strong>「1Pが塗ろうとした範囲」から「2Pがマスキングテープで保護した範囲」を<u>除いた部分</u></strong>だけになります。
+            </p>
+            <p style="text-align: left;">
+                このように、周期ホールドは不要な部分の周期進行を防ぐ「マスキングテープ」の役割を果たし、より正確で素早い調整を実現します。
+                当プランナーの結果画面にある「手順を確認」では、この複雑な手順を誰が何をすべきか分かりやすく表示するため、安心して調整作業に臨めるはずです。
+            </p>
+        
+            <hr>
+        
+            <p style="text-align: center;">
+                周期ホールドの具体的な手順や詳細な解説については、<br>ぜひ、ねこしたさんの動画をご覧ください。（該当の解説箇所から再生されます）<br>
+                <a href="https://www.youtube.com/watch?v=2xqllaCTP5c&t=1194s" target="_blank" rel="noopener noreferrer"><strong>周期ホールドの解説はこちら</strong></a>
+            </p>
+        </div>
+    </div>
+
 
     <div id="disclaimer-modal" class="modal backdrop-blur">
         <div class="modal-content">
@@ -372,50 +471,64 @@
         </div>
     </div>
 
-    <div id="tsurumi-info-modal" class="modal backdrop-blur">
+    <!-- New Logic Modal -->
+    <div id="logic-modal" class="modal backdrop-blur">
         <div class="modal-content">
-            <span class="modal-close" data-target="tsurumi-info-modal">&times;</span>
-            <h2>鶴観調整とは？</h2>
-            <p>鶴観調整とは、鶴観マップの一部の精鋭エネミーの「出現パターン」を、プレイヤーが意図的にコントロールするテクニックのことです。</p>
-            <p>その調整の中でも特に複雑で時間のかかる<strong>「何日にどこをロードすれば良いか」というスケジュールの計画を自動で行い、最短ルートを提案するのがこの『鶴観調整プランナー』です。</strong></p>
-            <hr style="margin: 15px 0;">
-            <h3>調整の基本的な仕組み</h3>
-            <ul style="text-align: left;">
-                <li><strong>3つの配置パターン:</strong> 調整対象のエネミーには「A」「B」「C」の3つの出現パターンがあり、それぞれ数や位置が異なります。このパターンは10箇所のエネミーグループごとに独立しています。</li>
-                <li><strong>「ロード」による周期の進行:</strong> エネミーのパターンは、ワープや移動でそのエネミーに近づき、<strong>ゲーム内に「ロード」された時にだけ</strong>次のパターンへ1つ進みます。逆を言えば、ロードしなければパターンは変わりません。</li>
-                <li><strong>選択的なロード:</strong> 特定の場所へワープしたり、決まったルートを移動したりすることで、一部のエネミーだけを狙ってロードし、周期を進めることができます。これが「調整」の基本となります。</li>
-            </ul>
-            <h4 style="margin-top: 15px;"><strong>【重要】調整作業における注意点</strong></h4>
-            <p style="text-align: left; line-height: 1.6;">鶴観調整は、配置の確認から計画の実行まで、<strong>すべての工程で精密な計画と慎重な操作が求められます。</strong><br>特に、意図しないエネミーをロードしてしまうと計画が大きく崩れる可能性があります。当プランナーを利用する際も、ご自身の現在の配置を正確に入力し、算出されたスケジュールを慎重に実行してください。</p>
-            <hr style="margin: 15px 0;">
-            <p style="text-align: center;">鶴観の精鋭の仕組みについて、より深く、正確に知りたい方は、<br>ぜひ、ねこしたさんのこちらの解説動画をご覧ください。<br><a href="https://youtu.be/2xqllaCTP5c?si=Pp_a3tTTLpFmB54B" target="_blank" rel="noopener noreferrer"><strong>【原神】鶴観の精鋭の仕組みと調整方法</strong></a></p>
-        </div>
-    </div>
+            <span class="modal-close" data-target="logic-modal">&times;</span>
+            <h2>製作者と計算の仕組みについて</h2>
 
-    <div id="cycle-hold-info-modal" class="modal backdrop-blur">
-        <div class="modal-content">
-            <span class="modal-close" data-target="cycle-hold-info-modal">&times;</span>
-            <h2>周期ホールドとは？</h2>
-            <p>周期ホールドとは、<strong>マルチプレイを利用して</strong>鶴観調整をより効率的に行うための<strong>高度なテクニック</strong>です。</p>
-            <p><strong>このプランナーで「周期ホールドを有効化」すると、この高度なテクニックを前提とした最短の調整スケジュールを自動で算出します。</strong>ソロでの調整よりも手順は複雑になりますが、調整にかかる日数を大幅に短縮できる可能性があります。</p>
-            <hr style="margin: 15px 0;">
-            <h3>周期ホールドの仕組み</h3>
-            <p style="text-align: left;">通常、エネミーをロードすると周期は1つ進みますが、周期ホールドを使うと<strong>「ロードしたにもかかわらず、周期を進めない」</strong>という特殊な状況を作り出せます。</p>
-            <p style="text-align: left;">これにより、調整したくないエネミーの周期を「ホールド（維持）」したまま、目的のエネミーの周期だけを進める、という精密な操作が可能になります。</p>
-            <h4 style="margin-top: 15px;">🎨 たとえ話：2人での壁塗り</h4>
-            <div class="analogy-box">
-                <p>このテクニックは、2人で行う壁塗りのようなものです。</p>
-                <ul>
-                    <li><strong>壁:</strong> 鶴観の10ヶ所の精鋭グループ</li>
-                    <li><strong>1P (ホスト):</strong> 壁を青く塗る<strong>「ペイント役」</strong>。周期を進めたい人です。</li>
-                    <li><strong>2P (ゲスト/ホールド役):</strong> 壁が塗られないよう保護する<strong>「マスキングテープ役」</strong>。周期を進めたくない人です。</li>
+            <h3>製作者について</h3>
+            <p>はじめまして、「あの時の鳥です」と申します。この「鶴観調整プランナー」を制作・運営しています。</p>
+            <p>私自身も精鋭狩りRTAに挑戦する中で、多くの人が直面する「鶴観調整」という高い壁を少しでも低くしたい。そして、この界隈に挑戦する仲間が一人でも増えてくれたら嬉しい。そんな想いで、このツールを丹精込めて制作しました。</p>
+            <p>本サイトの改善案や追加機能のご要望などありましたら、お気軽に相談していただけると幸いです。<br><a href="https://x.com/PIpXlMz1tB5ASjF" target="_blank" rel="noopener noreferrer"><strong>X (旧Twitter) アカウントはこちら</strong></a></p>
+            
+            <hr style="margin: 25px 0;">
+
+            <h3>計算ロジックの正しさと「最短」であることの証明</h3>
+            <p>このプランナーが提示するスケジュールは、なぜ<strong>正しく</strong>、かつ<strong>「最短」</strong>であると保証できるのでしょうか？<br>
+            それは、当てずっぽうや魔法のような方法ではなく、<strong>ゲーム内の確定的なルール</strong>を土台とし、それを<strong>正確な数式モデル</strong>へ変換、その上で<strong>数学的に証明されたアルゴリズム</strong>を用いて解を探索しているからです。</p>
+
+            <h4 style="margin-top:20px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Step 1: 前提となる「ゲームのルール」</h4>
+            <p style="text-align: left;">まず、大前提として、プランナーは以下の<strong>ゲーム内の確定的な法則</strong>に基づいて計算を行っています。</p>
+            <ul style="text-align: left; list-style: none; padding-left: 1em;">
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span><strong>ルール1：</strong>調整対象の精鋭は10グループあり、各グループは必ず「A, B, C」の3パターンのいずれかの状態になります。</li>
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span><strong>ルール2：</strong>パターンは、プレイヤーがその場に近づき「ロード」するという行為によってのみ、A→B→C→A と1つずつ進みます。</li>
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span><strong>ルール3：</strong>どの行動（ワープや移動）が、どのグループをロードするかは、先人たちの膨大な検証によってデータ化されています。（当サイトもそのデータを基にしています）</li>
+            </ul>
+            <p style="text-align: left;">プランナーは、これらの不変のルールとデータをパズルのピースとして利用します。</p>
+
+            <h4 style="margin-top:20px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Step 2: ルールを「数式モデル」に変換する (正しさの証明)</h4>
+            <p style="text-align: left;">次に、このルールをコンピュータが計算できる「数式モデル」に置き換えます。</p>
+            <ul style="text-align: left; list-style: none; padding-left: 1em;">
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span><strong>ルールの数値化:</strong> 鶴観の10個の精鋭グループがそれぞれ3パターンの状態を持つということは、3の10乗、すなわち<strong>59,049通り</strong>もの膨大な配置パターンが存在することを意味します。プランナーは、この59,049通りの全パターンを、それぞれ重複しないユニークな番号（状態番号）に変換します。</li>
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span>「ワープ②」や「歩き⑬」といった各調整アクションは、「<strong>ある状態番号</strong>を受け取ったら、ルール（`data.js`）に従って影響範囲のパターンを1つ進め、<strong>別の状態番号</strong>を返す関数」としてモデル化されます。</li>
+            </ul>
+            <p style="text-align: left;"><strong>結論:</strong> ゲーム内で起こりうる<strong>全ての配置パターン</strong>と、プレイヤーが取りうる<strong>全ての調整アクション</strong>を、このように漏れなく数値と数式の関係に変換することで、プランナーはゲーム内の鶴観調整をPC上で<strong>完全にシミュレート</strong>することが可能になります。これにより、計算ロジックが<strong>ゲームのルール通りに正しく機能する</strong>ことが保証されます。</p>
+
+            <h4 style="margin-top:20px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Step 3: どうやって最短ルートを探しているのか？</h4>
+            <p style="text-align: left;">ルール通りに動くシミュレーターが完成したら、次はその中から最短ルートを探します。この探し方は、駅の「最短乗り換え案内」のロジックと非常によく似ています。</p>
+            <div style="background-color: #f3f4f6; border-left: 4px solid #d1d5db; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                <p><strong>たとえ話：最短乗り換え案内</strong></p>
+                <ul style="padding-left: 2em; list-style: disc;">
+                    <li><strong>あなたの現在地:</strong> 現在の配置の「状態番号」</li>
+                    <li><strong>目的地:</strong> あなたが設定した理想の配置の「状態番号」</li>
+                    <li><strong>電車での1回の移動:</strong> 1日分の調整作業（状態番号の変化）</li>
                 </ul>
-                <p>ソロ調整は、ペイント役が1人で作業するのと同じです。塗ろうとした場所はすべて青くなります（周期が進みます）。<br>一方、周期ホールド（マルチ調整）では、まず2Pがマスキングテープで壁を保護します。その後、1Pが塗装をすると、最終的に青く塗られるのは<strong>「1Pが塗ろうとした範囲」から「2Pがマスキングテープで保護した範囲」を<u>除いた部分</u></strong>だけになります。</p>
-                <p>このように、周期ホールドは不要な部分の周期進行を防ぐ「マスキングテープ」の役割を果たし、より正確で素早い調整を実現します。</p>
             </div>
-            <p style="margin-top: 15px; text-align: left; line-height: 1.6;">理論上は複雑に聞こえるかもしれませんが、<strong>当プランナーで計算した後の結果画面では、各日の「手順を確認」ボタンから、ホスト役（1P）とホールド役（2P）がそれぞれ具体的にどの行動をすべきかが示されます。</strong></p>
-            <hr style="margin: 15px 0;">
-            <p style="text-align: center;">周期ホールドの具体的な手順や詳細な解説については、<br>ぜひ、ねこしたさんの動画をご覧ください。（該当の解説箇所から再生されます）<br><a href="https://www.youtube.com/watch?v=2xqllaCTP5c&t=1194s" target="_blank" rel="noopener noreferrer"><strong>周期ホールドの解説はこちら</strong></a></p>
+            <p style="text-align: left;">目的地までの最短ルートを探すため、プランナーは以下のような手順で、可能性のあるルートを<strong>しらみつぶしに</strong>探索します。</p>
+            <ol style="text-align: left; padding-left: 2em;">
+                <li style="margin-bottom: 5px;">まず、「現在地」から<strong>1回の移動（1日）</strong>で行ける全ての「次の駅（次の日の状態番号）」をリストアップします。</li>
+                <li style="margin-bottom: 5px;">次に、リストアップした全ての駅から、さらに<strong>1回の移動（合計2日）</strong>で行ける全ての駅をリストアップします。</li>
+                <li style="margin-bottom: 5px;">これを、「目的地」の状態番号に到着するまで繰り返します。</li>
+            </ol>
+            <img src="https://placehold.co/600x300/eef2ff/312e81?text=Route+Exploration+Image" alt="ルート探索のイメージ図" style="width:100%; max-width: 500px; border-radius: 8px; margin-top: 10px; display: block; margin-left: auto; margin-right: auto;">
+
+            <h4 style="margin-top:20px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Step 4: なぜそれが「最短」だと証明できるのか</h4>
+            <p style="text-align: left;">この「しらみつぶし」の探し方には、重要な特徴があります。</p>
+            <p style="text-align: left;">それは、<strong>1日で行けるルートを全て探し尽くしてから、初めて2日で行けるルートを探し始める</strong>、という点です。</p>
+            <p style="text-align: left;">このため、「目的地」に<strong>最初に到着した時点で、それが最も日数が少ない（乗り換えが少ない）ルートである</strong>ことが論理的に保証されます。もし3日で着くルートが見つかった後に、実は2日で着く隠れたルートが見つかる、ということは絶対に起こりません。</p>
+            <p style="text-align: left;">この方法は、コンピュータ科学の世界では「<strong>幅優先探索（BFS）</strong>」と呼ばれるアルゴリズムで、最短経路問題の解法として数学的に確立された、非常にポピュラーなものです。当プランナーは、この信頼性の高いアルゴリズムを採用することで、常に最適な解を導き出しています。</p>
+
         </div>
     </div>
 
