@@ -383,6 +383,7 @@ main {
     color: var(--secondary-text-color);
     max-width: 600px;
     margin: 0 auto;
+    margin-bottom: 10px;
 }
 .start-buttons {
     margin-top: 50px;
@@ -664,8 +665,6 @@ main {
     text-align: center;
     margin-top: 25px;
     padding: 10px;
-    font-size: 1.1em;
-    color: var(--secondary-text-color);
 }
 .result-footer-link a {
     color: var(--accent-color);
@@ -676,6 +675,9 @@ main {
 .result-footer-link a:hover {
     color: var(--accent-hover-color);
 }
+#disclaimer-link-result-mobile { display: none; }
+.result-disclaimer-desktop { display: none; }
+
 
 /* =================================================================== */
 /* 6. Specific Component Styles
@@ -1132,7 +1134,6 @@ main {
 
 .show-on-desktop { display: none; }
 .show-flex-on-desktop { display: none; }
-#disclaimer-link-result-mobile { display: none; }
 
 .btn-icon {
     display: inline-block;
@@ -1168,7 +1169,7 @@ main {
 @media (min-width: 992px) {
     body {
         background-color: #000; /* Fallback for older browsers */
-        background-image: url('https://github.com/Anotokinotori/Tsurumi-Map-Optimizer/blob/main/20250927140652.png?raw=true');
+        background-image: url('https://cdn.jsdelivr.net/gh/Anotokinotori/Tsurumi-Map-Optimizer@main/20250927140652.png');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
@@ -1193,6 +1194,7 @@ main {
     .show-on-desktop { display: block; }
     .show-flex-on-desktop { display: flex; }
     #disclaimer-link-result-mobile { display: none; }
+    .result-disclaimer-desktop { display: block; }
 }
 
 /* --- Tablet & Mobile --- */
@@ -1328,13 +1330,6 @@ main {
 
 /* --- Height Constrained Desktop --- */
 @media (min-width: 992px) and (max-height: 800px) {
-    .page {
-        padding-top: 1vw;
-        padding-bottom: 1vw;
-    }
-    .page-header { margin-bottom: 8px; }
-    .btn-back, .header-placeholder { width: 32px; height: 32px; }
-    .steps-container { gap: 10px; }
     #current-config-page .step-icon,
     #ideal-config-page .step-icon,
     #result-page .step-icon {
@@ -1347,17 +1342,6 @@ main {
     #result-page .step-label {
         margin-top: 10px;
         font-size: 0.9em;
-    }
-    .step-arrow { font-size: 1.5em; }
-    .view-switcher { margin-bottom: 8px; }
-    .view-tab { padding: 6px 12px; font-size: 0.9em; }
-    .page-footer { margin-top: 10px; }
-    #start-page .start-footer {
-        flex-direction: row;
-        justify-content: center;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 20px;
     }
 }
 
