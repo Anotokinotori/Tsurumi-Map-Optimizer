@@ -9,13 +9,11 @@
 </head>
 <body>
     <header class="site-header backdrop-blur">
-        <div class="site-title-wrapper">
-            <h1>
-                <span class="title-long">鶴観調整プランナー（周期ホールド対応）</span>
-                <span class="title-short">鶴観調整プランナー</span>
-            </h1>
-            <button id="tsurumi-info-btn" class="title-help-icon" title="鶴観調整とは？">？</button>
-        </div>
+        <h1>
+            <span class="title-long">鶴観調整プランナー（周期ホールド対応）</span>
+            <span class="title-short">鶴観調整プランナー</span>
+        </h1>
+        <button id="header-tsurumi-info-btn" class="title-help-icon" title="鶴観調整とは？">？</button>
         <div class="header-info">
             <span class="header-version">Ver. 1.2.2</span>
             <span class="credit-separator">|</span>
@@ -35,7 +33,10 @@
             <div id="start-page" class="page active">
                 <div class="page-content-wrapper">
                     <div class="start-header">
-                        <h1>鶴観調整プランナー</h1>
+                        <div class="start-title-container">
+                            <h1>鶴観調整プランナー</h1>
+                            <button id="start-tsurumi-info-btn" class="title-help-icon" title="鶴観調整とは？">？</button>
+                        </div>
                         <p class="subtitle">現在と理想の配置を入力すると、最短調整スケジュールを計算します</p>
                     </div>
                     
@@ -434,5 +435,4 @@
     <script src="js/main.js"></script>
 </body>
 </html>
-
 
