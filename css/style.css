@@ -384,16 +384,8 @@ main {
     max-width: 600px;
     margin: 0 auto;
 }
-.disclaimer-link {
-    display: inline-block;
+#disclaimer-link {
     margin-top: 10px;
-    font-size: 0.9em;
-    color: var(--secondary-text-color);
-    cursor: pointer;
-    text-decoration: underline;
-}
-.disclaimer-link:hover {
-    color: var(--primary-text-color);
 }
 .start-buttons {
     margin-top: 50px;
