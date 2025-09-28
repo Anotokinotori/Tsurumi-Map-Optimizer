@@ -1,4 +1,4 @@
-/* =================================================================== */
+/* =================================================================== *//* =================================================================== */
 /* 1. General & Root Styles
 /* =================================================================== */
 
@@ -1064,6 +1064,37 @@ main {
     transform: translate(-50%, -50%) rotate(45deg);
     left: 45%;
 }
+
+.pattern-marker { 
+    position: absolute; 
+    width: clamp(25px, 4vw, 35px); 
+    height: clamp(25px, 4vw, 35px);
+    background-color: rgba(59, 130, 246, 0.8); 
+    border: 2px solid var(--accent-color); 
+    animation: glowing 2s infinite; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    font-size: 1.1em; 
+    color: white; 
+    font-weight: bold; 
+    cursor: pointer; 
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background-size: cover;
+    background-position: center;
+}
+.pattern-marker .pattern-label {
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
+}
+.pattern-marker.completed {
+    background-color: #10B981;
+    border-color: white;
+    animation: none;
+    background-image: none !important;
+}
 #screenshot-popup .image-container {
     aspect-ratio: 500 / 300;
     min-height: 0;
@@ -1388,4 +1419,5 @@ main {
         font-size: 0.9em;
     }
 }
+
 
