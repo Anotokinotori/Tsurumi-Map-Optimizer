@@ -372,7 +372,10 @@ main {
      flex-direction: column;
      gap: 2vh;
 }
-#start-page .start-header {
+#start-page h1 {
+    font-size: clamp(2.5em, 5vw, 4.5em);
+    font-weight: 700;
+    color: #1E3A8A;
     margin-bottom: 10px;
 }
 .start-title-container {
@@ -380,33 +383,27 @@ main {
     justify-content: center;
     align-items: center;
     gap: 15px;
-    position: relative;
-}
-#start-page h1 {
-    font-size: clamp(2.5em, 5vw, 4.5em);
-    font-weight: 700;
-    color: #1E3A8A;
-    margin: 0;
 }
 .info-btn {
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    width: clamp(28px, 4vw, 35px);
-    height: clamp(28px, 4vw, 35px);
+    width: clamp(30px, 4vw, 40px);
+    height: clamp(30px, 4vw, 40px);
     border-radius: 50%;
-    background-color: #ccc;
-    color: white;
+    border: 2px solid #ccc;
+    background-color: transparent;
+    color: #aaa;
     font-weight: bold;
-    text-decoration: none;
-    font-size: clamp(1.1em, 2vw, 1.4em);
-    transition: background-color 0.2s;
-    border: none;
+    font-size: clamp(1.2em, 2vw, 1.5em);
     cursor: pointer;
-    padding: 0;
+    transition: all 0.2s;
+    line-height: 1;
 }
 .info-btn:hover {
-    background-color: #999;
+    background-color: #f0f0f0;
+    border-color: #999;
+    color: #888;
 }
 
 #start-page .subtitle {
@@ -414,6 +411,7 @@ main {
     color: var(--secondary-text-color);
     max-width: 600px;
     margin: 0 auto;
+    margin-bottom: 10px;
 }
 .start-buttons {
     margin-top: 50px;
@@ -463,15 +461,13 @@ main {
     height: 20px;
     border-radius: 50%;
     background-color: #ccc;
+    border: none;
     color: white;
     font-weight: bold;
     text-decoration: none;
     font-size: 0.9em;
-    margin-left: 5px;
-    transition: background-color 0.2s;
-    border: none;
     cursor: pointer;
-    padding: 0;
+    transition: background-color 0.2s;
 }
 .help-icon:hover {
     background-color: #999;
@@ -779,12 +775,7 @@ main {
 }
 
 /* --- Header & Footer Details --- */
-.header-title-container {
-    flex-grow: 1;
-    display: flex;
-    justify-content: flex-start;
-}
-.header-title-container h1 {
+.site-header h1 {
     margin: 0;
     font-size: clamp(1.2em, 2vw, 1.5em);
     color: white;
@@ -795,20 +786,19 @@ main {
     gap: 15px;
     font-size: clamp(0.8em, 1.5vw, 0.9em);
     color: #ccc;
-    flex-shrink: 0;
 }
 .header-link-btn {
     background: none;
     border: none;
-    color: #fff;
-    text-decoration: underline;
+    color: #ccc;
     font-size: 1em;
     cursor: pointer;
+    text-decoration: underline;
     transition: color 0.2s;
     padding: 0;
 }
 .header-link-btn:hover {
-    color: #ccc;
+    color: #fff;
 }
 .site-credit-footer p {
     margin: 0;
@@ -1016,24 +1006,9 @@ main {
 .mode-multi { color: var(--multiplayer-accent-color); font-weight: bold; }
 
 /* --- Modals Content --- */
-#guide-modal .modal-content h2,
-#tsurumi-info-modal .modal-content h2,
-#cycle-hold-info-modal .modal-content h2,
-#logic-modal .modal-content h2 { 
-    font-size: 2.2em; 
-    margin-bottom: 15px; 
-}
-#guide-modal .modal-content h3,
-#tsurumi-info-modal .modal-content h3,
-#cycle-hold-info-modal .modal-content h3,
-#logic-modal .modal-content h3 { 
-    font-size: 1.6em; 
-    margin-top: 10px; 
-    margin-bottom: 15px; 
-}
-#guide-modal .modal-content hr,
-#tsurumi-info-modal .modal-content hr,
-#cycle-hold-info-modal .modal-content hr {
+#guide-modal .modal-content h2 { font-size: 2.2em; margin-bottom: 15px; }
+#guide-modal .modal-content h3 { font-size: 1.6em; margin-top: 10px; margin-bottom: 15px; }
+#guide-modal .modal-content hr {
     border: none;
     height: 4px;
     background-color: #adb5bd;
@@ -1049,35 +1024,45 @@ main {
     flex-shrink: 1;
     min-height: 0;
 }
-.pattern-marker { 
-    position: absolute; 
-    width: clamp(25px, 4vw, 35px); 
-    height: clamp(25px, 4vw, 35px);
-    background-color: rgba(59, 130, 246, 0.8); 
-    border: 2px solid var(--accent-color); 
-    animation: glowing 2s infinite; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    font-size: 1.1em; 
-    color: white; 
-    font-weight: bold; 
-    cursor: pointer; 
+.zoom-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    background-color: rgba(0, 0, 0, 0.4);
+    border: none;
     border-radius: 50%;
-    transform: translate(-50%, -50%);
-    background-size: cover;
-    background-position: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: background-color 0.2s;
 }
-.pattern-marker .pattern-label {
-    background-color: transparent;
-    padding: 0;
-    border-radius: 0;
+.zoom-nav-btn:hover {
+    background-color: rgba(0, 0, 0, 0.7);
 }
-.pattern-marker.completed {
-    background-color: #10B981;
-    border-color: white;
-    animation: none;
-    background-image: none !important;
+.zoom-nav-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    border-top: 3px solid white;
+    border-right: 3px solid white;
+}
+.zoom-nav-btn.prev {
+    left: 15px;
+}
+.zoom-nav-btn.prev::before {
+    transform: translate(-50%, -50%) rotate(-135deg);
+    left: 55%;
+}
+.zoom-nav-btn.next {
+    right: 15px;
+}
+.zoom-nav-btn.next::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+    left: 45%;
 }
 #screenshot-popup .image-container {
     aspect-ratio: 500 / 300;
@@ -1135,8 +1120,13 @@ main {
     width: 100%;
     height: 100%;
 }
-#credit-modal .modal-content p { text-align: left; line-height: 1.8; }
-#credit-modal .modal-content h4 {
+#credit-modal .modal-content p,
+#logic-modal .modal-content p { 
+    text-align: left; 
+    line-height: 1.8; 
+}
+#credit-modal .modal-content h4,
+#logic-modal .modal-content h3 {
     margin-top: 20px;
     margin-bottom: 10px;
     text-align: left;
@@ -1245,11 +1235,6 @@ main {
         position: sticky;
         top: 20px;
     }
-    .pattern-marker {
-        width: 50px;
-        height: 50px;
-        font-size: 1.3em;
-    }
     .show-on-desktop { display: block; }
     .show-flex-on-desktop { display: flex; }
     #disclaimer-link-result-mobile { display: none; }
@@ -1305,7 +1290,6 @@ main {
         flex-grow: 1; 
     }
     .site-header, .site-credit-footer { padding: 10px 20px; }
-    .header-title-container { flex-grow: 0; }
     .title-long { display: none; }
     .title-short { display: inline; }
     .header-version,
