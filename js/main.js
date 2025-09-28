@@ -240,8 +240,9 @@ const TsurumiApp = {
         const isMultiplayer = this.elements.multiplayerCheckbox.checked;
         const allowBoat = this.elements.boatCheckbox.checked;
 
-        if (Object.keys(this.state.currentConfig).length !== totalGroups || Object.keys(this.state.idealConfig).length === 0) {
-            this.ui.showValidationMessage('全ての現在配置と、1つ以上の理想配置を入力してください。', this.elements.calculatePlanBtn);
+        // 【変更点】idealConfigのチェックを「1つ以上」から「全て」に変更
+        if (Object.keys(this.state.currentConfig).length !== totalGroups || Object.keys(this.state.idealConfig).length !== totalGroups) {
+            this.ui.showValidationMessage('全ての現在配置と理想配置を入力してください。', this.elements.calculatePlanBtn);
             return;
         }
 
@@ -499,6 +500,10 @@ const TsurumiApp = {
             progressEl.textContent = `入力完了: ${count} / ${totalGroups}`;
             if (configType === 'current') {
                 TsurumiApp.elements.goToIdealBtn.disabled = count !== totalGroups;
+            }
+            // 【追加】idealConfigの入力状況に応じて計算ボタンの有効/無効を切り替える
+            if (configType === 'ideal') {
+                TsurumiApp.elements.calculatePlanBtn.disabled = count !== totalGroups;
             }
         },
         updateMarker: function(configType, groupId) {
@@ -828,4 +833,5 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
 
