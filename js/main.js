@@ -4,7 +4,7 @@ const TsurumiApp = {
     state: {
         currentConfig: {},
         idealConfig: {},
-        activeSelection: { configType: null, groupId: null },
+        activeSelection: { configType: null, groupId: null, pattern: null },
         lastCalculatedPlan: null,
     },
 
@@ -44,7 +44,7 @@ const TsurumiApp = {
         this.elements.disclaimerLinkResultPC = document.getElementById('disclaimer-link-result-pc');
         this.elements.disclaimerLinkResultMobile = document.getElementById('disclaimer-link-result-mobile');
         this.elements.creditTrigger = document.getElementById('credit-modal-trigger');
-        this.elements.logicModalTrigger = document.getElementById('logic-modal-trigger'); // Added
+        this.elements.logicModalTrigger = document.getElementById('logic-modal-trigger');
         this.elements.loadPlanBtn = document.getElementById('load-plan-btn');
         this.elements.goToIdealBtn = document.getElementById('go-to-ideal-btn');
         this.elements.setRecommendedBtn = document.getElementById('set-recommended-btn');
@@ -57,6 +57,10 @@ const TsurumiApp = {
         this.elements.backToCurrentBtn = document.getElementById('back-to-current-btn');
         this.elements.backToIdealBtn = document.getElementById('back-to-ideal-btn');
         this.elements.recalculateBtn = document.getElementById('recalculate-alternate-mode-btn');
+        this.elements.zoomPrevBtn = document.getElementById('zoom-prev-btn');
+        this.elements.zoomNextBtn = document.getElementById('zoom-next-btn');
+        this.elements.zoomConfirmBtn = document.getElementById('zoom-confirm-btn');
+
 
         // Input Tabs
         this.elements.currentMapTab = document.getElementById('current-map-tab');
@@ -137,10 +141,16 @@ const TsurumiApp = {
         this.elements.disclaimerLinkResultPC.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
         this.elements.disclaimerLinkResultMobile.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
         this.elements.creditTrigger.addEventListener('click', () => this.ui.showModal('credit-modal'));
-        this.elements.logicModalTrigger.addEventListener('click', () => this.ui.showModal('logic-modal')); // Added
+        this.elements.logicModalTrigger.addEventListener('click', () => this.ui.showModal('logic-modal'));
         document.querySelectorAll('.modal-close').forEach(el => {
             el.addEventListener('click', () => this.ui.closeModal(el.dataset.target));
         });
+        
+        // Zoom Modal Actions
+        this.elements.zoomConfirmBtn.addEventListener('click', () => this.ui.confirmZoomSelection());
+        this.elements.zoomPrevBtn.addEventListener('click', () => this.ui.navigateZoomPattern(-1));
+        this.elements.zoomNextBtn.addEventListener('click', () => this.ui.navigateZoomPattern(1));
+
 
         // Step Indicator Click Events
         this.elements.steps.forEach(stepEl => {
@@ -240,7 +250,6 @@ const TsurumiApp = {
         const isMultiplayer = this.elements.multiplayerCheckbox.checked;
         const allowBoat = this.elements.boatCheckbox.checked;
 
-        // 【変更点】idealConfigのチェックを「1つ以上」から「全て」に変更
         if (Object.keys(this.state.currentConfig).length !== totalGroups || Object.keys(this.state.idealConfig).length !== totalGroups) {
             this.ui.showValidationMessage('全ての現在配置と理想配置を入力してください。', this.elements.calculatePlanBtn);
             return;
@@ -501,7 +510,6 @@ const TsurumiApp = {
             if (configType === 'current') {
                 TsurumiApp.elements.goToIdealBtn.disabled = count !== totalGroups;
             }
-            // 【追加】idealConfigの入力状況に応じて計算ボタンの有効/無効を切り替える
             if (configType === 'ideal') {
                 TsurumiApp.elements.calculatePlanBtn.disabled = count !== totalGroups;
             }
@@ -517,49 +525,44 @@ const TsurumiApp = {
                 btn.classList.toggle('selected', btn.textContent === pattern);
             });
         },
-        openGroupSelector: function(configType, groupId) {
-            TsurumiApp.state.activeSelection = { configType, groupId };
-            document.getElementById('zoom-title').textContent = `${eliteGroups[groupId].name} のパターンを選択`;
+        
+        openGroupSelector: function(configType, groupId, initialPattern = null) {
+            const currentPattern = initialPattern || 
+                (configType === 'current' ? TsurumiApp.state.currentConfig[groupId] : TsurumiApp.state.idealConfig[groupId]) || 
+                'A';
+
+            TsurumiApp.state.activeSelection = { configType, groupId, pattern: currentPattern };
+            this.updateZoomView(currentPattern);
+            this.showModal('zoom-view');
+        },
+
+        updateZoomView: function(pattern) {
+            const { groupId } = TsurumiApp.state.activeSelection;
+            if (!groupId) return;
+
+            TsurumiApp.state.activeSelection.pattern = pattern;
+
+            document.getElementById('zoom-title').textContent = `${eliteGroups[groupId].name} - パターン ${pattern}`;
             const zoomContainer = document.getElementById('zoom-map-container');
             const zoomMapImage = zoomContainer.querySelector('img');
             this.setupImageLoader(zoomMapImage, eliteGroups[groupId].zoomMapUrl);
-
-            zoomContainer.querySelectorAll('.pattern-marker').forEach(m => m.remove());
-            const selectedPattern = (configType === 'current' ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig)[groupId];
-
-            ['A', 'B', 'C'].forEach(pattern => {
-                const pos = patternMarkerPositions[groupId]?.[pattern];
-                if (!pos) return;
-
-                const marker = document.createElement('div');
-                marker.className = 'pattern-marker';
-                marker.innerHTML = `<span class="pattern-label">${pattern}</span>`;
-                if (pattern === selectedPattern) {
-                    marker.classList.add('completed');
-                    marker.innerHTML = '✔';
-                }
-
-                marker.style.top = `${100 - parseFloat(pos.bottom)}%`;
-                marker.style.left = `${100 - parseFloat(pos.right)}%`;
-                marker.addEventListener('click', () => this.selectPatternForConfirmation(pattern));
-                zoomContainer.appendChild(marker);
-            });
-            this.showModal('zoom-view');
         },
-        selectPatternForConfirmation: function(pattern) {
-             TsurumiApp.state.activeSelection.pattern = pattern;
-             const { groupId } = TsurumiApp.state.activeSelection;
-             document.getElementById('screenshot-title').textContent = `${eliteGroups[groupId].name} - パターン ${pattern} で合っていますか？`;
-             const screenshotImg = document.getElementById('screenshot-img');
-             this.setupImageLoader(screenshotImg, screenshotImageUrls[groupId]?.[pattern]);
-             document.getElementById('confirm-pattern-btn').onclick = () => {
-                const { configType, groupId, pattern } = TsurumiApp.state.activeSelection;
-                if (configType && groupId && pattern) TsurumiApp.updateConfig(configType, groupId, pattern);
-                this.closeModal('screenshot-popup');
-                this.closeModal('zoom-view');
-             };
-             this.showModal('screenshot-popup');
+        
+        navigateZoomPattern: function(direction) {
+            const patterns = ['A', 'B', 'C'];
+            const { pattern } = TsurumiApp.state.activeSelection;
+            const currentIndex = patterns.indexOf(pattern);
+            const nextIndex = (currentIndex + direction + patterns.length) % patterns.length;
+            const nextPattern = patterns[nextIndex];
+            this.updateZoomView(nextPattern);
         },
+
+        confirmZoomSelection: function() {
+            const { configType, groupId, pattern } = TsurumiApp.state.activeSelection;
+            if (configType && groupId && pattern) TsurumiApp.updateConfig(configType, groupId, pattern);
+            this.closeModal('zoom-view');
+        },
+
         setupImageLoader: function(imgElement, src) {
             const container = imgElement.parentElement;
             if (!container || !container.classList.contains('image-container')) return;
@@ -833,5 +836,4 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
-
 
