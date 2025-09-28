@@ -59,6 +59,9 @@ const TsurumiApp = {
         this.elements.recalculateBtn = document.getElementById('recalculate-alternate-mode-btn');
         this.elements.screenshotPrevBtn = document.getElementById('screenshot-prev-btn');
         this.elements.screenshotNextBtn = document.getElementById('screenshot-next-btn');
+        this.elements.openRequestFormBtn = document.getElementById('open-request-form-from-logic-btn');
+        this.elements.requestFormResultMobileBtn = document.getElementById('request-form-result-mobile-btn');
+        this.elements.requestFormResultPcBtn = document.getElementById('request-form-result-pc-btn');
 
 
         // Input Tabs
@@ -146,6 +149,9 @@ const TsurumiApp = {
         this.elements.disclaimerLinkResultMobile.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
         this.elements.creditTrigger.addEventListener('click', () => this.ui.showModal('credit-modal'));
         this.elements.logicModalTrigger.addEventListener('click', () => this.ui.showModal('logic-modal'));
+        this.elements.openRequestFormBtn.addEventListener('click', () => this.ui.showModal('request-modal'));
+        this.elements.requestFormResultMobileBtn.addEventListener('click', () => this.ui.showModal('request-modal'));
+        this.elements.requestFormResultPcBtn.addEventListener('click', () => this.ui.showModal('request-modal'));
         document.querySelectorAll('.modal-close').forEach(el => {
             el.addEventListener('click', () => this.ui.closeModal(el.dataset.target));
         });
@@ -646,19 +652,25 @@ const TsurumiApp = {
             statusMessage.textContent = '送信中...';
             statusMessage.style.color = 'inherit';
             submitBtn.disabled = true;
-
-            // The form submission is handled by the form's 'target' attribute pointing to a hidden iframe
-            // We just need to trigger the standard form submit event
+            
+            // This is a flag for the iframe's onload event
+            const iframe = document.getElementById('hidden_iframe');
+            iframe.submitted = true; 
+            
             form.submit();
+        },
+        handleFormSuccess: function() {
+            const form = TsurumiApp.elements.gForm;
+            const statusMessage = TsurumiApp.elements.formStatusMessage;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            
+            statusMessage.textContent = '送信しました！ご協力ありがとうございます。';
+            statusMessage.style.color = 'green';
+            submitBtn.disabled = false;
+            form.reset();
 
-            // We can't reliably know when the submission is complete with the iframe method,
-            // so we'll show a success message after a short delay.
-            setTimeout(() => {
-                statusMessage.textContent = '送信しました！ご協力ありがとうございます。';
-                statusMessage.style.color = 'green';
-                submitBtn.disabled = false;
-                form.reset();
-            }, 1000); // 1 second delay
+            // Reset the flag
+            document.getElementById('hidden_iframe').submitted = false;
         },
         
         showDayDetail: function(dayIndex) {
