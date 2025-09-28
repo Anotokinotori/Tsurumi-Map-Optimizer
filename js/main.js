@@ -57,9 +57,8 @@ const TsurumiApp = {
         this.elements.backToCurrentBtn = document.getElementById('back-to-current-btn');
         this.elements.backToIdealBtn = document.getElementById('back-to-ideal-btn');
         this.elements.recalculateBtn = document.getElementById('recalculate-alternate-mode-btn');
-        this.elements.zoomPrevBtn = document.getElementById('zoom-prev-btn');
-        this.elements.zoomNextBtn = document.getElementById('zoom-next-btn');
-        this.elements.zoomConfirmBtn = document.getElementById('zoom-confirm-btn');
+        this.elements.screenshotPrevBtn = document.getElementById('screenshot-prev-btn');
+        this.elements.screenshotNextBtn = document.getElementById('screenshot-next-btn');
 
 
         // Input Tabs
@@ -146,11 +145,9 @@ const TsurumiApp = {
             el.addEventListener('click', () => this.ui.closeModal(el.dataset.target));
         });
         
-        // Zoom Modal Actions
-        this.elements.zoomConfirmBtn.addEventListener('click', () => this.ui.confirmZoomSelection());
-        this.elements.zoomPrevBtn.addEventListener('click', () => this.ui.navigateZoomPattern(-1));
-        this.elements.zoomNextBtn.addEventListener('click', () => this.ui.navigateZoomPattern(1));
-
+        // Screenshot Modal Navigation
+        this.elements.screenshotPrevBtn.addEventListener('click', () => this.ui.navigateScreenshotPattern(-1));
+        this.elements.screenshotNextBtn.addEventListener('click', () => this.ui.navigateScreenshotPattern(1));
 
         // Step Indicator Click Events
         this.elements.steps.forEach(stepEl => {
@@ -525,57 +522,77 @@ const TsurumiApp = {
                 btn.classList.toggle('selected', btn.textContent === pattern);
             });
         },
-        
-        openGroupSelector: function(configType, groupId, initialPattern = null) {
-            const currentConfig = (configType === 'current') ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig;
-            const currentPattern = initialPattern || currentConfig[groupId] || 'A';
+        openGroupSelector: function(configType, groupId) {
+            TsurumiApp.state.activeSelection = { configType, groupId };
+            document.getElementById('zoom-title').textContent = `${eliteGroups[groupId].name} のパターンを選択`;
+            const zoomContainer = document.getElementById('zoom-map-container');
+            const zoomMapImage = zoomContainer.querySelector('img');
+            this.setupImageLoader(zoomMapImage, eliteGroups[groupId].zoomMapUrl);
 
-            TsurumiApp.state.activeSelection = { configType, groupId, pattern: currentPattern };
-            this.updateZoomView(currentPattern);
+            zoomContainer.querySelectorAll('.pattern-marker').forEach(m => m.remove());
+            const selectedPattern = (configType === 'current' ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig)[groupId];
+
+            ['A', 'B', 'C'].forEach(pattern => {
+                const pos = patternMarkerPositions[groupId]?.[pattern];
+                if (!pos) return;
+
+                const marker = document.createElement('div');
+                marker.className = 'pattern-marker';
+                marker.innerHTML = `<span class="pattern-label">${pattern}</span>`;
+                if (pattern === selectedPattern) {
+                    marker.classList.add('completed');
+                    marker.innerHTML = '✔';
+                }
+
+                marker.style.top = `${100 - parseFloat(pos.bottom)}%`;
+                marker.style.left = `${100 - parseFloat(pos.right)}%`;
+                marker.addEventListener('click', () => this.selectPatternForConfirmation(pattern));
+                zoomContainer.appendChild(marker);
+            });
             this.showModal('zoom-view');
         },
-
-        updateZoomView: function(pattern) {
+        selectPatternForConfirmation: function(pattern) {
+             // Set the initial pattern when opening the screenshot view
+            TsurumiApp.state.activeSelection.pattern = pattern;
+            
+            // Update the view with the initial pattern
+            this.updateScreenshotView(pattern);
+            
+            // Set up the confirmation button
+            document.getElementById('confirm-pattern-btn').onclick = () => {
+               const { configType, groupId, pattern } = TsurumiApp.state.activeSelection;
+               if (configType && groupId && pattern) TsurumiApp.updateConfig(configType, groupId, pattern);
+               this.closeModal('screenshot-popup');
+               this.closeModal('zoom-view');
+            };
+            
+            // Show the modal
+            this.showModal('screenshot-popup');
+        },
+        updateScreenshotView: function(pattern) {
             const { groupId } = TsurumiApp.state.activeSelection;
             if (!groupId) return;
 
+            // Update the active selection state with the new pattern
             TsurumiApp.state.activeSelection.pattern = pattern;
 
-            document.getElementById('zoom-title').textContent = `${eliteGroups[groupId].name} - パターン ${pattern}`;
-            const screenshotImg = document.getElementById('zoom-map-container').querySelector('img');
-            this.setupImageLoader(screenshotImg, screenshotImageUrls[groupId]?.[pattern]);
+            // Update the modal title
+            document.getElementById('screenshot-title').textContent = `${eliteGroups[groupId].name} - パターン ${pattern} で合っていますか？`;
             
-            // This part is for the pattern markers inside the zoom view, but the feature was removed.
-            // If you want to re-add pattern markers inside the zoom view, you would implement that logic here.
+            // Update the image
+            const screenshotImg = document.getElementById('screenshot-img');
+            this.setupImageLoader(screenshotImg, screenshotImageUrls[groupId]?.[pattern]);
         },
-        
-        navigateZoomPattern: function(direction) {
+        navigateScreenshotPattern: function(direction) {
             const patterns = ['A', 'B', 'C'];
             const { pattern } = TsurumiApp.state.activeSelection;
             const currentIndex = patterns.indexOf(pattern);
             const nextIndex = (currentIndex + direction + patterns.length) % patterns.length;
             const nextPattern = patterns[nextIndex];
-            this.updateZoomView(nextPattern);
+            
+            // Update the view to show the next pattern
+            this.updateScreenshotView(nextPattern);
         },
-
-        confirmZoomSelection: function() {
-            const { configType, groupId, pattern } = TsurumiApp.state.activeSelection;
-            if (configType && groupId && pattern) {
-                // Open the screenshot confirmation popup
-                document.getElementById('screenshot-title').textContent = `${eliteGroups[groupId].name} - パターン ${pattern} で合っていますか？`;
-                const screenshotImg = document.getElementById('screenshot-img');
-                this.setupImageLoader(screenshotImg, screenshotImageUrls[groupId]?.[pattern]);
-                document.getElementById('confirm-pattern-btn').onclick = () => {
-                   TsurumiApp.updateConfig(configType, groupId, pattern);
-                   this.closeModal('screenshot-popup');
-                   this.closeModal('zoom-view');
-                };
-                this.showModal('screenshot-popup');
-            } else {
-                 this.closeModal('zoom-view');
-            }
-        },
-
         setupImageLoader: function(imgElement, src) {
             const container = imgElement.parentElement;
             if (!container || !container.classList.contains('image-container')) return;
