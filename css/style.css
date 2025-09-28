@@ -1,4 +1,4 @@
-/* =================================================================== *//* =================================================================== */
+/* =================================================================== */
 /* 1. General & Root Styles
 /* =================================================================== */
 
@@ -775,6 +775,9 @@ main {
 }
 
 /* --- Header & Footer Details --- */
+.site-header .header-title-container {
+    flex-grow: 1;
+}
 .site-header h1 {
     margin: 0;
     font-size: clamp(1.2em, 2vw, 1.5em);
@@ -791,6 +794,7 @@ main {
     background: none;
     border: none;
     color: #ccc;
+    font-family: inherit;
     font-size: 1em;
     cursor: pointer;
     text-decoration: underline;
@@ -1064,40 +1068,10 @@ main {
     transform: translate(-50%, -50%) rotate(45deg);
     left: 45%;
 }
-
-.pattern-marker { 
-    position: absolute; 
-    width: clamp(25px, 4vw, 35px); 
-    height: clamp(25px, 4vw, 35px);
-    background-color: rgba(59, 130, 246, 0.8); 
-    border: 2px solid var(--accent-color); 
-    animation: glowing 2s infinite; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    font-size: 1.1em; 
-    color: white; 
-    font-weight: bold; 
-    cursor: pointer; 
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    background-size: cover;
-    background-position: center;
-}
-.pattern-marker .pattern-label {
-    background-color: transparent;
-    padding: 0;
-    border-radius: 0;
-}
-.pattern-marker.completed {
-    background-color: #10B981;
-    border-color: white;
-    animation: none;
-    background-image: none !important;
-}
 #screenshot-popup .image-container {
     aspect-ratio: 500 / 300;
     min-height: 0;
+    position: relative;
 }
 .loader {
     border: 8px solid #f3f3f3;
@@ -1164,6 +1138,31 @@ main {
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 8px;
 }
+/* Request Form Styles */
+#request-form-container .form-group {
+    margin-bottom: 15px;
+    text-align: left;
+}
+#request-form-container label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: var(--primary-text-color);
+}
+#request-form-container select,
+#request-form-container textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    font-family: inherit;
+    font-size: 1em;
+    box-sizing: border-box;
+}
+#request-form-container #submit-form-btn {
+    width: 100%;
+}
+
 #saved-plans-list {
     list-style: none;
     padding: 0;
