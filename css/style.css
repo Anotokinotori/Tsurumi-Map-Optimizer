@@ -1,1421 +1,546 @@
-/* =================================================================== */
-/* 1. General & Root Styles
-/* =================================================================== */
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鶴観調整プランナー（周期ホールド対応）</title>
+    <!-- CSSファイルを外部から読み込み -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="site-header backdrop-blur">
+        <div class="header-title-container">
+            <h1>
+                <span class="title-long">鶴観調整プランナー（周期ホールド対応）</span>
+                <span class="title-short">鶴観調整プランナー</span>
+            </h1>
+        </div>
+        <div class="header-info">
+            <span class="header-version">Ver. 1.2.2</span>
+            <span class="credit-separator">|</span>
+            <!-- 製作者リンクをボタンに変更 -->
+            <button id="logic-modal-trigger" class="header-link-btn">製作者: あの時の鳥です</button>
+        </div>
+    </header>
 
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+    <div id="info-banner" class="info-banner">
+        <p>鶴観の精鋭の仕組みについて詳しく知りたい方は、<a href="https://youtu.be/2xqllaCTP5c?si=m9yyxXo5GS0rwFG9" target="_blank" rel="noopener noreferrer">こちらの解説動画</a>をご覧ください。</p>
+        <button id="close-banner-btn" class="close-banner-btn" title="閉じる">&times;</button>
+    </div>
 
-:root {
-    --bg-color: #f0f2f5;
-    --panel-bg-color: rgba(255, 255, 255, 0.85);
-    --header-bg-color: rgba(26, 32, 44, 0.85);
-    --primary-text-color: #333;
-    --secondary-text-color: #555;
-    --accent-color: #3B82F6; /* Blue accent */
-    --accent-hover-color: #2563EB;
-    --multiplayer-accent-color: #EC4899; /* Pink for multi */
-    --multiplayer-accent-hover-color: #DB2777;
-    --border-color: #e0e0e0;
-    --shadow-color: rgba(0, 0, 0, 0.1);
-    --btn-secondary-bg: #f3f4f6;
-    --btn-secondary-bg-hover: #e5e7eb;
-    --danger-color: #ef4444;
-    --danger-hover-color: #dc2626;
-}
+    <main>
+        <div class="container backdrop-blur">
 
-body {
-    font-family: 'Noto Sans JP', sans-serif;
-    margin: 0;
-    padding: 0;
-    background-image: url('https://api.mg-dev.net/api/v1/genshin/backgrounds/Tsurumi%20Island');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden; /* Prevent body scroll on desktop */
-}
+            <!-- Page 1: Start Screen -->
+            <div id="start-page" class="page active">
+                <div class="page-content-wrapper">
+                    <div class="start-header">
+                        <div class="start-title-container">
+                             <h1>鶴観調整プランナー</h1>
+                             <button id="tsurumi-info-btn" class="info-btn" title="鶴観調整とは？">？</button>
+                        </div>
+                        <p class="subtitle">現在と理想の配置を入力すると、最短調整スケジュールを計算します</p>
+                    </div>
+                    
+                    <div class="steps-container">
+                        <div class="step" data-step="1"> <div class="step-icon">①</div> <div class="step-label">現在の配置を入力</div> </div>
+                        <div class="step-arrow">→</div>
+                        <div class="step" data-step="2"> <div class="step-icon">②</div> <div class="step-label">理想の配置を入力</div> </div>
+                        <div class="step-arrow">→</div>
+                        <div class="step" data-step="3"> <div class="step-icon">③</div> <div class="step-label">調整スケジュール</div> </div>
+                    </div>
 
-h1, h2, h3 {
-    color: var(--primary-text-color);
-}
+                    <div class="start-buttons">
+                        <button id="go-to-current-btn" class="btn btn-primary">調整を始める</button>
+                        <button id="load-plan-btn" class="btn btn-secondary">保存したプランを読み込む</button>
+                    </div>
 
-.backdrop-blur {
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-}
+                    <div class="start-footer">
+                        <div class="multi-mode-toggle">
+                            <input type="checkbox" id="boat-mode-checkbox">
+                            <label for="boat-mode-checkbox">ボートでの配置調整を許可</label>
+                        </div>
+                        <div class="multi-mode-toggle">
+                            <input type="checkbox" id="multiplayer-mode-checkbox">
+                            <label for="multiplayer-mode-checkbox">周期ホールドを有効化</label>
+                            <button id="cycle-hold-info-btn" class="help-icon" title="周期ホールドとは？">?</button>
+                        </div>
+                         <div class="footer-links">
+                             <button id="guide-btn" class="btn btn-secondary-link">使い方ガイド</button>
+                             <span class="link-separator">|</span>
+                             <button id="disclaimer-link" class="btn btn-secondary-link">注意事項</button>
+                         </div>
+                    </div>
+                </div>
+            </div>
 
-/* =================================================================== */
-/* 2. Layout Components (Header, Footer, Main)
-/* =================================================================== */
+            <!-- Page 2: Current Configuration Input -->
+            <div id="current-config-page" class="page">
+                <div class="page-content-wrapper">
+                    <div class="page-header">
+                        <button id="back-to-start-btn" class="btn-back" aria-label="戻る"></button>
+                        <div class="steps-container">
+                            <div class="step" data-step="1"> <div class="step-icon">①</div> <div class="step-label">現在の配置を入力</div> </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step" data-step="2"> <div class="step-icon">②</div> <div class="step-label">理想の配置を入力</div> </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step" data-step="3"> <div class="step-icon">③</div> <div class="step-label">調整スケジュール</div> </div>
+                        </div>
+                        <div class="header-placeholder"></div>
+                    </div>
 
-.site-header {
-    width: 100%;
-    padding: 10px 40px;
-    background-color: var(--header-bg-color);
-    color: white;
-    box-sizing: border-box;
-    flex-shrink: 0;
-    z-index: 10;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+                    <div class="view-switcher">
+                        <button id="current-map-tab" class="view-tab active" data-view="map">マップ表示</button>
+                        <button id="current-list-tab" class="view-tab" data-view="list">リスト表示</button>
+                    </div>
 
-.site-credit-footer {
-    width: 100%;
-    padding: 8px 40px;
-    background-color: var(--header-bg-color);
-    color: #ccc;
-    box-sizing: border-box;
-    flex-shrink: 0;
-    z-index: 10;
-    text-align: center;
-    font-size: 0.9em;
-}
+                    <div class="input-views-container">
+                        <div id="current-map-view" class="input-view active">
+                            <div class="map-container" id="current-map-container">
+                                 <div class="map-guide-text">アイコンをタップして選択</div>
+                                 <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/input_page_map.png?raw=true" alt="鶴観マップ" class="map-bg">
+                            </div>
+                        </div>
+                        <div id="current-list-view" class="input-view">
+                            <div class="config-list" id="current-config-list">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="page-footer">
+                        <div class="left-action">
+                            <div class="quick-fill-buttons show-flex-on-desktop">
+                                <span class="quick-fill-label">一括入力:</span>
+                                <button id="fill-all-a-btn" class="btn btn-secondary btn-small">A</button>
+                                <button id="fill-all-b-btn" class="btn btn-secondary btn-small">B</button>
+                                <button id="fill-all-c-btn" class="btn btn-secondary btn-small">C</button>
+                            </div>
+                        </div>
+                        <div class="center-action">
+                            <div class="progress-text" id="progress-text">入力完了: 0 / 10</div>
+                        </div>
+                        <div class="right-action">
+                            <div id="validation-message" class="validation-message"></div>
+                            <button id="go-to-ideal-btn" class="btn btn-primary" disabled>理想の配置へ</button>
+                        </div>
+                   </div>
+                </div>
+            </div>
+            
+            <!-- Page 3: Ideal Configuration Input -->
+            <div id="ideal-config-page" class="page">
+                <div class="page-content-wrapper">
+                     <div class="page-header">
+                        <button id="back-to-current-btn" class="btn-back" aria-label="戻る"></button>
+                        <div class="steps-container">
+                            <div class="step" data-step="1"> <div class="step-icon">①</div> <div class="step-label">現在の配置を入力</div> </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step" data-step="2"> <div class="step-icon">②</div> <div class="step-label">理想の配置を入力</div> </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step" data-step="3"> <div class="step-icon">③</div> <div class="step-label">調整スケジュール</div> </div>
+                        </div>
+                        <div class="header-placeholder"></div>
+                    </div>
 
-main {
-    flex-grow: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    overflow: hidden; 
-    padding: 2vh 2vw;
-    box-sizing: border-box;
-}
+                    <div class="view-switcher">
+                        <button id="ideal-map-tab" class="view-tab active" data-view="map">マップ表示</button>
+                        <button id="ideal-list-tab" class="view-tab" data-view="list">リスト表示</button>
+                    </div>
 
-.container {
-    width: 100%;
-    height: 100%; 
-    max-width: 1600px;
-    max-height: 900px;
-    background-color: var(--panel-bg-color);
-    border-radius: 20px;
-    box-shadow: 0 10px 40px var(--shadow-color);
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
+                    <div class="input-views-container">
+                        <div id="ideal-map-view" class="input-view active">
+                            <div class="map-container" id="ideal-map-container">
+                                 <div class="map-guide-text">アイコンをタップして選択</div>
+                                 <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/input_page_map.png?raw=true" alt="鶴観マップ" class="map-bg">
+                            </div>
+                        </div>
+                        <div id="ideal-list-view" class="input-view">
+                            <div class="config-list" id="ideal-config-list">
+                            </div>
+                        </div>
+                    </div>
 
-.page-content-wrapper { 
-    width: 100%; 
-    height: 100%; 
-    display: flex; 
-    flex-direction: column; 
-    justify-content: flex-start; 
-}
+                     <div class="page-footer">
+                        <div class="left-action">
+                             <button class="btn btn-secondary" id="set-recommended-btn">環境配置</button>
+                             <button class="btn btn-secondary show-on-desktop" id="copy-current-btn">現在配置をコピー</button>
+                        </div>
+                        <div class="center-action">
+                            <div class="progress-text" id="ideal-progress-text">入力完了: 0 / 10</div>
+                        </div>
+                        <div class="right-action">
+                            <button id="calculate-plan-btn" class="btn btn-primary" disabled>調整プランを計算</button>
+                        </div>
+                   </div>
+                </div>
+            </div>
 
-/* =================================================================== */
-/* 3. Page Structure & Transitions
-/* =================================================================== */
+            <!-- Page 4: Result Page -->
+            <div id="result-page" class="page">
+                <div class="page-content-wrapper">
+                     <div class="page-header">
+                        <button id="back-to-ideal-btn" class="btn-back" aria-label="戻る"></button>
+                         <div class="steps-container">
+                            <div class="step" data-step="1"> <div class="step-icon">①</div> <div class="step-label">現在の配置を入力</div> </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step" data-step="2"> <div class="step-icon">②</div> <div class="step-label">理想の配置を入力</div> </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step" data-step="3"> <div class="step-icon">③</div> <div class="step-label">調整スケジュール</div> </div>
+                        </div>
+                        <div class="header-placeholder"></div>
+                    </div>
 
-.page {
-    padding: 2vw 4vw;
-    box-sizing: border-box;
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.35s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    pointer-events: none;
-}
+                    <div class="result-grid">
+                        <div class="result-layout-container">
+                            <div class="result-map-container">
+                                <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88%202025-09-21%20161308.png?raw=true" alt="鶴観マップ 結果表示" class="map-bg">
+                            </div>
+                            <div class="result-actions-container">
+                                <div id="solo-mode-notice" class="solo-notice show-on-desktop">
+周期ホールドを使わない調整方法です。使用すると期間をもっと短縮できるかもしれません。<a href="https://youtu.be/2xqllaCTP5c?si=UyMkRCct-Z1Pp5HI&t=1194" target="_blank" rel="noopener noreferrer">詳しくは動画で</a>
+                                </div>
+                                <button id="recalculate-alternate-mode-btn" class="btn">
+                                    <span class="btn-icon icon-recalc"></span>
+                                    <span id="recalculate-btn-text"></span>
+                                </button>
+                                <button id="save-plan-btn" class="btn btn-secondary">
+                                    <span class="btn-icon icon-save"></span>
+                                    <span>結果を保存</span>
+                                </button>
+                                <button id="reset-btn" class="btn btn-secondary">
+                                    <span class="btn-icon icon-reset"></span>
+                                    <span>リセット</span>
+                                </button>
+                                <button id="disclaimer-link-result-mobile" class="btn btn-secondary-link">注意事項</button>
+                            </div>
+                        </div>
 
-.page.active {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-}
+                        <div id="result-details" class="result-details-container">
+                             <div id="result-summary">
+                                 <button id="save-plan-icon-btn" class="save-icon-btn" title="結果を保存"></button>
+                                 <span id="result-summary-text"></span>
+                             </div>
+                             <div class="result-table-container">
+                                 <table class="result-table">
+                                     <thead>
+                                         <tr> <th>日付</th> <th>モード</th> <th>2P(ホールド役)の行動</th> <th>1P(ホスト)の行動</th> <th>詳細</th> </tr>
+                                     </thead>
+                                     <tbody id="result-tbody"></tbody>
+                                 </table>
+                             </div>
+                             <p class="result-footer-link">
+                                鶴観のロード範囲（移動ルート）について詳しく知りたい方は<a href="https://note.com/nekoshita_g/n/n485ff9b3df29" target="_blank" rel="noopener noreferrer">こちら</a>
+                             </p>
+                             <p class="result-disclaimer-desktop">
+                                <button id="disclaimer-link-result-pc" class="btn btn-secondary-link">注意事項</button>
+                             </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- Modals -->
+    <div id="guide-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="guide-modal">&times;</span>
+            <h2>使い方ガイド</h2>
+            <p>このプランナーは、鶴観の精鋭エネミーの配置を、最短日数で理想の配置に調整するためのスケジュールを計算します。</p>
+            
+            <hr>
 
-/* =================================================================== */
-/* 4. Common Components
-/* =================================================================== */
+            <h3>Step 1: 現在の配置を入力</h3>
+            <p>まず、あなたの世界の現在のエネミー配置を10ヶ所すべて入力します。「マップ表示」または「リスト表示」で入力できます。</p>
+            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%8F%BE%E5%9C%A8.gif?raw=true" alt="マップ入力画面" style="width:100%; border-radius: 8px; margin-top: 10px;">
+            <p style="margin-top: 10px;">マップ上のアイコンをタップすると、詳細なマップが表示され、A/B/Cのパターンを選択できます。選択に迷ったら、スクリーンショットで実際のゲーム画面を確認できます。</p>
+            
+            <hr>
 
-/* --- Buttons --- */
-.btn { 
-    border: none; 
-    padding: 14px 28px; 
-    border-radius: 50px; 
-    font-size: clamp(1em, 1.5vw, 1.2em); 
-    cursor: pointer; 
-    transition: all 0.3s ease; 
-    font-weight: bold; 
-    text-decoration: none; 
-    display: inline-block; 
-}
-.btn-primary { 
-    background-color: var(--accent-color); 
-    color: white; 
-    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4); 
-}
-.btn-primary:hover { 
-    background-color: var(--accent-hover-color); 
-    transform: translateY(-3px); 
-    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.5); 
-}
-.btn-secondary {
-    background: var(--btn-secondary-bg);
-    color: var(--secondary-text-color);
-    box-shadow: none;
-    text-decoration: none;
-}
-.btn-secondary:hover {
-    background: var(--btn-secondary-bg-hover);
-    transform: translateY(-2px);
-    color: var(--primary-text-color);
-}
-.btn-secondary-link {
-    background: none; 
-    color: var(--secondary-text-color); 
-    font-size: 1em; 
-    text-decoration: underline; 
-    padding: 10px 20px; 
-    box-shadow: none;
-}
-.btn-secondary-link:hover {
-    background: none; 
-    transform: none; 
-    box-shadow: none; 
-    color: var(--primary-text-color);
-}
-.btn-multi { 
-    background-color: var(--multiplayer-accent-color); 
-    color: white; 
-    box-shadow: 0 5px 15px rgba(236, 72, 153, 0.4); 
-}
-.btn-multi:hover { 
-    background-color: var(--multiplayer-accent-hover-color); 
-    transform: translateY(-3px); 
-    box-shadow: 0 8px 20px rgba(236, 72, 153, 0.5); 
-}
-.btn-details { 
-    background-color: #6b7280; 
-    color: white; 
-    padding: 6px 14px; 
-    border-radius: 20px; 
-    font-size: 0.9em; 
-}
-.btn-details:hover { 
-    background-color: #4b5563; 
-}
-.btn-small {
-    padding: 5px 15px;
-    font-size: 0.9em;
-    border-radius: 20px;
-}
-.btn-delete {
-    background-color: var(--danger-color);
-    color: white;
-    padding: 8px 16px;
-    font-size: 0.9em;
-}
-.btn-delete:hover {
-    background-color: var(--danger-hover-color);
-}
-.btn-load {
-    padding: 8px 16px;
-    font-size: 0.9em;
-}
-.btn:disabled { 
-    background-color: #9ca3af; 
-    cursor: not-allowed; 
-    transform: none; 
-    box-shadow: none; 
-}
+            <h3>Step 2: 理想の配置を入力</h3>
+            <p>次に、目標とする理想の配置を<strong>10ヶ所すべて</strong>入力します。正しい計算結果を得るため、すべての配置を入力してください。</p>
+            <p>便利な「環境配置を自動入力」ボタンも活用してください。</p>
+            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%90%86%E6%83%B3.gif?raw=true" alt="理想配置の入力" style="width:100%; border-radius: 8px; margin-top: 10px;">
+            
+            <hr>
+            
+            <h3>Step 3: スケジュールを計算・確認</h3>
+            <p>入力が終わったら、「調整プランを計算」ボタンを押します。</p>
+            <p>スタートページで「周期ホールドを有効にする」にチェックを入れていると、マルチプレイを前提とした最短ルートを計算します。</p>
+            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%B5%B0%E6%9E%9C.gif?raw=true" alt="結果表示画面" style="width:100%; border-radius: 8px; margin-top: 10px;">
 
-/* --- Modals --- */
-.modal { 
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    background-color: rgba(0, 0, 0, 0.6); 
-    z-index: 1000; 
-    opacity: 0; 
-    visibility: hidden; 
-    transition: opacity 0.3s ease; 
-    display: none; 
-    justify-content: center; 
-    align-items: center; 
-    padding: 2vh 2vw; 
-    box-sizing: border-box; 
-}
-.modal.active { 
-    opacity: 1; 
-    visibility: visible; 
-    display: flex; 
-}
-.modal-content { 
-    background-color: #fff; 
-    padding: 30px; 
-    border-radius: 15px; 
-    position: relative; 
-    width: 100%; 
-    max-width: 900px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
-    display: flex; 
-    flex-direction: column; 
-    max-height: 95vh; 
-    overflow-y: auto;
-}
-.modal-close { 
-    position: absolute; 
-    top: 15px; 
-    right: 20px; 
-    font-size: 2.5em; 
-    line-height: 1; 
-    cursor: pointer; 
-    color: #aaa; 
-    transition: color 0.2s; 
-}
-.modal-close:hover { 
-    color: #333; 
-}
+            <hr>
 
-/* --- Banners --- */
-.info-banner {
-    background-color: rgba(229, 231, 235, 0.95);
-    color: var(--secondary-text-color);
-    text-align: center;
-    padding: 12px 50px;
-    position: relative;
-    font-size: 0.95em;
-    border-bottom: 1px solid var(--border-color);
-    transition: all 0.4s ease-in-out;
-    overflow: hidden;
-}
-.info-banner.hidden {
-    height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-    opacity: 0;
-}
-.info-banner p { margin: 0; }
-.info-banner a {
-    color: var(--accent-color);
-    font-weight: bold;
-    text-decoration: underline;
-}
-.close-banner-btn {
-    position: absolute;
-    top: 50%;
-    right: 15px;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    font-size: 1.8em;
-    line-height: 1;
-    cursor: pointer;
-    color: #a0aec0;
-    padding: 5px;
-}
-.close-banner-btn:hover {
-    color: var(--primary-text-color);
-}
+            <h3>ご注意</h3>
+            <p style="text-align: left; line-height: 1.7; font-size: 0.9em;">
+                このサイトは、私が個人的に制作した非公式のファンツールです。計算結果の正確性には万全を期していますが、ゲームのアップデートなどにより、情報が古くなったり、予期せぬ不具合が発生したりする可能性もございます。<br>
+                本サイトの利用によって生じたいかなる損害についても、制作者は一切の責任を負いかねますので、あらかじめご了承ください。ご利用は自己責任でお願いいたします。
+            </p>
+        </div>
+    </div>
+    
+    <div id="tsurumi-info-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="tsurumi-info-modal">&times;</span>
+            <h2>鶴観調整とは？</h2>
+            <p>鶴観調整とは、鶴観マップの一部の精鋭エネミーの「出現パターン」を、プレイヤーが意図的にコントロールするテクニックのことです。</p>
+            <p>その調整の中でも特に複雑で時間のかかる<strong>「何日にどこをロードすれば良いか」というスケジュールの計画を自動で行い、最短ルートを提案するのがこの『鶴観調整プランナー』です。</strong></p>
+            
+            <hr style="margin: 15px 0;">
+        
+            <h3>調整の基本的な仕組み</h3>
+            <ul style="text-align: left; list-style: none; padding-left: 0;">
+                <li style="margin-bottom: 10px;"><strong>3つの配置パターン:</strong> 調整対象のエネミーには「A」「B」「C」の3つの出現パターンがあり、それぞれ数や位置が異なります。このパターンは10箇所のエネミーグループごとに独立しています。</li>
+                <li style="margin-bottom: 10px;"><strong>「ロード」による周期の進行:</strong> エネミーのパターンは、ワープや移動でそのエネミーに近づき、<strong>ゲーム内に「ロード」された時にだけ</strong>次のパターンへ1つ進みます。逆を言えば、ロードしなければパターンは変わりません。</li>
+                <li style="margin-bottom: 10px;"><strong>選択的なロード:</strong> 特定の場所へワープしたり、決まったルートを移動したりすることで、一部のエネミーだけを狙ってロードし、周期を進めることができます。これが「調整」の基本となります。</li>
+            </ul>
+        
+            <h4><strong>【重要】調整作業における注意点</strong></h4>
+            <p style="text-align: left;">鶴観調整は、配置の確認から計画の実行まで、<strong>すべての工程で精密な計画と慎重な操作が求められます。</strong><br>特に、意図しないエネミーをロードしてしまうと計画が大きく崩れる可能性があります。当プランナーを利用する際も、ご自身の現在の配置を正確に入力し、算出されたスケジュールを慎重に実行してください。</p>
+        
+            <hr style="margin: 15px 0;">
+        
+            <p style="text-align: center;">鶴観の精鋭の仕組みについて、より深く、正確に知りたい方は、<br>ぜひ、ねこしたさんのこちらの解説動画をご覧ください。<br>
+                <a href="https://youtu.be/2xqllaCTP5c?si=Pp_a3tTTLpFmB54B" target="_blank" rel="noopener noreferrer"><strong>【原神】鶴観の精鋭の仕組みと調整方法</strong></a>
+            </p>
+        </div>
+    </div>
 
-/* --- Image Loader --- */
-.image-container {
-    position: relative;
-    width: 100%;
-    min-height: 150px;
-    background-color: var(--btn-secondary-bg);
-    border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-}
-.image-loader {
-    color: var(--secondary-text-color);
-    font-weight: bold;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1;
-}
-.image-container img {
-    width: 100%;
-    height: auto;
-    display: block;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-.image-container.loaded .image-loader {
-    display: none;
-}
-.image-container.loaded img {
-    opacity: 1;
-}
-
-/* =================================================================== */
-/* 5. Page-Specific Styles
-/* =================================================================== */
-
-/* --- Start Page --- */
-#start-page .page-content-wrapper {
-     height: auto;
-     justify-content: center;
-     display: flex;
-     flex-direction: column;
-     gap: 2vh;
-}
-#start-page h1 {
-    font-size: clamp(2.5em, 5vw, 4.5em);
-    font-weight: 700;
-    color: #1E3A8A;
-    margin-bottom: 10px;
-}
-.start-title-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-}
-.info-btn {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    width: clamp(30px, 4vw, 40px);
-    height: clamp(30px, 4vw, 40px);
-    border-radius: 50%;
-    border: 2px solid #ccc;
-    background-color: transparent;
-    color: #aaa;
-    font-weight: bold;
-    font-size: clamp(1.2em, 2vw, 1.5em);
-    cursor: pointer;
-    transition: all 0.2s;
-    line-height: 1;
-}
-.info-btn:hover {
-    background-color: #f0f0f0;
-    border-color: #999;
-    color: #888;
-}
-
-#start-page .subtitle {
-    font-size: clamp(1em, 1.5vw, 1.2em);
-    color: var(--secondary-text-color);
-    max-width: 600px;
-    margin: 0 auto;
-    margin-bottom: 10px;
-}
-.start-buttons {
-    margin-top: 50px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    width: 100%;
-}
-.start-buttons .btn {
-    width: 100%;
-    max-width: 450px;
-    box-sizing: border-box;
-}
-#go-to-current-btn {
-    padding: 21px 42px;
-    font-size: clamp(1.5em, 2.25vw, 1.8em);
-}
-.start-footer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    margin-top: 20px;
-}
-.multi-mode-toggle {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    color: var(--secondary-text-color);
-}
-.multi-mode-toggle input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-}
-.multi-mode-toggle label {
-    font-size: 1em;
-    cursor: pointer;
-}
-.help-icon {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background-color: #ccc;
-    border: none;
-    color: white;
-    font-weight: bold;
-    text-decoration: none;
-    font-size: 0.9em;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-.help-icon:hover {
-    background-color: #999;
-}
-.footer-links {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-}
-.link-separator {
-    color: var(--secondary-text-color);
-    opacity: 0.5;
-}
+    <div id="cycle-hold-info-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="cycle-hold-info-modal">&times;</span>
+            <h2>周期ホールドとは？</h2>
+            <p>周期ホールドとは、<strong>マルチプレイを利用して</strong>鶴観調整をより効率的に行うための<strong>高度なテクニック</strong>です。</p>
+            <p><strong>このプランナーで「周期ホールドを有効化」すると、この高度なテクニックを前提とした最短の調整スケジュールを自動で算出します。</strong>ソロでの調整よりも手順は複雑になりますが、調整にかかる日数を大幅に短縮できる可能性があります。</p>
+            
+            <hr style="margin: 15px 0;">
+        
+            <h3>周期ホールドの仕組み</h3>
+            <p>通常、エネミーをロードすると周期は1つ進みますが、周期ホールドを使うと<strong>「ロードしたにもかかわらず、周期を進めない」</strong>という特殊な状況を作り出せます。</p>
+            <p>これにより、調整したくないエネミーの周期を「ホールド（維持）」したまま、目的のエネミーの周期だけを進める、という精密な操作が可能になります。</p>
+        
+            <h4>🎨 たとえ話：2人での壁塗り</h4>
+            <p>このテクニックは、2人で行う壁塗りのようなものです。</p>
+            <ul style="text-align: left; list-style: none; padding-left: 0;">
+                <li style="margin-bottom: 5px;"><strong>壁:</strong> 鶴観の10ヶ所の精鋭グループ</li>
+                <li style="margin-bottom: 5px;"><strong>1P (ホスト):</strong> 壁を青く塗る<strong>「ペイント役」</strong>。周期を進めたい人です。</li>
+                <li style="margin-bottom: 5px;"><strong>2P (ゲスト/ホールド役):</strong> 壁が塗られないよう保護する<strong>「マスキングテープ役」</strong>。周期を進めたくない人です。</li>
+            </ul>
+            <p style="text-align: left;">ソロ調整は、ペイント役が1人で作業するのと同じです。塗ろうとした場所はすべて青くなります（周期が進みます）。<br>一方、周期ホールド（マルチ調整）では、まず2Pがマスキングテープで壁を保護します。その後、1Pが塗装をすると、最終的に青く塗られるのは<strong>「1Pが塗ろうとした範囲」から「2Pがマスキングテープで保護した範囲」を<u>除いた部分</u></strong>だけになります。</p>
+            <p style="text-align: left;">このように、周期ホールドは不要な部分の周期進行を防ぐ「マスキングテープ」の役割を果たし、より正確で素早い調整を実現します。</p>
+            <p style="text-align: left; margin-top: 10px;">理論上は複雑に聞こえるかもしれませんが、<strong>当プランナーで計算した後の結果画面では、各日の「手順を確認」ボタンから、ホスト役（1P）とホールド役（2P）がそれぞれ具体的にどの行動をすべきかが示されます。</strong></p>
+        
+            <hr style="margin: 15px 0;">
+        
+            <p style="text-align: center;">周期ホールドの具体的な手順や詳細な解説については、<br>ぜひ、ねこしたさんの動画をご覧ください。（該当の解説箇所から再生されます）<br>
+                <a href="https://www.youtube.com/watch?v=2xqllaCTP5c&t=1194s" target="_blank" rel="noopener noreferrer"><strong>周期ホールドの解説はこちら</strong></a>
+            </p>
+        </div>
+    </div>
 
 
-/* --- Input Pages (Shared) --- */
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 15px;
-    flex-shrink: 0;
-}
-.page-footer {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 20px;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-}
-.page-footer .left-action {
-     flex: 1 1 0%;
-     display: flex;
-     justify-content: flex-start;
-     gap: 10px;
-}
-.page-footer .center-action {
-     flex: 1 1 0%;
-     display: flex;
-     justify-content: center;
-     gap: 15px;
-}
- .page-footer .right-action {
-     flex: 1 1 0%;
-     display: flex;
-     justify-content: flex-end;
-     gap: 15px;
-     position: relative; /* For validation message */
-}
-.page-footer .progress-text {
-    text-align: center;
-    font-size: 1.1em;
-    font-weight: bold;
-    color: var(--secondary-text-color);
-}
-.view-switcher { 
-    margin-bottom: 15px; 
-    display: flex; 
-    gap: 10px; 
-    border-bottom: 2px solid var(--border-color); 
-    padding-bottom: 5px; 
-    align-items: center; 
-    flex-wrap: wrap; 
-}
-.view-tab { 
-    padding: 10px 20px; 
-    font-size: 1em; 
-    font-weight: bold; 
-    color: var(--secondary-text-color); 
-    background: none; 
-    border: none; 
-    border-bottom: 3px solid transparent; 
-    cursor: pointer; 
-    transition: all 0.3s; 
-}
-.view-tab.active { 
-    color: var(--accent-color); 
-    border-bottom-color: var(--accent-color); 
-}
-.input-views-container { 
-    flex-grow: 1; 
-    position: relative; 
-    width: 100%; 
-    min-height: 200px; 
-}
-.input-view { 
-    width: 100%; 
-    height: 100%; 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    opacity: 0; 
-    visibility: hidden; 
-    transition: opacity 0.3s ease; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center; 
-}
-.input-view.active { 
-    opacity: 1; 
-    visibility: visible; 
-}
+    <div id="disclaimer-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="disclaimer-modal">&times;</span>
+            <h2>注意事項</h2>
+            
+            <hr style="margin: 10px 0;">
 
-/* --- Result Page --- */
-#result-page {
-    overflow-y: auto;
-    justify-content: flex-start;
-}
-#result-page .page-content-wrapper {
-    display: block;
-}
-.result-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
-    align-items: flex-start;
-    width: 100%;
-}
-.result-layout-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    width: 100%;
-}
-.result-map-container {
-    width: 100%;
-    height: auto;
-    max-width: 450px;
-    margin: 0 auto;
-}
-.result-map-container img {
-    width: 100%;
-    height: auto;
-    border-radius: 10px;
-}
-.result-actions-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-}
-.result-actions-container .btn {
-    width: 100%;
-    max-width: 450px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-}
-.result-details-container {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-}
-#result-summary { 
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    font-size: 1.5em; 
-    font-weight: bold; 
-    margin-bottom: 20px; 
-    padding: 15px; 
-    background-color: #eef2ff; 
-    border-radius: 10px; 
-    color: #312e81; 
-    flex-shrink: 0;
-}
-#result-summary-text {
-    flex-grow: 1;
-    text-align: center;
-    padding: 0 40px; /* Add padding to prevent text overlap with icon */
-}
-.save-icon-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 5px;
-    width: 32px;
-    height: 32px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23312e81' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z'%3E%3C/path%3E%3C/svg%3E");
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    opacity: 0.7;
-    transition: opacity 0.2s, transform 0.2s;
-    position: absolute;
-    top: 50%;
-    right: 15px;
-    transform: translateY(-50%);
-    display: none; /* Hide by default */
-}
-.save-icon-btn:hover {
-    opacity: 1;
-    transform: translateY(-50%) scale(1.1);
-}
-.result-table-container { 
-    width: 100%;
-}
-.result-table { 
-    width: 100%; 
-    border-collapse: collapse; 
-}
-.result-table th, .result-table td { 
-    padding: 15px; 
-    text-align: left; 
-    border-bottom: 1px solid var(--border-color); 
-}
-.result-table th { 
-    background-color: #f9f9f9; 
-    position: sticky; 
-    top: 0; 
-    z-index: 1; 
-}
-.result-footer-link,
-.result-disclaimer-desktop {
-    text-align: center;
-    margin-top: 25px;
-    padding: 10px;
-}
-.result-footer-link a {
-    color: var(--accent-color);
-    font-weight: bold;
-    text-decoration: underline;
-    transition: color 0.2s;
-}
-.result-footer-link a:hover {
-    color: var(--accent-hover-color);
-}
-#disclaimer-link-result-mobile { display: none; }
-.result-disclaimer-desktop { display: none; }
+            <h4>正確性とリスクについて</h4>
+            <p style="text-align: left; line-height: 1.7; font-size: 0.9em;">
+                このプランナーは、制作者が個人的に制作した非公式のファンツールです。<br>
+                計算結果の正確性には万全を期しておりますが、ゲームのアップデート等により情報が古くなる可能性や、予期せぬ不具合が発生する可能性もございます。<br>
+                また、配置を誤って入力した場合、当然ながら正しくない調整スケジュールが出力されます。入力内容が正しいか、十分にご確認ください。
+            </p>
+
+            <h4 style="margin-top: 20px;">免責事項</h4>
+            <p style="text-align: left; line-height: 1.7; font-size: 0.9em;">
+                本サイトを利用したことで生じたいかなる損害についても、制作者は一切の責任を負いかねます。<br>
+                すべての操作は、自己責任の上で慎重に行っていただきますよう、お願いいたします。
+            </p>
+        </div>
+    </div>
+    
+    <div id="zoom-view" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="zoom-view">&times;</span>
+            <h3 id="zoom-title"></h3>
+            <div id="zoom-map-container" class="image-container">
+                <div class="image-loader">読み込み中...</div>
+                <img src="https://placehold.co/800x500/e9e9e9/333?text=Zoomed+Area" alt="ズームマップ">
+            </div>
+        </div>
+    </div>
+
+    <div id="screenshot-popup" class="modal backdrop-blur">
+        <div class="modal-content">
+             <span class="modal-close" data-target="screenshot-popup">&times;</span>
+             <h3 id="screenshot-title"></h3>
+             <div class="image-container">
+                <button id="screenshot-prev-btn" class="zoom-nav-btn prev" aria-label="前のパターン"></button>
+                <div class="image-loader">読み込み中...</div>
+                <img id="screenshot-img" src="https://placehold.co/500x300/eef2ff/312e81?text=In-Game+Screenshot" alt="ゲーム内スクリーンショット">
+                <button id="screenshot-next-btn" class="zoom-nav-btn next" aria-label="次のパターン"></button>
+             </div>
+             <button id="confirm-pattern-btn" class="btn btn-primary" style="margin-top: 15px;">確定</button>
+        </div>
+    </div>
+    
+    <div id="loading-modal" class="modal">
+         <div class="modal-content" style="text-align: center;">
+            <h2 style="font-size: 2.5em; margin-bottom: 10px;">計算中...</h2>
+            <p id="loading-text">最適なルートを探索しています。<br>組み合わせが複雑な場合、十数秒かかることがあります。</p>
+            <div class="loader"></div>
+            <div id="calculation-progress"></div>
+         </div>
+    </div>
+    
+    <div id="day-detail-modal" class="modal backdrop-blur">
+         <div class="modal-content">
+              <span class="modal-close" data-target="day-detail-modal">&times;</span>
+              <h2 id="day-detail-title"></h2>
+              <div id="day-detail-content"></div>
+       </div>
+    </div>
+
+    <div id="credit-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="credit-modal">&times;</span>
+            <h2>Special Thanks</h2>
+            <p>このツールの開発にあたり、「ねこした」さんより多大なるご協力をいただきました。<br>心より感謝申し上げます。</p>
+            
+            <hr style="margin: 20px 0;">
+            
+            <h4>■ 画像・情報提供</h4>
+            <p>ツール内で使用している各配置の画像や、精鋭エネミーの出現パターンに関する情報は、以下のnote記事を参考にさせていただきました。非常に分かりやすくまとめられており、開発の大きな助けとなりました。</p>
+            <p style="padding-left: 1em;"><strong>note記事:</strong> <a href="https://note.com/nekoshita_g/n/nba4aff6a13ff" target="_blank" rel="noopener noreferrer">【原神】鶴観の精鋭の仕組みと調整方法</a></p>
+            
+            <h4>■ 調整方法の解説</h4>
+            <p>本ツールの計算ロジックは、以下の動画で解説されている調整方法を基にプログラムとして実装したものです。鶴観調整の仕組みそのものについて、大変分かりやすく解説されていますので、ぜひご覧ください。</p>
+            <p style="padding-left: 1em;"><strong>解説動画:</strong> <a href="https://youtu.be/2xqllaCTP5c?si=jY3Vn64mj6y91Vte" target="_blank" rel="noopener noreferrer">【原神】鶴観の精鋭の仕組みと調整方法 (YouTube)</a></p>
+            
+            <hr style="margin: 20px 0;">
+            
+            <p style="text-align: center;">
+                <a href="https://www.youtube.com/@nekoshita_g" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="text-decoration: none;">ねこしたさんのYouTubeチャンネルはこちら</a>
+            </p>
+        </div>
+    </div>
+    
+    <div id="load-plan-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="load-plan-modal">&times;</span>
+            <h2>保存したプランを読み込む</h2>
+            <ul id="saved-plans-list">
+                <!-- Saved plans will be dynamically inserted here -->
+            </ul>
+            <p id="no-saved-plans">保存されたプランはありません。</p>
+        </div>
+    </div>
+
+    <!-- New Logic Modal -->
+    <div id="logic-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="logic-modal">&times;</span>
+            <h2>製作者と計算の仕組みについて</h2>
+
+            <h3>製作者について</h3>
+            <p>はじめまして、「あの時の鳥です」と申します。この「鶴観調整プランナー」を制作・運営しています。</p>
+            <p>精鋭狩りRTAに挑戦する中で、多くの人が直面する「鶴観調整」という高い壁を少しでも低くしたい。そして、この界隈に挑戦する仲間が一人でも増えてくれたら嬉しい。そんな想いで、このツールを丹精込めて制作しました。</p>
+            
+            <hr style="margin: 20px 0;">
+
+            <!-- Request Form -->
+            <div id="request-form-container">
+                <h3>改善案・ご要望フォーム</h3>
+                <p>本サイトの改善案や追加機能のご要望などありましたら、お気軽に相談していただけると幸いです。<br>
+                <small>※このフォームは匿名で送信され、個人情報は一切記録されません。</small>
+                </p>
+                <form id="g-form" 
+                      action="https://docs.google.com/forms/u/0/d/e/1FAIpQLScnbmGsRUGtgFTgBg05rmhRFwvIQ4XJnCKt2PxNJM0fS3JUPw/formResponse"
+                      target="hidden_iframe" 
+                      method="POST">
+                    <div class="form-group">
+                        <label for="form-category">お問い合わせの種類</label>
+                        <select id="form-category" name="entry.308906270" required>
+                            <option value="改善案">改善案</option>
+                            <option value="機能要望">機能要望</option>
+                            <option value="不具合報告">不具合報告</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="form-details">詳細</label>
+                        <textarea id="form-details" name="entry.748640506" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" id="submit-form-btn" class="btn btn-primary">送信する</button>
+                    <p id="form-status-message" style="margin-top: 10px;"></p>
+                </form>
+                <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="if(submitted) {window.location='about:blank';}"></iframe>
+            </div>
+            
+            <hr style="margin: 25px 0;">
+
+            <h3>計算ロジックの正しさと「最短」であることの証明</h3>
+            <p>このプランナーが提示するスケジュールは、なぜ<strong>正しく</strong>、かつ<strong>「最短」</strong>であると保証できるのでしょうか？<br>
+            それは、当てずっぽうや魔法のような方法ではなく、<strong>ゲーム内の確定的なルール</strong>を土台とし、それを<strong>正確な数式モデル</strong>へ変換、その上で<strong>数学的に証明されたアルゴリズム</strong>を用いて解を探索しているからです。</p>
+
+            <h4 style="margin-top:20px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Step 1: 前提となる「ゲームのルール」</h4>
+            <p style="text-align: left;">まず、大前提として、プランナーは以下の<strong>ゲーム内の確定的な法則</strong>に基づいて計算を行っています。</p>
+            <ul style="text-align: left; list-style: none; padding-left: 1em;">
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span><strong>ルール1：</strong>調整対象の精鋭は10グループあり、各グループは必ず「A, B, C」の3パターンのいずれかの状態になります。</li>
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span><strong>ルール2：</strong>パターンは、プレイヤーがその場に近づき「ロード」するという行為によってのみ、A→B→C→A と1つずつ進みます。</li>
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span><strong>ルール3：</strong>どの行動（ワープや移動）が、どのグループをロードするかは、先人たちの膨大な検証によってデータ化されています。（当サイトもそのデータを基にしています）</li>
+            </ul>
+            <p style="text-align: left;">プランナーは、これらの不変のルールとデータをパズルのピースとして利用します。</p>
+
+            <h4 style="margin-top:20px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Step 2: ルールを「数式モデル」に変換する (正しさの証明)</h4>
+            <p style="text-align: left;">次に、このルールをコンピュータが計算できる「数式モデル」に置き換えます。</p>
+            <ul style="text-align: left; list-style: none; padding-left: 1em;">
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span><strong>ルールの数値化:</strong> 鶴観の10個の精鋭グループがそれぞれ3パターンの状態を持つということは、3の10乗、すなわち<strong>59,049通り</strong>もの膨大な配置パターンが存在することを意味します。プランナーは、この59,049通りの全パターンを、それぞれ重複しないユニークな番号（状態番号）に変換します。</li>
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span>「ワープ②」や「歩き⑬」といった各調整アクションは、「<strong>ある状態番号</strong>を受け取ったら、ルール（`data.js`）に従って影響範囲のパターンを1つ進め、<strong>別の状態番号</strong>を返す関数」としてモデル化されます。</li>
+            </ul>
+            <p style="text-align: left;"><strong>結論:</strong> ゲーム内で起こりうる<strong>全ての配置パターン</strong>と、プレイヤーが取りうる<strong>全ての調整アクション</strong>を、このように漏れなく数値と数式の関係に変換することで、プランナーはゲーム内の鶴観調整をPC上で<strong>完全にシミュレート</strong>することが可能になります。これにより、計算ロジックが<strong>ゲームのルール通りに正しく機能する</strong>ことが保証されます。</p>
+
+            <h4 style="margin-top:20px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Step 3: どうやって最短ルートを探しているのか？</h4>
+            <p style="text-align: left;">ルール通りに動くシミュレーターが完成したら、次はその中から最短ルートを探します。この探し方は、駅の「最短乗り換え案内」のロジックと非常によく似ています。</p>
+            <div style="background-color: #f3f4f6; border-left: 4px solid #d1d5db; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                <p><strong>たとえ話：最短乗り換え案内</strong></p>
+                <ul style="padding-left: 2em; list-style: disc;">
+                    <li><strong>あなたの現在地:</strong> 現在の配置の「状態番号」</li>
+                    <li><strong>目的地:</strong> あなたが設定した理想の配置の「状態番号」</li>
+                    <li><strong>電車での1回の移動:</strong> 1日分の調整作業（状態番号の変化）</li>
+                </ul>
+            </div>
+            <p style="text-align: left;">目的地までの最短ルートを探すため、プランナーは以下のような手順で、可能性のあるルートを<strong>しらみつぶしに</strong>探索します。</p>
+            <ol style="text-align: left; padding-left: 2em;">
+                <li style="margin-bottom: 5px;">まず、「現在地」から<strong>1回の移動（1日）</strong>で行ける全ての「次の駅（次の日の状態番号）」をリストアップします。</li>
+                <li style="margin-bottom: 5px;">次に、リストアップした全ての駅から、さらに<strong>1回の移動（合計2日）</strong>で行ける全ての駅をリストアップします。</li>
+                <li style="margin-bottom: 5px;">これを、「目的地」の状態番号に到着するまで繰り返します。</li>
+            </ol>
+            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/logic-bfs.png?raw=true" alt="ルート探索のイメージ図" style="width:100%; max-width: 500px; border-radius: 8px; margin-top: 10px; display: block; margin-left: auto; margin-right: auto;">
+
+            <h4 style="margin-top:20px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Step 4: なぜそれが「最短」だと証明できるのか</h4>
+            <p style="text-align: left;">この「しらみつぶし」の探し方には、重要な特徴があります。</p>
+            <p style="text-align: left;">それは、<strong>1日で行けるルートを全て探し尽くしてから、初めて2日で行けるルートを探し始める</strong>、という点です。</p>
+            <p style="text-align: left;">このため、「目的地」に<strong>最初に到着した時点で、それが最も日数が少ない（乗り換えが少ない）ルートである</strong>ことが論理的に保証されます。もし3日で着くルートが見つかった後に、実は2日で着く隠れたルートが見つかる、ということは絶対に起こりません。</p>
+            <p style="text-align: left;">この方法は、コンピュータ科学の世界では「<strong>幅優先探索（BFS）</strong>」と呼ばれるアルゴリズムで、最短経路問題の解法として数学的に確立された、非常にポピュラーなものです。当プランナーは、この信頼性の高いアルゴリズムを採用することで、常に最適な解を導き出しています。</p>
+
+        </div>
+    </div>
 
 
-/* =================================================================== */
-/* 6. Specific Component Styles
-/* =================================================================== */
+    <footer class="site-credit-footer backdrop-blur">
+        <p>
+            <span id="credit-modal-trigger">Special Thanks: ねこしたさん (詳細はこちら)</span>
+            <span class="credit-separator">|</span>
+            <span>鶴観を研究してくださった先人の方々</span>
+        </p>
+    </footer>
 
-/* --- Step Indicator --- */
-.steps-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-    flex-grow: 1;
-}
-.step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer; /* Clickable */
-}
-.step-icon {
-    width: 60px;
-    height: 60px;
-    background-color: #fff;
-    border: 3px solid var(--border-color);
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.5em;
-    font-weight: bold;
-    color: var(--secondary-text-color);
-    box-shadow: 0 4px 10px var(--shadow-color);
-    transition: all 0.3s ease;
-}
-.step-label {
-    margin-top: 15px;
-    font-size: 1.1em;
-    font-weight: bold;
-    color: var(--secondary-text-color);
-    transition: all 0.3s ease;
-}
-.step-arrow {
-    font-size: 2.5em;
-    color: var(--border-color);
-}
-.step.active-step .step-icon {
-    border-color: var(--accent-color);
-    color: var(--accent-color);
-    animation: glowing-step 2s infinite ease-in-out;
-}
-.step.active-step .step-label {
-    color: var(--primary-text-color);
-}
-#start-page .step.active-step .step-icon {
-    animation: none;
-    border-color: var(--accent-color);
-    color: var(--accent-color);
-}
-#start-page .step.active-step .step-label {
-    color: var(--primary-text-color);
-}
-@keyframes glowing-step {
-    0% { box-shadow: 0 0 5px var(--accent-color), 0 0 10px var(--accent-color); transform: scale(1); }
-    50% { box-shadow: 0 0 20px var(--accent-color), 0 0 30px var(--accent-color); transform: scale(1.05); }
-    100% { box-shadow: 0 0 5px var(--accent-color), 0 0 10px var(--accent-color); transform: scale(1); }
-}
-
-/* --- Header & Footer Details --- */
-.site-header .header-title-container {
-    flex-grow: 1;
-}
-.site-header h1 {
-    margin: 0;
-    font-size: clamp(1.2em, 2vw, 1.5em);
-    color: white;
-}
-.header-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    font-size: clamp(0.8em, 1.5vw, 0.9em);
-    color: #ccc;
-}
-.header-link-btn {
-    background: none;
-    border: none;
-    color: #ccc;
-    font-family: inherit;
-    font-size: 1em;
-    cursor: pointer;
-    text-decoration: underline;
-    transition: color 0.2s;
-    padding: 0;
-}
-.header-link-btn:hover {
-    color: #fff;
-}
-.site-credit-footer p {
-    margin: 0;
-    padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 5px;
-}
-#credit-modal-trigger {
-    cursor: pointer;
-    transition: color 0.2s;
-}
-#credit-modal-trigger:hover {
-    color: #fff;
-    text-decoration: underline;
-}
-.credit-separator { margin: 0 10px; }
-.site-credit-footer a {
-    color: #fff;
-    text-decoration: underline;
-    transition: color 0.2s;
-}
-.site-credit-footer a:hover {
-    color: #ccc;
-    text-decoration: none;
-}
-.title-short { display: none; }
-.btn-back {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    width: 40px;
-    height: 40px;
-    background-image: url('https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/chevron_backward_41dp_1F1F1F_FILL0_wght400_GRAD0_opsz40.png?raw=true');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    opacity: 0.6;
-    transition: opacity 0.2s;
-}
-.btn-back:hover { opacity: 1; }
-.header-placeholder { width: 40px; flex-shrink: 0; }
-
-/* --- Map & List Input Views --- */
-.map-container { 
-    position: relative; 
-    width: 100%; 
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-.map-guide-text {
-    position: absolute;
-    top: 5%;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(0, 0, 0, 0.6);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 1em;
-    font-weight: bold;
-    pointer-events: none;
-    z-index: 5;
-    opacity: 0.8;
-    transition: opacity 0.5s ease-in-out;
-    animation: pulsing-text 2.5s infinite ease-in-out;
-}
-.map-guide-text.hidden {
-    opacity: 0;
-    animation: none;
-}
-@keyframes pulsing-text {
-    0% { opacity: 0.7; transform: translateX(-50%) scale(1); }
-    50% { opacity: 1; transform: translateX(-50%) scale(1.03); }
-    100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
-}
-.map-container img.map-bg {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-    object-fit: contain; 
-    border-radius: 10px; 
-}
-.map-marker { 
-    position: absolute; 
-    width: clamp(28px, 5vw, 40px);
-    height: clamp(28px, 5vw, 40px);
-    background-color: rgba(59, 130, 246, 0.7); 
-    background-size: cover;
-    background-position: center;
-    border-radius: 50%; border: 3px solid var(--accent-color); 
-    cursor: pointer; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    font-weight: bold; 
-    color: white; 
-    font-size: 1.1em; 
-    transition: all 0.3s ease; 
-}
-.map-marker.glowing { animation: glowing 2s infinite; }
-.map-marker.completed { 
-    background-color: #10B981; 
-    border-color: white; 
-    animation: none; 
-    background-image: none !important;
-}
-@keyframes glowing { 
-    0% { box-shadow: 0 0 8px var(--accent-color); } 
-    50% { box-shadow: 0 0 55px var(--accent-color); } 
-    100% { box-shadow: 0 0 8px var(--accent-color); } 
-}
-.config-list { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-    gap: 15px; 
-    width: 100%; 
-    max-width: 1000px; 
-    overflow-y: auto; 
-    padding: 15px; 
-    height: 100%;
-}
-.config-item { 
-    background-color: #f9f9f9; 
-    padding: 15px; 
-    border-radius: 10px; 
-    border: 1px solid var(--border-color); 
-    text-align: left;
-}
-.config-item-label { 
-    font-size: 1.1em; 
-    font-weight: bold; 
-    margin-bottom: 10px; 
-    display: block; 
-}
-.pattern-buttons button { 
-    background: #fff; 
-    color: var(--secondary-text-color); 
-    border: 2px solid var(--border-color); 
-    padding: 10px; 
-    margin: 2px; 
-    border-radius: 5px; 
-    cursor: pointer; 
-    width: 50px; 
-    font-size: 1em; 
-    transition: all 0.2s; 
-}
-.pattern-buttons button:hover { border-color: var(--accent-hover-color); }
-.pattern-buttons button.selected { 
-    background: var(--accent-color); 
-    color: white; 
-    border-color: var(--accent-color); 
-}
-
-/* --- Form & Validation --- */
-.validation-message {
-    color: #ef4444;
-    font-weight: bold;
-    font-size: 0.9em;
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid #ef4444;
-    position: absolute;
-    bottom: 110%;
-    right: 0;
-    opacity: 0;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    transform: translateY(10px);
-    pointer-events: none;
-    z-index: 10;
-}
-.validation-message.show {
-    opacity: 1;
-    transform: translateY(0);
-}
-@keyframes shake {
- 10%, 90% { transform: translateX(-1px); }
- 20%, 80% { transform: translateX(2px); }
- 30%, 50%, 70% { transform: translateX(-3px); }
- 40%, 60% { transform: translateX(3px); }
-}
-.shake {
-    animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
-}
-.quick-fill-buttons {
-    align-items: center;
-    gap: 5px;
-}
-.quick-fill-label {
-    font-size: 0.9em;
-    color: var(--secondary-text-color);
-    margin-right: 5px;
-    font-weight: bold;
-}
-
-/* --- Result Table --- */
-.mode-solo { color: var(--accent-color); font-weight: bold; }
-.mode-multi { color: var(--multiplayer-accent-color); font-weight: bold; }
-
-/* --- Modals Content --- */
-#guide-modal .modal-content h2 { font-size: 2.2em; margin-bottom: 15px; }
-#guide-modal .modal-content h3 { font-size: 1.6em; margin-top: 10px; margin-bottom: 15px; }
-#guide-modal .modal-content hr {
-    border: none;
-    height: 4px;
-    background-color: #adb5bd;
-    border-radius: 2px;
-    margin: 30px 0;
-}
-#zoom-view .modal-content { overflow: hidden; }
-#zoom-map-container {
-    position: relative;
-    width: 100%;
-    margin: 20px auto 0;
-    aspect-ratio: 16 / 9;
-    flex-shrink: 1;
-    min-height: 0;
-}
-.zoom-nav-btn {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 44px;
-    height: 44px;
-    background-color: rgba(0, 0, 0, 0.4);
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 10;
-    transition: background-color 0.2s;
-}
-.zoom-nav-btn:hover {
-    background-color: rgba(0, 0, 0, 0.7);
-}
-.zoom-nav-btn::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 12px;
-    height: 12px;
-    border-top: 3px solid white;
-    border-right: 3px solid white;
-}
-.zoom-nav-btn.prev {
-    left: 15px;
-}
-.zoom-nav-btn.prev::before {
-    transform: translate(-50%, -50%) rotate(-135deg);
-    left: 55%;
-}
-.zoom-nav-btn.next {
-    right: 15px;
-}
-.zoom-nav-btn.next::before {
-    transform: translate(-50%, -50%) rotate(45deg);
-    left: 45%;
-}
-#screenshot-popup .image-container {
-    aspect-ratio: 500 / 300;
-    min-height: 0;
-    position: relative;
-}
-.loader {
-    border: 8px solid #f3f3f3;
-    border-top: 8px solid var(--accent-color);
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    animation: spin 1.5s linear infinite;
-    margin: 20px auto;
-}
-#calculation-progress {
-    margin-top: 15px;
-    color: var(--secondary-text-color);
-    font-weight: bold;
-    height: 2em;
-}
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-#day-detail-content ul { list-style: none; padding: 0; margin-top: 15px; text-align: left; }
-#day-detail-content li {
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-left: 5px solid var(--accent-color);
-}
-#day-detail-content h3 { margin-bottom: 20px; text-align: center; }
-#day-detail-content h4 {
-    margin-top: 25px;
-    margin-bottom: 10px;
-    border-bottom: 2px solid var(--border-color);
-    padding-bottom: 5px;
-    text-align: left;
-}
-#day-detail-content .video-container {
-    position: relative;
-    padding-bottom: 56.25%; /* 16:9 */
-    height: 0;
-    overflow: hidden;
-    max-width: 100%;
-    background: #000;
-    margin-top: 10px;
-    border-radius: 8px;
-}
-#day-detail-content .video-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-#credit-modal .modal-content p,
-#logic-modal .modal-content p { 
-    text-align: left; 
-    line-height: 1.8; 
-}
-#credit-modal .modal-content h4,
-#logic-modal .modal-content h3 {
-    margin-top: 20px;
-    margin-bottom: 10px;
-    text-align: left;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 8px;
-}
-/* Request Form Styles */
-#request-form-container .form-group {
-    margin-bottom: 15px;
-    text-align: left;
-}
-#request-form-container label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: var(--primary-text-color);
-}
-#request-form-container select,
-#request-form-container textarea {
-    width: 100%;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid var(--border-color);
-    font-family: inherit;
-    font-size: 1em;
-    box-sizing: border-box;
-}
-#request-form-container #submit-form-btn {
-    width: 100%;
-}
-
-#saved-plans-list {
-    list-style: none;
-    padding: 0;
-    margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-.saved-plan-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    background-color: var(--btn-secondary-bg);
-    border-radius: 10px;
-    border: 1px solid var(--border-color);
-}
-.saved-plan-item-name {
-    font-weight: bold;
-    font-size: 1.1em;
-    color: var(--primary-text-color);
-}
-.saved-plan-item-actions { display: flex; gap: 10px; }
-#no-saved-plans {
-    text-align: center;
-    color: var(--secondary-text-color);
-    margin-top: 30px;
-    font-size: 1.1em;
-}
-
-/* --- Misc --- */
-.solo-notice {
-    font-size: 0.9em;
-    color: var(--secondary-text-color);
-    background-color: var(--btn-secondary-bg);
-    padding: 12px 15px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    max-width: 450px;
-    width: 100%;
-    box-sizing: border-box;
-    text-align: center;
-    line-height: 1.6;
-}
-.solo-notice a {
-    color: var(--accent-hover-color);
-}
-
-.show-on-desktop { display: none; }
-.show-flex-on-desktop { display: none; }
-
-.btn-icon {
-    display: inline-block;
-    width: 1.2em;
-    height: 1.2em;
-    background-color: currentColor;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    mask-position: center;
-    -webkit-mask-size: contain;
-    mask-size: contain;
-}
-.icon-save {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z'%3E%3C/path%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z'%3E%3C/path%3E%3C/svg%3E");
-}
-.icon-reset {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='23 4 23 10 17 10'%3E%3C/polyline%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'%3E%3C/path%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='23 4 23 10 17 10'%3E%3C/polyline%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'%3E%3C/path%3E%3C/svg%3E");
-}
-.icon-recalc {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='2' width='16' height='20' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='8' y1='6' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='16' y1='14' x2='8' y2='14'%3E%3C/line%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='2' width='16' height='20' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='8' y1='6' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='16' y1='14' x2='8' y2='14'%3E%3C/line%3E%3C/svg%3E");
-}
-
-
-/* =================================================================== */
-/* 7. Responsive Design
-/* =================================================================== */
-
-/* --- Desktop (Large Screens) --- */
-@media (min-width: 992px) {
-    body {
-        background-color: #000; /* Fallback for older browsers */
-        background-image: url('https://cdn.jsdelivr.net/gh/Anotokinotori/Tsurumi-Map-Optimizer@main/20250927140652.png');
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-    }
-    main {
-        background: none;
-    }
-    .result-grid {
-        grid-template-columns: minmax(350px, 4fr) 6fr;
-        gap: 40px;
-        align-items: flex-start;
-    }
-    .result-layout-container {
-        position: sticky;
-        top: 20px;
-    }
-    .show-on-desktop { display: block; }
-    .show-flex-on-desktop { display: flex; }
-    #disclaimer-link-result-mobile { display: none; }
-    .result-disclaimer-desktop { display: block; }
-}
-
-/* --- Tablet & Mobile --- */
-@media (max-width: 991px) {
-    body {
-        overflow: auto;
-        height: auto;
-        min-height: 100vh;
-        padding-bottom: 50px; /* Space for fixed footer */
-    }
-    main {
-         padding: 0;
-         height: auto;
-         flex-grow: 1;
-    }
-    .container { 
-        width: 100%; 
-        height: auto;
-        min-height: 0;
-        max-height: none; 
-        border-radius: 0; 
-        overflow: visible;
-    }
-    .page { 
-        padding: 20px; 
-        height: auto;
-        position: relative;
-        opacity: 1;
-        visibility: visible;
-        transform: none;
-        display: none; 
-        justify-content: flex-start;
-    }
-    .page.active {
-        display: flex;
-    }
-    .page-content-wrapper {
-        height: auto;
-        min-height: calc(100vh - 80px); /* Header height approx */
-    }
-    #start-page {
-        justify-content: center;
-        padding-top: 2vh;
-        padding-bottom: 2vh;
-        flex-grow: 1; 
-    }
-    #start-page .page-content-wrapper {
-        min-height: 0; 
-        flex-grow: 1; 
-    }
-    .site-header, .site-credit-footer { padding: 10px 20px; }
-    .title-long { display: none; }
-    .title-short { display: inline; }
-    .header-version,
-    .header-version + .credit-separator {
-        display: none;
-    }
-    #start-page h1 { font-size: 2.5em; }
-    .steps-container { gap: 10px; }
-    .step-icon { width: 50px; height: 50px; font-size: 1.2em;}
-    .step-label { font-size: 0.9em; }
-    .step-arrow { font-size: 2em; }
-    h2 { font-size: 1.5em; }
-    .config-list { grid-template-columns: 1fr; height: 100%; max-height: none; }
-    .modal-content { width: 90%; padding: 20px; }
-    .result-table th, .result-table td { padding: 10px; font-size: 0.9em;}
-    .input-views-container {
-        flex-grow: 0;
-        height: 43vh;
-    }
-    .input-views-container .map-container {
-        height: 100%;
-        aspect-ratio: unset;
-    }
-    .site-credit-footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-    }
-    /* Reorder result page for mobile */
-    .result-details-container {
-        order: 1;
-    }
-    .result-layout-container {
-        order: 2;
-    }
-    .result-footer-link {
-        display: none;
-    }
-    .result-disclaimer-desktop {
-        display: none;
-    }
-    #disclaimer-link-result-mobile {
-        display: inline-block;
-    }
-    .save-icon-btn {
-        display: block; /* Show on mobile */
-    }
-}
-
-/* --- Small Mobile --- */
-@media (max-width: 480px) {
-    #start-page h1 { font-size: 2em; }
-    .steps-container { gap: 5px; margin-top: 15px; margin-bottom: 10px;}
-    .step-icon { width: 40px; height: 40px; font-size: 1em; }
-    .step-label { font-size: 0.7em; margin-top: 8px; }
-    .step-arrow { font-size: 1.5em; }
-    .btn { font-size: 1em; padding: 12px 24px; }
-    #go-to-current-btn { padding: 18px 36px; font-size: 1.3em; }
-    .page { padding: 15px; }
-    .config-item-label { font-size: 1em; }
-    .pattern-buttons button { width: 40px; height: 40px; padding: 5px; font-size: 0.9em;}
-    .page-footer { 
-        flex-direction: row; 
-        flex-wrap: wrap;
-        gap: 10px;
-        padding-bottom: 15px;
-    }
-    .page-footer .left-action, .page-footer .right-action {
-        flex-basis: auto;
-        flex-grow: 0;
-    }
-    .page-footer .center-action {
-        flex-basis: 100%;
-        order: 3;
-    }
-    .page-footer .right-action {
-        margin-left: auto;
-    }
-    .page-footer .btn { font-size: 0.9em; padding: 10px 20px; }
-    .page-footer .btn-secondary-link { font-size: 0.9em; padding: 10px; }
-}
-
-/* --- Height Constrained Desktop --- */
-@media (min-width: 992px) and (max-height: 800px) {
-    #current-config-page .step-icon,
-    #ideal-config-page .step-icon,
-    #result-page .step-icon {
-        width: 45px;
-        height: 45px;
-        font-size: 1.2em;
-    }
-    #current-config-page .step-label,
-    #ideal-config-page .step-label,
-    #result-page .step-label {
-        margin-top: 10px;
-        font-size: 0.9em;
-    }
-}
+    <!-- JavaScriptファイルを外部から読み込み -->
+    <!-- データ定義を先に、メインロジックを後に読み込む -->
+    <script src="js/data.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
 
