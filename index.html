@@ -446,7 +446,37 @@
             <h3>製作者について</h3>
             <p>はじめまして、「あの時の鳥です」と申します。この「鶴観調整プランナー」を制作・運営しています。</p>
             <p>精鋭狩りRTAに挑戦する中で、多くの人が直面する「鶴観調整」という高い壁を少しでも低くしたい。そして、この界隈に挑戦する仲間が一人でも増えてくれたら嬉しい。そんな想いで、このツールを丹精込めて制作しました。</p>
-            <p>本サイトの改善案や追加機能のご要望などありましたら、お気軽に相談していただけると幸いです。<br><a href="https://x.com/PIpXlMz1tB5ASjF" target="_blank" rel="noopener noreferrer"><strong>X (旧Twitter) アカウントはこちら</strong></a></p>
+            
+            <hr style="margin: 20px 0;">
+
+            <!-- Request Form -->
+            <div id="request-form-container">
+                <h3>改善案・ご要望フォーム</h3>
+                <p>本サイトの改善案や追加機能のご要望などありましたら、お気軽に相談していただけると幸いです。<br>
+                <small>※このフォームは匿名で送信され、個人情報は一切記録されません。</small>
+                </p>
+                <form id="g-form" 
+                      action="https://docs.google.com/forms/u/0/d/e/1FAIpQLScnbmGsRUGtgFTgBg05rmhRFwvIQ4XJnCKt2PxNJM0fS3JUPw/formResponse"
+                      target="hidden_iframe" 
+                      method="POST">
+                    <div class="form-group">
+                        <label for="form-category">お問い合わせの種類</label>
+                        <select id="form-category" name="entry.12345" required> <!-- Replace with actual name attribute -->
+                            <option value="改善案">改善案</option>
+                            <option value="機能要望">機能要望</option>
+                            <option value="不具合報告">不具合報告</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="form-details">詳細</label>
+                        <textarea id="form-details" name="entry.67890" rows="5" required></textarea> <!-- Replace with actual name attribute -->
+                    </div>
+                    <button type="submit" id="submit-form-btn" class="btn btn-primary">送信する</button>
+                    <p id="form-status-message" style="margin-top: 10px;"></p>
+                </form>
+                <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+            </div>
             
             <hr style="margin: 25px 0;">
 
