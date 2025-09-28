@@ -76,6 +76,11 @@ const TsurumiApp = {
         this.elements.progressText = document.getElementById('progress-text');
         this.elements.idealProgressText = document.getElementById('ideal-progress-text');
         this.elements.validationMessage = document.getElementById('validation-message');
+        
+        // Form
+        this.elements.gForm = document.getElementById('g-form');
+        this.elements.formStatusMessage = document.getElementById('form-status-message');
+
 
         // Result Page
         this.elements.resultTbody = document.getElementById('result-tbody');
@@ -148,6 +153,16 @@ const TsurumiApp = {
         // Screenshot Modal Navigation
         this.elements.screenshotPrevBtn.addEventListener('click', () => this.ui.navigateScreenshotPattern(-1));
         this.elements.screenshotNextBtn.addEventListener('click', () => this.ui.navigateScreenshotPattern(1));
+
+        // Form Submission
+        if (this.elements.gForm) {
+            this.elements.gForm.addEventListener('submit', (e) => {
+                // The default submit is prevented, and our custom handler takes over.
+                // The form's action and target attributes will be used by the handler.
+                this.ui.handleFormSubmit(e);
+            });
+        }
+
 
         // Step Indicator Click Events
         this.elements.steps.forEach(stepEl => {
@@ -614,6 +629,36 @@ const TsurumiApp = {
             const isIdealStarted = Object.keys(TsurumiApp.state.idealConfig).length > 0;
             document.querySelector('#current-map-container .map-guide-text').classList.toggle('hidden', isCurrentStarted);
             document.querySelector('#ideal-map-container .map-guide-text').classList.toggle('hidden', isIdealStarted);
+        },
+        
+        handleFormSubmit: function(event) {
+            event.preventDefault();
+            const form = TsurumiApp.elements.gForm;
+            const statusMessage = TsurumiApp.elements.formStatusMessage;
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            if (!form.checkValidity()) {
+                statusMessage.textContent = '入力されていない項目があります。';
+                statusMessage.style.color = 'red';
+                return;
+            }
+
+            statusMessage.textContent = '送信中...';
+            statusMessage.style.color = 'inherit';
+            submitBtn.disabled = true;
+
+            // The form submission is handled by the form's 'target' attribute pointing to a hidden iframe
+            // We just need to trigger the standard form submit event
+            form.submit();
+
+            // We can't reliably know when the submission is complete with the iframe method,
+            // so we'll show a success message after a short delay.
+            setTimeout(() => {
+                statusMessage.textContent = '送信しました！ご協力ありがとうございます。';
+                statusMessage.style.color = 'green';
+                submitBtn.disabled = false;
+                form.reset();
+            }, 1000); // 1 second delay
         },
         
         showDayDetail: function(dayIndex) {
