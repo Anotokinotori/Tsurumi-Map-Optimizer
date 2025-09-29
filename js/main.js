@@ -195,18 +195,19 @@ const TsurumiApp = {
         this.elements.resultTbody.addEventListener('click', (e) => {
             const target = e.target;
             const row = target.closest('tr');
-            if (!row || !row.dataset.dayIndex) return;
-
-            const dayIndex = parseInt(row.dataset.dayIndex, 10);
+            if (!row) return;
 
             // Handle details button click
             if (target.classList.contains('btn-details')) {
+                const dayIndex = parseInt(target.dataset.dayIndex, 10);
                 this.ui.showDayDetail(dayIndex);
                 return;
             }
-            
-            // Handle progress tracking click (checkbox for desktop, whole row for mobile)
-            this.toggleProgress(dayIndex);
+
+            // Handle progress tracking click
+            if (row.dataset.dayIndex) {
+                 this.toggleProgress(parseInt(row.dataset.dayIndex, 10));
+            }
         });
         
         this.elements.recalculateBtn.addEventListener('click', () => {
@@ -220,10 +221,6 @@ const TsurumiApp = {
         window.addEventListener('resize', () => {
             this.ui.updateMapLayout('current-map-container');
             this.ui.updateMapLayout('ideal-map-container');
-            // Re-render results on resize to toggle mobile/desktop progress UI
-            if (document.getElementById('result-page').classList.contains('active')) {
-                this.ui.displayResults(this.state.lastCalculatedPlan, this.elements.multiplayerCheckbox.checked, this.elements.boatCheckbox.checked);
-            }
         });
 
         this.elements.allMapBgs.forEach(img => {
@@ -237,10 +234,8 @@ const TsurumiApp = {
     },
 
     // --- CORE LOGIC ---
-    updateConfig(configType, groupId, pattern, options = {}) {
-        if (!options.isInitializing) {
-            this.state.activePlanId = null; // Any user config change invalidates the current plan ID
-        }
+    updateConfig(configType, groupId, pattern) {
+        this.state.activePlanId = null; // Any config change invalidates the current plan ID
         const configToUpdate = (configType === 'current') ? this.state.currentConfig : this.state.idealConfig;
         configToUpdate[groupId] = pattern;
         
@@ -321,7 +316,7 @@ const TsurumiApp = {
         }, 50);
     },
 
-    async savePlan() {
+    savePlan() {
         const planName = window.prompt("結果を保存します。名前を入力してください:", "マイプラン " + new Date().toLocaleDateString());
         if (!planName || planName.trim() === "") return;
 
@@ -349,7 +344,7 @@ const TsurumiApp = {
             savedPlans.push(planData);
             localStorage.setItem('tsurumiSavedPlans', JSON.stringify(savedPlans));
             
-            // Re-render the results to attach the new planId to the rows and apply progress
+            // Re-render the results to attach the new planId to the rows
             this.ui.displayResults(this.state.lastCalculatedPlan, planData.isMultiplayer, this.elements.boatCheckbox.checked);
 
         } catch (e) {
@@ -370,18 +365,18 @@ const TsurumiApp = {
             advanceAction: { ...day.advanceAction, affectedGroups: new Set(day.advanceAction.affectedGroups || []) }
         }));
 
-        // Use spread operator to create new objects to avoid reference issues
-        this.state.currentConfig = { ...planToLoad.currentConfig };
-        this.state.idealConfig = { ...planToLoad.idealConfig };
+        this.state.currentConfig = planToLoad.currentConfig;
+        this.state.idealConfig = planToLoad.idealConfig;
         this.state.lastCalculatedPlan = deserializedPlan;
         this.state.activePlanId = planToLoad.id;
         this.elements.multiplayerCheckbox.checked = planToLoad.isMultiplayer;
 
         groupKeys.forEach(groupId => {
-            if (this.state.currentConfig[groupId]) this.updateConfig('current', groupId, this.state.currentConfig[groupId], { isInitializing: true });
-            if (this.state.idealConfig[groupId]) this.updateConfig('ideal', groupId, this.state.idealConfig[groupId], { isInitializing: true });
+            if (this.state.currentConfig[groupId]) this.updateConfig('current', groupId, this.state.currentConfig[groupId]);
+            if (this.state.idealConfig[groupId]) this.updateConfig('ideal', groupId, this.state.idealConfig[groupId]);
         });
         
+        // After loading, we must clear the activePlanId from the state because config changes have been made
         this.state.activePlanId = planToLoad.id;
 
         this.ui.displayResults(this.state.lastCalculatedPlan, planToLoad.isMultiplayer, this.elements.boatCheckbox.checked);
@@ -405,10 +400,20 @@ const TsurumiApp = {
         }
     },
 
+    getSavedPlans() {
+        try {
+            const plansJSON = localStorage.getItem('tsurumiSavedPlans');
+            return plansJSON ? JSON.parse(plansJSON) : [];
+        } catch (e) {
+            console.error("Failed to read saved plans:", e);
+            return [];
+        }
+    },
+
     toggleProgress(dayIndex) {
         if (!this.state.activePlanId) {
             if (window.confirm("結果を保存すると、進捗を記録できます。\n今すぐ保存しますか？")) {
-                this.savePlan(); // This will re-render and enable progress tracking
+                this.savePlan();
             }
             return;
         }
