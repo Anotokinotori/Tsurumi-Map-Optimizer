@@ -1256,6 +1256,8 @@ main {
 
 .show-on-desktop { display: none; }
 .show-flex-on-desktop { display: none; }
+.hide-on-desktop { display: block; } /* Added */
+
 
 .btn-icon {
     display: inline-block;
@@ -1310,7 +1312,7 @@ main {
     }
     .show-on-desktop { display: block; }
     .show-flex-on-desktop { display: flex; }
-    #disclaimer-link-result-mobile { display: none; }
+    .hide-on-desktop { display: none; } /* Added */
     .result-disclaimer-desktop { display: flex; }
 }
 
