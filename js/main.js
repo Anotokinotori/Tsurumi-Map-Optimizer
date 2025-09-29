@@ -601,7 +601,7 @@ const TsurumiApp = {
             TsurumiApp.state.activeSelection.pattern = pattern;
 
             // Update the modal title
-            document.getElementById('screenshot-title').textContent = `${eliteGroups[groupId].name} - パターン ${pattern} で合っていますか？`;
+            document.getElementById('screenshot-title').textContent = `${eliteGroups[groupId].name} - ${pattern} ですか？`;
             
             // Update the image
             const screenshotImg = document.getElementById('screenshot-img');
@@ -931,5 +931,4 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
-
 
