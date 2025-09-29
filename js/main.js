@@ -1,935 +1,569 @@
-const TsurumiApp = {
-    // --- STATE ---
-    // Manages the dynamic data of the application.
-    state: {
-        currentConfig: {},
-        idealConfig: {},
-        activeSelection: { configType: null, groupId: null, pattern: null },
-        lastCalculatedPlan: null,
-    },
-
-    // --- ELEMENTS ---
-    // Caches frequently accessed DOM elements.
-    elements: {},
-
-    // --- INITIALIZATION ---
-    init: function() {
-        this.cacheElements();
-        this.ui.initInputPage('current');
-        this.ui.initInputPage('ideal');
-        this.bindEvents();
-
-        // Check if the info banner was previously closed
-        if (localStorage.getItem('tsurumiBannerClosed') === 'true') {
-            this.elements.infoBanner.style.display = 'none';
-        }
-    },
-
-    cacheElements: function() {
-        this.elements.pages = document.querySelectorAll('.page');
-        this.elements.steps = document.querySelectorAll('.step');
-        this.elements.modals = document.querySelectorAll('.modal');
-        this.elements.allMapBgs = document.querySelectorAll('.map-bg');
-        
-        // Banner
-        this.elements.infoBanner = document.getElementById('info-banner');
-        this.elements.closeBannerBtn = document.getElementById('close-banner-btn');
-        
-        // Buttons
-        this.elements.goToCurrentBtn = document.getElementById('go-to-current-btn');
-        this.elements.guideBtn = document.getElementById('guide-btn');
-        this.elements.tsurumiInfoBtn = document.getElementById('tsurumi-info-btn');
-        this.elements.cycleHoldInfoBtn = document.getElementById('cycle-hold-info-btn');
-        this.elements.disclaimerLink = document.getElementById('disclaimer-link');
-        this.elements.disclaimerLinkResultPC = document.getElementById('disclaimer-link-result-pc');
-        this.elements.disclaimerLinkResultMobile = document.getElementById('disclaimer-link-result-mobile');
-        this.elements.creditTrigger = document.getElementById('credit-modal-trigger');
-        this.elements.logicModalTrigger = document.getElementById('logic-modal-trigger');
-        this.elements.loadPlanBtn = document.getElementById('load-plan-btn');
-        this.elements.goToIdealBtn = document.getElementById('go-to-ideal-btn');
-        this.elements.setRecommendedBtn = document.getElementById('set-recommended-btn');
-        this.elements.copyCurrentBtn = document.getElementById('copy-current-btn');
-        this.elements.calculatePlanBtn = document.getElementById('calculate-plan-btn');
-        this.elements.resetBtn = document.getElementById('reset-btn');
-        this.elements.savePlanBtn = document.getElementById('save-plan-btn');
-        this.elements.savePlanIconBtn = document.getElementById('save-plan-icon-btn');
-        this.elements.backToStartBtn = document.getElementById('back-to-start-btn');
-        this.elements.backToCurrentBtn = document.getElementById('back-to-current-btn');
-        this.elements.backToIdealBtn = document.getElementById('back-to-ideal-btn');
-        this.elements.recalculateBtn = document.getElementById('recalculate-alternate-mode-btn');
-        this.elements.screenshotPrevBtn = document.getElementById('screenshot-prev-btn');
-        this.elements.screenshotNextBtn = document.getElementById('screenshot-next-btn');
-        this.elements.openRequestFormBtn = document.getElementById('open-request-form-from-logic-btn');
-        this.elements.requestFormResultMobileBtn = document.getElementById('request-form-result-mobile-btn');
-        this.elements.requestFormResultPcBtn = document.getElementById('request-form-result-pc-btn');
-
-
-        // Input Tabs
-        this.elements.currentMapTab = document.getElementById('current-map-tab');
-        this.elements.currentListTab = document.getElementById('current-list-tab');
-        this.elements.idealMapTab = document.getElementById('ideal-map-tab');
-        this.elements.idealListTab = document.getElementById('ideal-list-tab');
-
-        // Quick Fill Buttons
-        this.elements.fillAllABtn = document.getElementById('fill-all-a-btn');
-        this.elements.fillAllBBtn = document.getElementById('fill-all-b-btn');
-        this.elements.fillAllCBtn = document.getElementById('fill-all-c-btn');
-
-        // Progress Text
-        this.elements.progressText = document.getElementById('progress-text');
-        this.elements.idealProgressText = document.getElementById('ideal-progress-text');
-        this.elements.validationMessage = document.getElementById('validation-message');
-        
-        // Form
-        this.elements.gForm = document.getElementById('g-form');
-        this.elements.formStatusMessage = document.getElementById('form-status-message');
-
-
-        // Result Page
-        this.elements.resultTbody = document.getElementById('result-tbody');
-        this.elements.resultSummary = document.getElementById('result-summary');
-        this.elements.soloNotice = document.getElementById('solo-mode-notice');
-        this.elements.resultPage = document.getElementById('result-page');
-
-        // Modals
-        this.elements.dayDetailModalContent = document.getElementById('day-detail-content');
-
-        // Checkboxes
-        this.elements.multiplayerCheckbox = document.getElementById('multiplayer-mode-checkbox');
-        this.elements.boatCheckbox = document.getElementById('boat-mode-checkbox');
-    },
-
-    bindEvents: function() {
-        // Banner close button
-        this.elements.closeBannerBtn.addEventListener('click', () => {
-            this.elements.infoBanner.classList.add('hidden');
-            localStorage.setItem('tsurumiBannerClosed', 'true');
-        });
-        
-        // Page Navigation
-        this.elements.goToCurrentBtn.addEventListener('click', () => this.ui.showPage('current-config-page'));
-        this.elements.backToStartBtn.addEventListener('click', () => this.ui.showPage('start-page'));
-        this.elements.backToCurrentBtn.addEventListener('click', () => this.ui.showPage('current-config-page'));
-        this.elements.backToIdealBtn.addEventListener('click', () => this.ui.showPage('ideal-config-page'));
-
-        this.elements.goToIdealBtn.addEventListener('click', (e) => {
-            if (e.currentTarget.disabled) {
-                this.ui.showValidationMessage('すべての配置を入力してください。', e.currentTarget);
-            } else {
-                this.ui.showPage('ideal-config-page');
-            }
-        });
-        
-        // Main Actions
-        this.elements.calculatePlanBtn.addEventListener('click', () => this.calculatePlan());
-        this.elements.resetBtn.addEventListener('click', () => this.resetApp());
-        this.elements.savePlanBtn.addEventListener('click', () => this.savePlan());
-        this.elements.savePlanIconBtn.addEventListener('click', () => this.savePlan());
-        this.elements.loadPlanBtn.addEventListener('click', () => this.ui.openLoadModal());
-
-        // Input Helpers
-        this.elements.setRecommendedBtn.addEventListener('click', () => this.setRecommendedConfig());
-        this.elements.copyCurrentBtn.addEventListener('click', () => this.copyCurrentConfigToIdeal());
-        this.elements.fillAllABtn.addEventListener('click', () => this.fillAllConfigs('A'));
-        this.elements.fillAllBBtn.addEventListener('click', () => this.fillAllConfigs('B'));
-        this.elements.fillAllCBtn.addEventListener('click', () => this.fillAllConfigs('C'));
-
-        // Tab Switching
-        this.elements.currentMapTab.addEventListener('click', () => this.ui.switchInputView('current', 'map'));
-        this.elements.currentListTab.addEventListener('click', () => this.ui.switchInputView('current', 'list'));
-        this.elements.idealMapTab.addEventListener('click', () => this.ui.switchInputView('ideal', 'map'));
-        this.elements.idealListTab.addEventListener('click', () => this.ui.switchInputView('ideal', 'list'));
-
-        // Modals
-        this.elements.guideBtn.addEventListener('click', () => this.ui.showModal('guide-modal'));
-        this.elements.tsurumiInfoBtn.addEventListener('click', () => this.ui.showModal('tsurumi-info-modal'));
-        this.elements.cycleHoldInfoBtn.addEventListener('click', () => this.ui.showModal('cycle-hold-info-modal'));
-        this.elements.disclaimerLink.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
-        this.elements.disclaimerLinkResultPC.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
-        this.elements.disclaimerLinkResultMobile.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
-        this.elements.creditTrigger.addEventListener('click', () => this.ui.showModal('credit-modal'));
-        this.elements.logicModalTrigger.addEventListener('click', () => this.ui.showModal('logic-modal'));
-        this.elements.openRequestFormBtn.addEventListener('click', () => this.ui.showModal('request-modal'));
-        this.elements.requestFormResultMobileBtn.addEventListener('click', () => this.ui.showModal('request-modal'));
-        this.elements.requestFormResultPcBtn.addEventListener('click', () => this.ui.showModal('request-modal'));
-        document.querySelectorAll('.modal-close').forEach(el => {
-            el.addEventListener('click', () => this.ui.closeModal(el.dataset.target));
-        });
-        
-        // Screenshot Modal Navigation
-        this.elements.screenshotPrevBtn.addEventListener('click', () => this.ui.navigateScreenshotPattern(-1));
-        this.elements.screenshotNextBtn.addEventListener('click', () => this.ui.navigateScreenshotPattern(1));
-
-        // Form Submission
-        if (this.elements.gForm) {
-            this.elements.gForm.addEventListener('submit', (e) => {
-                this.ui.handleFormSubmit(e);
-            });
-        }
-
-
-        // Step Indicator Click Events
-        this.elements.steps.forEach(stepEl => {
-            stepEl.addEventListener('click', () => {
-                const step = stepEl.dataset.step;
-                switch (step) {
-                    case '1':
-                        this.ui.showPage('current-config-page');
-                        break;
-                    case '2':
-                        if (!this.elements.goToIdealBtn.disabled) {
-                            this.ui.showPage('ideal-config-page');
-                        }
-                        break;
-                    case '3':
-                        if (this.state.lastCalculatedPlan) {
-                            this.ui.showPage('result-page');
-                        }
-                        break;
-                }
-            });
-        });
-
-        // Result Page Actions
-        this.elements.resultTbody.addEventListener('click', (e) => {
-            if (e.target && e.target.classList.contains('btn-details')) {
-                const dayIndex = parseInt(e.target.dataset.dayIndex, 10);
-                this.ui.showDayDetail(dayIndex);
-            }
-        });
-        this.elements.recalculateBtn.addEventListener('click', () => {
-            const currentMode = this.elements.multiplayerCheckbox.checked;
-            this.elements.multiplayerCheckbox.checked = !currentMode;
-            this.calculatePlan();
-        });
-
-        // Robust layout updates
-        window.addEventListener('resize', () => {
-            this.ui.updateMapLayout('current-map-container');
-            this.ui.updateMapLayout('ideal-map-container');
-        });
-
-        this.elements.allMapBgs.forEach(img => {
-            const containerId = img.closest('.map-container').id;
-            if (img.complete && img.naturalWidth > 0) {
-                this.ui.updateMapLayout(containerId);
-            } else {
-                img.addEventListener('load', () => this.ui.updateMapLayout(containerId));
-            }
-        });
-    },
-
-    // --- CORE LOGIC ---
-    updateConfig(configType, groupId, pattern) {
-        const configToUpdate = (configType === 'current') ? this.state.currentConfig : this.state.idealConfig;
-        configToUpdate[groupId] = pattern;
-        
-        this.ui.updateMarker(configType, groupId, pattern);
-        this.ui.updatePatternButtons(configType, groupId, pattern);
-        this.ui.updateProgress(configType);
-        this.ui.updateGuideTextVisibility();
-    },
-
-    fillAllConfigs(pattern) {
-        groupKeys.forEach(groupId => this.updateConfig('current', groupId, pattern));
-    },
-
-    setRecommendedConfig() {
-        groupKeys.forEach(groupId => {
-            if (recommendedConfig[groupId]) {
-                this.updateConfig('ideal', groupId, recommendedConfig[groupId]);
-            }
-        });
-    },
-
-    copyCurrentConfigToIdeal() {
-        groupKeys.forEach(groupId => {
-            if (this.state.currentConfig[groupId]) {
-                this.updateConfig('ideal', groupId, this.state.currentConfig[groupId]);
-            }
-        });
-    },
-
-    resetApp() {
-        this.state.currentConfig = {};
-        this.state.idealConfig = {};
-        this.state.lastCalculatedPlan = null;
-        this.ui.initInputPage('current');
-        this.ui.initInputPage('ideal');
-        this.ui.updateProgress('current');
-        this.ui.updateProgress('ideal');
-        this.ui.updateGuideTextVisibility();
-        this.ui.showPage('start-page');
-    },
-
-    calculatePlan() {
-        const isMultiplayer = this.elements.multiplayerCheckbox.checked;
-        const allowBoat = this.elements.boatCheckbox.checked;
-
-        if (Object.keys(this.state.currentConfig).length !== totalGroups || Object.keys(this.state.idealConfig).length !== totalGroups) {
-            this.ui.showValidationMessage('全ての現在配置と理想配置を入力してください。', this.elements.calculatePlanBtn);
-            return;
-        }
-
-        const loadingTextEl = document.getElementById('loading-text');
-        if (loadingTextEl) {
-            loadingTextEl.innerHTML = `<span style="display: block; font-size: 1.1em; font-weight: bold; margin-bottom: 15px;">このツールは、<a href="https://youtu.be/2xqllaCTP5c?si=m9yyxXo5GS0rwFG9" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold;">ねこしたさんの解説</a>に基づき、プログラムされました！<br>ぜひ解説動画もご覧ください。</span><span style="font-size: 0.9em; color: var(--secondary-text-color);">計算には数分かかる場合がありますので、しばらくお待ちください。</span>`;
-        }
-        
-        const progressEl = document.getElementById('calculation-progress');
-        const onProgress = (verifiedCount) => {
-            if(progressEl) {
-                progressEl.textContent = `検証済みパターン: ${verifiedCount} / 59049`;
-            }
-        };
-
-        this.ui.showModal('loading-modal');
-        
-        setTimeout(() => {
-            PlanCalculator.findShortestPlan(
-                this.state.currentConfig,
-                this.state.idealConfig,
-                { isMultiplayer, allowBoat, onProgress }
-            ).then(plan => {
-                this.state.lastCalculatedPlan = plan;
-                this.ui.displayResults(plan, isMultiplayer, allowBoat);
-                this.ui.closeModal('loading-modal');
-                if(progressEl) progressEl.textContent = '';
-            });
-        }, 50);
-    },
-
-    savePlan() {
-        const planName = window.prompt("結果を保存します。名前を入力してください:", "マイプラン " + new Date().toLocaleDateString());
-        if (!planName || planName.trim() === "") return;
-
-        const serializablePlan = this.state.lastCalculatedPlan.map(day => ({
-            ...day,
-            holdAction: { ...day.holdAction, affectedGroups: Array.from(day.holdAction.affectedGroups || []) },
-            advanceAction: { ...day.advanceAction, affectedGroups: Array.from(day.advanceAction.affectedGroups || []) }
-        }));
-
-        const planData = {
-            id: Date.now().toString(),
-            name: planName.trim(),
-            currentConfig: this.state.currentConfig,
-            idealConfig: this.state.idealConfig,
-            plan: serializablePlan,
-            isMultiplayer: this.elements.multiplayerCheckbox.checked,
-            createdAt: new Date().toISOString()
-        };
-
-        try {
-            const savedPlans = this.getSavedPlans();
-            savedPlans.push(planData);
-            localStorage.setItem('tsurumiSavedPlans', JSON.stringify(savedPlans));
-        } catch (e) {
-            console.error("Failed to save plan:", e);
-        }
-    },
-
-    loadPlan(planId) {
-        const plans = this.getSavedPlans();
-        const planToLoad = plans.find(p => p.id === planId);
-        if (!planToLoad) {
-            return;
-        }
-
-        const deserializedPlan = planToLoad.plan.map(day => ({
-            ...day,
-            holdAction: { ...day.holdAction, affectedGroups: new Set(day.holdAction.affectedGroups || []) },
-            advanceAction: { ...day.advanceAction, affectedGroups: new Set(day.advanceAction.affectedGroups || []) }
-        }));
-
-        this.state.currentConfig = planToLoad.currentConfig;
-        this.state.idealConfig = planToLoad.idealConfig;
-        this.state.lastCalculatedPlan = deserializedPlan;
-        this.elements.multiplayerCheckbox.checked = planToLoad.isMultiplayer;
-
-        groupKeys.forEach(groupId => {
-            if (this.state.currentConfig[groupId]) this.updateConfig('current', groupId, this.state.currentConfig[groupId]);
-            if (this.state.idealConfig[groupId]) this.updateConfig('ideal', groupId, this.state.idealConfig[groupId]);
-        });
-
-        this.ui.displayResults(this.state.lastCalculatedPlan, planToLoad.isMultiplayer, this.elements.boatCheckbox.checked);
-        this.ui.closeModal('load-plan-modal');
-    },
-
-    deletePlan(planId) {
-        const plans = this.getSavedPlans();
-        const updatedPlans = plans.filter(p => p.id !== planId);
-        try {
-            localStorage.setItem('tsurumiSavedPlans', JSON.stringify(updatedPlans));
-            this.ui.renderSavedPlans();
-        } catch (e) {
-            console.error("Failed to delete plan:", e);
-        }
-    },
-
-    getSavedPlans() {
-        try {
-            const plansJSON = localStorage.getItem('tsurumiSavedPlans');
-            return plansJSON ? JSON.parse(plansJSON) : [];
-        } catch (e) {
-            console.error("Failed to read saved plans:", e);
-            return [];
-        }
-    },
-
-    // --- UI LOGIC ---
-    ui: {
-        initInputPage: function(configType) {
-            const mapContainer = document.getElementById(`${configType}-map-container`);
-            const listContainer = document.getElementById(`${configType}-config-list`);
-            mapContainer.querySelectorAll('.map-marker').forEach(marker => marker.remove());
-            listContainer.innerHTML = '';
-            
-            groupKeys.forEach(groupId => {
-                const group = eliteGroups[groupId];
-                // Map Marker
-                const marker = document.createElement('div');
-                marker.className = 'map-marker glowing';
-                marker.id = `${configType}-marker-${groupId}`;
-                marker.style.backgroundImage = `url(${group.iconUrl})`;
-                marker.addEventListener('click', () => TsurumiApp.ui.openGroupSelector(configType, groupId));
-                mapContainer.appendChild(marker);
-
-                // List Item
-                const item = document.createElement('div');
-                item.className = 'config-item';
-                item.innerHTML = `<span class="config-item-label">${group.name}</span>`;
-                const buttons = document.createElement('div');
-                buttons.className = 'pattern-buttons';
-                buttons.id = `${configType}-buttons-${groupId}`;
-                ['A', 'B', 'C'].forEach(pattern => {
-                    const btn = document.createElement('button');
-                    btn.textContent = pattern;
-                    btn.addEventListener('click', () => TsurumiApp.updateConfig(configType, groupId, pattern));
-                    buttons.appendChild(btn);
-                });
-                item.appendChild(buttons);
-                listContainer.appendChild(item);
-            });
-        },
-
-        showPage: function(pageId) {
-            TsurumiApp.elements.pages.forEach(page => page.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-
-            TsurumiApp.elements.steps.forEach(step => step.classList.remove('active-step'));
-            let activeStepNumber = 1;
-            if (pageId.includes('current')) activeStepNumber = 1;
-            else if (pageId.includes('ideal')) activeStepNumber = 2;
-            else if (pageId.includes('result')) activeStepNumber = 3;
-            
-            document.querySelectorAll(`.step[data-step="${activeStepNumber}"]`).forEach(stepEl => stepEl.classList.add('active-step'));
-            
-            if (pageId.includes('config')) {
-                const containerId = `${pageId.split('-')[0]}-map-container`;
-                this.updateMapLayout(containerId);
-            }
-        },
-
-        updateMapLayout: function(containerId) {
-            const mapContainer = document.getElementById(containerId);
-            if (!mapContainer || !mapContainer.offsetParent) return;
-
-            const mapImage = mapContainer.querySelector('.map-bg');
-            if (!mapImage || !mapImage.complete || mapImage.naturalWidth === 0) return;
-
-            const markers = mapContainer.querySelectorAll('.map-marker');
-            const containerRect = mapContainer.getBoundingClientRect();
-            const imageAspectRatio = mapImage.naturalWidth / mapImage.naturalHeight;
-            const containerAspectRatio = containerRect.width / containerRect.height;
-
-            let renderedWidth, renderedHeight, offsetX, offsetY;
-            if (imageAspectRatio > containerAspectRatio) {
-                renderedWidth = containerRect.width;
-                renderedHeight = renderedWidth / imageAspectRatio;
-                offsetX = 0;
-                offsetY = (containerRect.height - renderedHeight) / 2;
-            } else {
-                renderedHeight = containerRect.height;
-                renderedWidth = renderedHeight * imageAspectRatio;
-                offsetX = (containerRect.width - renderedWidth) / 2;
-                offsetY = 0;
-            }
-
-            markers.forEach(marker => {
-                const groupId = marker.id.split('-')[2];
-                const pos = markerPositions[groupId];
-                if (pos) {
-                    const newLeft = offsetX + (renderedWidth * (parseFloat(pos.left) / 100));
-                    const newTop = offsetY + (renderedHeight * (parseFloat(pos.top) / 100));
-                    marker.style.left = `${newLeft - marker.offsetWidth / 2}px`;
-                    marker.style.top = `${newTop - marker.offsetHeight / 2}px`;
-                }
-            });
-        },
-
-        displayResults: function(plan, isMultiplayer, allowBoat) {
-            const summaryEl = document.getElementById('result-summary-text');
-            const summaryText = !plan ? '8日以内に完了する調整プランは見つかりませんでした。'
-                              : plan.length === 0 ? '調整は不要です！'
-                              : `最短 ${plan.length} 日で調整可能！`;
-            
-            summaryEl.textContent = summaryText;
-
-            TsurumiApp.elements.soloNotice.style.display = isMultiplayer ? 'none' : '';
-            
-            const recalcBtnText = document.getElementById('recalculate-btn-text');
-            if (recalcBtnText) {
-                recalcBtnText.textContent = isMultiplayer ? '周期ホールドOFFで再計算' : '周期ホールドONで再計算';
-            }
-            TsurumiApp.elements.recalculateBtn.className = isMultiplayer ? 'btn btn-primary' : 'btn btn-multi';
-            
-            const showSaveButtons = plan && plan.length > 0;
-            document.getElementById('save-plan-btn').style.display = showSaveButtons ? '' : 'none';
-            document.getElementById('save-plan-icon-btn').style.display = showSaveButtons ? '' : 'none';
-
-            const tbody = TsurumiApp.elements.resultTbody;
-            tbody.innerHTML = '';
-            if (plan) {
-                plan.forEach((day, index) => {
-                    const tr = document.createElement('tr');
-                    const modeClass = day.mode === 'ソロ' ? 'mode-solo' : 'mode-multi';
-                    tr.innerHTML = `
-                        <td>${index + 1}日目</td>
-                        <td><span class="${modeClass}">${day.mode}</span></td>
-                        <td>${day.holdAction.name}</td>
-                        <td>${day.advanceAction.name}</td>
-                        <td><button class="btn btn-details" data-day-index="${index}">手順を確認</button></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            }
-            this.showPage('result-page');
-
-            TsurumiApp.elements.resultPage.scrollTop = 0;
-            try { window.scrollTo(0, 0); } catch(e) {/* ignore */}
-        },
-
-        showModal: function(modalId) { document.getElementById(modalId).classList.add('active'); },
-        closeModal: function(modalId) { document.getElementById(modalId).classList.remove('active'); },
-        switchInputView: function(configType, view) {
-            document.getElementById(`${configType}-map-tab`).classList.toggle('active', view === 'map');
-            document.getElementById(`${configType}-list-tab`).classList.toggle('active', view === 'list');
-            document.getElementById(`${configType}-map-view`).classList.toggle('active', view === 'map');
-            document.getElementById(`${configType}-list-view`).classList.toggle('active', view === 'list');
-            if (view === 'map') this.updateMapLayout(`${configType}-map-container`);
-        },
-        updateProgress: function(configType) {
-            const config = (configType === 'current') ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig;
-            const progressEl = (configType === 'current') ? TsurumiApp.elements.progressText : TsurumiApp.elements.idealProgressText;
-            const count = Object.keys(config).length;
-            progressEl.textContent = `入力完了: ${count} / ${totalGroups}`;
-            if (configType === 'current') {
-                TsurumiApp.elements.goToIdealBtn.disabled = count !== totalGroups;
-            }
-            if (configType === 'ideal') {
-                TsurumiApp.elements.calculatePlanBtn.disabled = count !== totalGroups;
-            }
-        },
-        updateMarker: function(configType, groupId, pattern) {
-            const marker = document.getElementById(`${configType}-marker-${groupId}`);
-            // Reset all state-related classes
-            marker.classList.remove('glowing', 'completed', 'completed-a', 'completed-b', 'completed-c');
-            
-            // Set the pattern text inside the marker
-            marker.innerHTML = pattern;
-
-            // Add a class corresponding to the selected pattern for color styling
-            marker.classList.add(`completed-${pattern.toLowerCase()}`);
-        },
-        updatePatternButtons: function(configType, groupId, pattern) {
-             document.getElementById(`${configType}-buttons-${groupId}`).querySelectorAll('button').forEach(btn => {
-                btn.classList.toggle('selected', btn.textContent === pattern);
-            });
-        },
-        openGroupSelector: function(configType, groupId) {
-            TsurumiApp.state.activeSelection = { configType, groupId };
-            document.getElementById('zoom-title').textContent = `${eliteGroups[groupId].name} のパターンを選択`;
-            const zoomContainer = document.getElementById('zoom-map-container');
-            const zoomMapImage = zoomContainer.querySelector('img');
-            this.setupImageLoader(zoomMapImage, eliteGroups[groupId].zoomMapUrl);
-
-            zoomContainer.querySelectorAll('.pattern-marker').forEach(m => m.remove());
-            const selectedPattern = (configType === 'current' ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig)[groupId];
-
-            ['A', 'B', 'C'].forEach(pattern => {
-                const pos = patternMarkerPositions[groupId]?.[pattern];
-                if (!pos) return;
-
-                const marker = document.createElement('div');
-                marker.className = 'pattern-marker';
-                marker.innerHTML = `<span class="pattern-label">${pattern}</span>`;
-                if (pattern === selectedPattern) {
-                    marker.classList.add('completed');
-                    marker.innerHTML = '✔';
-                }
-
-                marker.style.top = `${100 - parseFloat(pos.bottom)}%`;
-                marker.style.left = `${100 - parseFloat(pos.right)}%`;
-                marker.addEventListener('click', () => this.selectPatternForConfirmation(pattern));
-                zoomContainer.appendChild(marker);
-            });
-            this.showModal('zoom-view');
-        },
-        selectPatternForConfirmation: function(pattern) {
-             // Set the initial pattern when opening the screenshot view
-            TsurumiApp.state.activeSelection.pattern = pattern;
-            
-            // Update the view with the initial pattern
-            this.updateScreenshotView(pattern);
-            
-            // Set up the confirmation button
-            document.getElementById('confirm-pattern-btn').onclick = () => {
-               const { configType, groupId, pattern } = TsurumiApp.state.activeSelection;
-               if (configType && groupId && pattern) TsurumiApp.updateConfig(configType, groupId, pattern);
-               this.closeModal('screenshot-popup');
-               this.closeModal('zoom-view');
-            };
-            
-            // Show the modal
-            this.showModal('screenshot-popup');
-        },
-        updateScreenshotView: function(pattern) {
-            const { groupId } = TsurumiApp.state.activeSelection;
-            if (!groupId) return;
-
-            // Update the active selection state with the new pattern
-            TsurumiApp.state.activeSelection.pattern = pattern;
-
-            // Update the modal title
-            document.getElementById('screenshot-title').textContent = `${eliteGroups[groupId].name} - ${pattern} ですか？`;
-            
-            // Update the image
-            const screenshotImg = document.getElementById('screenshot-img');
-            this.setupImageLoader(screenshotImg, screenshotImageUrls[groupId]?.[pattern]);
-        },
-        navigateScreenshotPattern: function(direction) {
-            const patterns = ['A', 'B', 'C'];
-            const { pattern } = TsurumiApp.state.activeSelection;
-            const currentIndex = patterns.indexOf(pattern);
-            const nextIndex = (currentIndex + direction + patterns.length) % patterns.length;
-            const nextPattern = patterns[nextIndex];
-            
-            // Update the view to show the next pattern
-            this.updateScreenshotView(nextPattern);
-        },
-        setupImageLoader: function(imgElement, src) {
-            const container = imgElement.parentElement;
-            if (!container || !container.classList.contains('image-container')) return;
-            container.classList.remove('loaded');
-            imgElement.onload = () => container.classList.add('loaded');
-            imgElement.onerror = () => { container.querySelector('.image-loader').textContent = '読込失敗'; };
-            imgElement.src = src || 'https://placehold.co/1x1/ffffff/ffffff?text=';
-        },
-        showValidationMessage: function(message, targetElement) {
-            const validationMessage = TsurumiApp.elements.validationMessage;
-            validationMessage.textContent = message;
-            validationMessage.classList.add('show');
-            targetElement.classList.add('shake');
-            setTimeout(() => validationMessage.classList.remove('show'), 2000);
-            setTimeout(() => targetElement.classList.remove('shake'), 600);
-        },
-        updateGuideTextVisibility: function() {
-            const isCurrentStarted = Object.keys(TsurumiApp.state.currentConfig).length > 0;
-            const isIdealStarted = Object.keys(TsurumiApp.state.idealConfig).length > 0;
-            document.querySelector('#current-map-container .map-guide-text').classList.toggle('hidden', isCurrentStarted);
-            document.querySelector('#ideal-map-container .map-guide-text').classList.toggle('hidden', isIdealStarted);
-        },
-        
-        handleFormSubmit: function(event) {
-            event.preventDefault();
-            const form = TsurumiApp.elements.gForm;
-            const statusMessage = TsurumiApp.elements.formStatusMessage;
-            const submitBtn = form.querySelector('button[type="submit"]');
-
-            if (!form.checkValidity()) {
-                statusMessage.textContent = '入力されていない項目があります。';
-                statusMessage.style.color = 'red';
-                return;
-            }
-
-            statusMessage.textContent = '送信中...';
-            statusMessage.style.color = 'inherit';
-            submitBtn.disabled = true;
-            
-            // This is a flag for the iframe's onload event
-            const iframe = document.getElementById('hidden_iframe');
-            if(iframe) {
-                iframe.submitted = true; 
-            }
-            
-            form.submit();
-        },
-        handleFormSuccess: function() {
-            const form = TsurumiApp.elements.gForm;
-            const statusMessage = TsurumiApp.elements.formStatusMessage;
-            const submitBtn = form.querySelector('button[type="submit"]');
-            
-            statusMessage.textContent = '送信しました！ご協力ありがとうございます。';
-            statusMessage.style.color = 'green';
-            submitBtn.disabled = false;
-            form.reset();
-
-            // Reset the flag
-            const iframe = document.getElementById('hidden_iframe');
-            if(iframe) {
-                iframe.submitted = false;
-            }
-        },
-        
-        showDayDetail: function(dayIndex) {
-            const plan = TsurumiApp.state.lastCalculatedPlan;
-            if (!plan || isNaN(dayIndex) || !plan[dayIndex]) return;
-
-            const dayData = plan[dayIndex];
-            const dayNumber = dayIndex + 1;
-            document.getElementById('day-detail-title').textContent = `${dayNumber}日目の手順詳細`;
-            TsurumiApp.elements.dayDetailModalContent.innerHTML = this.generateDayDetailHTML(dayData);
-            TsurumiApp.elements.dayDetailModalContent.querySelectorAll('.image-container img').forEach(img => {
-                this.setupImageLoader(img, img.dataset.src);
-                img.src = img.dataset.src;
-            });
-            this.showModal('day-detail-modal');
-        },
-        generateDayDetailHTML: function(dayData) {
-            let html = '<p style="text-align:center; color: var(--secondary-text-color);"><strong>【重要】</strong>「歩き」や「ボート」での移動は、<strong>ルートを慎重に確認し、チャスカのような飛行系キャラは使用しないでください。</strong></p>';
-            if (dayData.mode === 'ソロ') {
-                html += `<h3>ソロモードでの行動</h3>` + this.generateActionDetailsHTML(dayData.advanceAction);
-            } else {
-                 html += `<h3>マルチモード（周期ホールド）での行動</h3>
-                        <h4>Step 1: 準備</h4>
-                        <p>ホスト(1P)は鶴観以外の安全な場所に移動し、ゲスト(2P)を世界に招き入れます。</p>
-                        <h4>Step 2: 周期のホールド (ゲストの操作)</h4>
-                        <p><strong>[重要]</strong> まずホスト(1P)が層岩巨淵・地下鉱区など、<strong>テイワット以外のマップに移動</strong>するのを待ちます。</p>
-                        <p>ホストの移動後、ゲスト(2P)は以下の行動で指定されたグループの周期を読み込みます。</p>`
-                        + this.generateActionDetailsHTML(dayData.holdAction) +
-                        `<p><strong>[重要]</strong> ゲストは上記行動を終えたら、速やかにホストの世界から退出してください。</p>
-                        <h4 style="margin-top: 25px;">Step 3: 周期の進行 (ホストの操作)</h4>
-                        <p>ゲストが退出してソロ状態に戻った後、ホスト(1P)は以下の行動で、ゲストが<strong>読み込まなかった</strong>グループの周期を1つ<strong>進めます</strong>。</p>`
-                        + this.generateActionDetailsHTML(dayData.advanceAction, dayData.holdAction);
-            }
-            return html;
-        },
-        generateActionDetailsHTML: function(actionData, holdActionData = {affectedGroups: new Set()}) {
-            if (!actionData || !actionData.name || actionData.name === '---' || actionData.name === '何もしない') return '<p>特別な行動は不要です。</p>';
-
-            const effectiveGroups = new Set([...actionData.affectedGroups].filter(x => !holdActionData.affectedGroups.has(x)));
-            if (effectiveGroups.size === 0) return '<p>特別な行動は不要です。</p>';
-            
-            const affectedGroupsList = Array.from(effectiveGroups).map(key => `「${eliteGroups[key].name}」`).join('、');
-            let html = `<p><strong>影響を受けるグループ:</strong> ${affectedGroupsList}</p><ul>`;
-            const actions = actionData.name.split(' + ');
-            
-            actions.forEach(actionName => {
-                const action = actionsData.find(a => a.name === actionName);
-                if (!action || ![...action.affectedGroups].some(g => effectiveGroups.has(g))) return;
-
-                const details = actionDetails[action.id] || {};
-                html += `<li><strong>${actionName}</strong><p>${(details.note || '').replace(/\n/g, '<br>')}</p>`;
-                if (details.images) {
-                    details.images.forEach(imgUrl => {
-                        html += `<div class="image-container"><div class="image-loader">読込中...</div><img data-src="${imgUrl}" alt="${actionName}のルート図"></div>`;
-                    });
-                }
-                if (details.videoUrl) html += `<div class="video-container"><iframe src="${details.videoUrl.replace('youtu.be/','youtube.com/embed/').split('?si=')[0]}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-                html += `</li>`;
-            });
-            return html + '</ul>';
-        },
-        openLoadModal: function() {
-            this.renderSavedPlans();
-            this.showModal('load-plan-modal');
-        },
-        renderSavedPlans: function() {
-            const plans = TsurumiApp.getSavedPlans();
-            const listEl = document.getElementById('saved-plans-list');
-            const noPlansEl = document.getElementById('no-saved-plans');
-            listEl.innerHTML = '';
-            noPlansEl.style.display = plans.length === 0 ? 'block' : 'none';
-            listEl.style.display = plans.length > 0 ? '' : 'none';
-
-            plans.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(plan => {
-                const li = document.createElement('li');
-                li.className = 'saved-plan-item';
-                li.innerHTML = `<span class="saved-plan-item-name">${plan.name}</span>
-                                <div class="saved-plan-item-actions">
-                                    <button class="btn btn-primary btn-load" data-plan-id="${plan.id}">読込</button>
-                                    <button class="btn btn-delete" data-plan-id="${plan.id}">削除</button>
-                                </div>`;
-                li.querySelector('.btn-load').addEventListener('click', () => TsurumiApp.loadPlan(plan.id));
-                li.querySelector('.btn-delete').addEventListener('click', () => TsurumiApp.deletePlan(plan.id));
-                listEl.appendChild(li);
-            });
-        }
-    }
-};
-
-// --- CALCULATION SERVICE ---
-// A pure object for handling complex calculations without side effects.
-const PlanCalculator = {
-    findShortestPlan: function(startConfig, idealConfig, options) {
-        return new Promise(resolve => {
-            const { isMultiplayer, allowBoat, onProgress } = options;
-            const actionsToUse = this.getAvailableActions(allowBoat);
-            
-            const PATTERN_MAP = { 'A': 0, 'B': 1, 'C': 2 };
-            const endConfigArr = groupKeys.map(k => idealConfig[k] ? PATTERN_MAP[idealConfig[k]] : -1);
-    
-            let startState = 0;
-            for (let i = 0; i < groupKeys.length; i++) {
-                startState = startState * 3 + PATTERN_MAP[startConfig[groupKeys[i]]];
-            }
-    
-            if (this.isStateGoal(startState, endConfigArr)) {
-                resolve([]);
-                return;
-            }
-    
-            const queue = [{ state: startState, path: [] }];
-            const visited = new Set([startState]);
-            let verifiedCount = 0;
-
-            const processChunk = () => {
-                const startTime = Date.now();
-                while (queue.length > 0 && (Date.now() - startTime < 50)) {
-                    const { state, path } = queue.shift();
-                    verifiedCount++;
-
-                    if (path.length >= 8) continue;
-    
-                    const currentStateArr = this.stateToArray(state);
-                    let solutionPath = null;
-    
-                    // Solo mode actions
-                    for (const soloAction of actionsToUse) {
-                        const nextState = this.applyAction(currentStateArr, soloAction.affectedGroups);
-                        if (!visited.has(nextState)) {
-                            const newPath = [...path, { holdAction: { name: '---' }, advanceAction: soloAction, mode: 'ソロ' }];
-                            if (this.isStateGoal(nextState, endConfigArr)) {
-                                solutionPath = newPath;
-                                break;
-                            }
-                            visited.add(nextState);
-                            queue.push({ state: nextState, path: newPath });
-                        }
-                    }
-                    if (solutionPath) {
-                        resolve(solutionPath);
-                        return;
-                    }
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鶴観調整プランナー（周期ホールド対応）</title>
+    <!-- CSSファイルを外部から読み込み -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="site-header backdrop-blur">
+        <div class="header-title-container">
+            <h1>
+                <span class="title-long">鶴観調整プランナー（周期ホールド対応）</span>
+                <span class="title-short">鶴観調整プランナー</span>
+            </h1>
+        </div>
+        <div class="header-info">
+            <span class="header-version">Ver. 1.2.2</span>
+            <span class="credit-separator">|</span>
+            <!-- 製作者リンクをボタンに変更 -->
+            <button id="logic-modal-trigger" class="header-link-btn">製作者: あの時の鳥です</button>
+        </div>
+    </header>
+
+    <div id="info-banner" class="info-banner">
+        <p>鶴観の精鋭の仕組みについて詳しく知りたい方は、<a href="https://youtu.be/2xqllaCTP5c?si=m9yyxXo5GS0rwFG9" target="_blank" rel="noopener noreferrer">こちらの解説動画</a>をご覧ください。</p>
+        <button id="close-banner-btn" class="close-banner-btn" title="閉じる">&times;</button>
+    </div>
+
+    <main>
+        <div class="container backdrop-blur">
+
+            <!-- Page 1: Start Screen -->
+            <div id="start-page" class="page active">
+                <div class="page-content-wrapper">
+                    <div class="start-header">
+                        <div class="start-title-container">
+                             <h1>鶴観調整プランナー</h1>
+                             <button id="tsurumi-info-btn" class="info-btn" title="鶴観調整とは？">？</button>
+                        </div>
+                        <p class="subtitle">現在と理想の配置を入力すると、最短調整スケジュールを計算します</p>
+                    </div>
                     
-                    if (isMultiplayer) {
-                        for (const holdAction of actionsToUse) {
-                            for (const advanceAction of actionsToUse) {
-                                const effectiveAdvance = new Set([...advanceAction.affectedGroups].filter(x => !holdAction.affectedGroups.has(x)));
-                                if (effectiveAdvance.size === 0) continue;
-        
-                                const nextState = this.applyAction(currentStateArr, effectiveAdvance);
-                                if (!visited.has(nextState)) {
-                                     const newPath = [...path, { holdAction, advanceAction, mode: 'マルチ' }];
-                                     if (this.isStateGoal(nextState, endConfigArr)) {
-                                        solutionPath = newPath;
-                                        break;
-                                     }
-                                     visited.add(nextState);
-                                     queue.push({ state: nextState, path: newPath });
-                                }
-                            }
-                            if (solutionPath) break;
-                        }
-                    }
-                    if (solutionPath) {
-                        resolve(solutionPath);
-                        return;
-                    }
-                }
-    
-                if (queue.length > 0) {
-                    if (onProgress) onProgress(verifiedCount);
-                    setTimeout(processChunk, 0);
-                } else {
-                    if (onProgress) onProgress(verifiedCount);
-                    resolve(null);
-                }
-            };
+                    <div class="steps-container">
+                        <div class="step" data-step="1"> <div class="step-icon">①</div> <div class="step-label">現在の配置を入力</div> </div>
+                        <div class="step-arrow">→</div>
+                        <div class="step" data-step="2"> <div class="step-icon">②</div> <div class="step-label">理想の配置を入力</div> </div>
+                        <div class="step-arrow">→</div>
+                        <div class="step" data-step="3"> <div class="step-icon">③</div> <div class="step-label">調整スケジュール</div> </div>
+                    </div>
+
+                    <div class="start-buttons">
+                        <button id="go-to-current-btn" class="btn btn-primary">調整を始める</button>
+                        <button id="load-plan-btn" class="btn btn-secondary">保存したプランを読み込む</button>
+                    </div>
+
+                    <div class="start-footer">
+                        <div class="multi-mode-toggle">
+                            <input type="checkbox" id="boat-mode-checkbox">
+                            <label for="boat-mode-checkbox">ボートでの配置調整を許可</label>
+                        </div>
+                        <div class="multi-mode-toggle">
+                            <input type="checkbox" id="multiplayer-mode-checkbox">
+                            <label for="multiplayer-mode-checkbox">周期ホールドを有効化</label>
+                            <button id="cycle-hold-info-btn" class="help-icon" title="周期ホールドとは？">?</button>
+                        </div>
+                         <div class="footer-links">
+                             <button id="guide-btn" class="btn btn-secondary-link">使い方ガイド</button>
+                             <span class="link-separator">|</span>
+                             <button id="disclaimer-link" class="btn btn-secondary-link">注意事項</button>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page 2: Current Configuration Input -->
+            <div id="current-config-page" class="page">
+                <div class="page-content-wrapper">
+                    <div class="page-header">
+                        <button id="back-to-start-btn" class="btn-back" aria-label="戻る"></button>
+                        <div class="steps-container">
+                            <div class="step" data-step="1"> <div class="step-icon">①</div> <div class="step-label">現在の配置を入力</div> </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step" data-step="2"> <div class="step-icon">②</div> <div class="step-label">理想の配置を入力</div> </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step" data-step="3"> <div class="step-icon">③</div> <div class="step-label">調整スケジュール</div> </div>
+                        </div>
+                        <div class="header-placeholder"></div>
+                    </div>
+
+                    <div class="view-switcher">
+                        <button id="current-map-tab" class="view-tab active" data-view="map">マップ表示</button>
+                        <button id="current-list-tab" class="view-tab" data-view="list">リスト表示</button>
+                    </div>
+
+                    <div class="input-views-container">
+                        <div id="current-map-view" class="input-view active">
+                            <div class="map-container" id="current-map-container">
+                                 <div class="map-guide-text">アイコンをタップして選択</div>
+                                 <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/input_page_map.png?raw=true" alt="鶴観マップ" class="map-bg">
+                            </div>
+                        </div>
+                        <div id="current-list-view" class="input-view">
+                            <div class="config-list" id="current-config-list">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="page-footer">
+                        <div class="left-action">
+                            <div class="quick-fill-buttons show-flex-on-desktop">
+                                <span class="quick-fill-label">一括入力:</span>
+                                <button id="fill-all-a-btn" class="btn btn-secondary btn-small">A</button>
+                                <button id="fill-all-b-btn" class="btn btn-secondary btn-small">B</button>
+                                <button id="fill-all-c-btn" class="btn btn-secondary btn-small">C</button>
+                            </div>
+                        </div>
+                        <div class="center-action">
+                            <div class="progress-text" id="progress-text">入力完了: 0 / 10</div>
+                        </div>
+                        <div class="right-action">
+                            <div id="validation-message" class="validation-message"></div>
+                            <button id="go-to-ideal-btn" class="btn btn-primary" disabled>理想の配置へ</button>
+                        </div>
+                   </div>
+                </div>
+            </div>
             
-            processChunk();
-        });
-    },
+            <!-- Page 3: Ideal Configuration Input -->
+            <div id="ideal-config-page" class="page">
+                <div class="page-content-wrapper">
+                     <div class="page-header">
+                        <button id="back-to-current-btn" class="btn-back" aria-label="戻る"></button>
+                        <div class="steps-container">
+                            <div class="step" data-step="1"> <div class="step-icon">①</div> <div class="step-label">現在の配置を入力</div> </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step" data-step="2"> <div class="step-icon">②</div> <div class="step-label">理想の配置を入力</div> </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step" data-step="3"> <div class="step-icon">③</div> <div class="step-label">調整スケジュール</div> </div>
+                        </div>
+                        <div class="header-placeholder"></div>
+                    </div>
 
-    applyAction: function(stateArr, affectedGroups) {
-        const nextStateArr = [...stateArr];
-        for (const group of affectedGroups) {
-            const idx = groupKeys.indexOf(group);
-            nextStateArr[idx] = (nextStateArr[idx] + 1) % 3;
-        }
-        return this.arrayToState(nextStateArr);
-    },
+                    <div class="view-switcher">
+                        <button id="ideal-map-tab" class="view-tab active" data-view="map">マップ表示</button>
+                        <button id="ideal-list-tab" class="view-tab" data-view="list">リスト表示</button>
+                    </div>
+
+                    <div class="input-views-container">
+                        <div id="ideal-map-view" class="input-view active">
+                            <div class="map-container" id="ideal-map-container">
+                                 <div class="map-guide-text">アイコンをタップして選択</div>
+                                 <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/input_page_map.png?raw=true" alt="鶴観マップ" class="map-bg">
+                            </div>
+                        </div>
+                        <div id="ideal-list-view" class="input-view">
+                            <div class="config-list" id="ideal-config-list">
+                            </div>
+                        </div>
+                    </div>
+
+                     <div class="page-footer">
+                        <div class="left-action">
+                             <button class="btn btn-secondary" id="set-recommended-btn">環境配置</button>
+                             <button class="btn btn-secondary show-on-desktop" id="copy-current-btn">現在配置をコピー</button>
+                        </div>
+                        <div class="center-action">
+                            <div class="progress-text" id="ideal-progress-text">入力完了: 0 / 10</div>
+                        </div>
+                        <div class="right-action">
+                            <button id="calculate-plan-btn" class="btn btn-primary" disabled>調整プランを計算</button>
+                        </div>
+                   </div>
+                </div>
+            </div>
+
+            <!-- Page 4: Result Page -->
+            <div id="result-page" class="page">
+                <div class="page-content-wrapper">
+                     <div class="page-header">
+                        <button id="back-to-ideal-btn" class="btn-back" aria-label="戻る"></button>
+                         <div class="steps-container">
+                            <div class="step" data-step="1"> <div class="step-icon">①</div> <div class="step-label">現在の配置を入力</div> </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step" data-step="2"> <div class="step-icon">②</div> <div class="step-label">理想の配置を入力</div> </div>
+                            <div class="step-arrow">→</div>
+                            <div class="step" data-step="3"> <div class="step-icon">③</div> <div class="step-label">調整スケジュール</div> </div>
+                        </div>
+                        <div class="header-placeholder"></div>
+                    </div>
+
+                    <div class="result-grid">
+                        <div class="result-layout-container">
+                            <div class="result-map-container">
+                                <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88%202025-09-21%20161308.png?raw=true" alt="鶴観マップ 結果表示" class="map-bg">
+                            </div>
+                            <div class="result-actions-container">
+                                <div id="solo-mode-notice" class="solo-notice show-on-desktop">
+周期ホールドを使わない調整方法です。使用すると期間をもっと短縮できるかもしれません。<a href="https://youtu.be/2xqllaCTP5c?si=UyMkRCct-Z1Pp5HI&t=1194" target="_blank" rel="noopener noreferrer">詳しくは動画で</a>
+                                </div>
+                                <button id="recalculate-alternate-mode-btn" class="btn">
+                                    <span class="btn-icon icon-recalc"></span>
+                                    <span id="recalculate-btn-text"></span>
+                                </button>
+                                <button id="save-plan-btn" class="btn btn-secondary">
+                                    <span class="btn-icon icon-save"></span>
+                                    <span>結果を保存</span>
+                                </button>
+                                <button id="reset-btn" class="btn btn-secondary">
+                                    <span class="btn-icon icon-reset"></span>
+                                    <span>リセット</span>
+                                </button>
+                                <div class="footer-links hide-on-desktop">
+                                    <button id="disclaimer-link-result-mobile" class="btn btn-secondary-link">注意事項</button>
+                                    <span class="link-separator">|</span>
+                                    <button id="request-form-result-mobile-btn" class="btn btn-secondary-link">リクエストフォーム</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="result-details" class="result-details-container">
+                             <div id="result-summary">
+                                 <button id="save-plan-icon-btn" class="save-icon-btn" title="結果を保存"></button>
+                                 <span id="result-summary-text"></span>
+                             </div>
+                             <div class="result-table-container">
+                                 <table class="result-table">
+                                     <thead>
+                                         <tr>
+                                             <th class="progress-col">完了</th>
+                                             <th>日付</th>
+                                             <th>モード</th>
+                                             <th>2P(ホールド役)の行動</th>
+                                             <th>1P(ホスト)の行動</th>
+                                             <th>詳細</th>
+                                         </tr>
+                                     </thead>
+                                     <tbody id="result-tbody"></tbody>
+                                 </table>
+                             </div>
+                             <p class="result-footer-link">
+                                鶴観のロード範囲（移動ルート）について詳しく知りたい方は<a href="https://note.com/nekoshita_g/n/n485ff9b3df29" target="_blank" rel="noopener noreferrer">こちら</a>
+                             </p>
+                             <div class="result-disclaimer-desktop footer-links">
+                                <button id="disclaimer-link-result-pc" class="btn btn-secondary-link">注意事項</button>
+                                <span class="link-separator">|</span>
+                                <button id="request-form-result-pc-btn" class="btn btn-secondary-link">リクエストフォーム</button>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- Modals -->
+    <div id="guide-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="guide-modal">&times;</span>
+            <h2>使い方ガイド</h2>
+            <p>このプランナーは、鶴観の精鋭エネミーの配置を、最短日数で理想の配置に調整するためのスケジュールを計算します。</p>
+            
+            <hr>
+
+            <h3>Step 1: 現在の配置を入力</h3>
+            <p>まず、あなたの世界の現在のエネミー配置を10ヶ所すべて入力します。「マップ表示」または「リスト表示」で入力できます。</p>
+            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%8F%BE%E5%9C%A8.gif?raw=true" alt="マップ入力画面" style="width:100%; border-radius: 8px; margin-top: 10px;">
+            <p style="margin-top: 10px;">マップ上のアイコンをタップすると、詳細なマップが表示され、A/B/Cのパターンを選択できます。選択に迷ったら、スクリーンショットで実際のゲーム画面を確認できます。</p>
+            
+            <hr>
+
+            <h3>Step 2: 理想の配置を入力</h3>
+            <p>次に、目標とする理想の配置を<strong>10ヶ所すべて</strong>入力します。正しい計算結果を得るため、すべての配置を入力してください。</p>
+            <p>便利な「環境配置を自動入力」ボタンも活用してください。</p>
+            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%90%86%E6%83%B3.gif?raw=true" alt="理想配置の入力" style="width:100%; border-radius: 8px; margin-top: 10px;">
+            
+            <hr>
+            
+            <h3>Step 3: スケジュールを計算・確認</h3>
+            <p>入力が終わったら、「調整プランを計算」ボタンを押します。</p>
+            <p>スタートページで「周期ホールドを有効にする」にチェックを入れていると、マルチプレイを前提とした最短ルートを計算します。</p>
+            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%B5%90%E6%9E%9C.gif?raw=true" alt="結果表示画面" style="width:100%; border-radius: 8px; margin-top: 10px;">
+
+            <hr>
+
+            <h3>ご注意</h3>
+            <p style="text-align: left; line-height: 1.7; font-size: 0.9em;">
+                このサイトは、私が個人的に制作した非公式のファンツールです。計算結果の正確性には万全を期していますが、ゲームのアップデートなどにより、情報が古くなったり、予期せぬ不具合が発生したりする可能性もございます。<br>
+                本サイトの利用によって生じたいかなる損害についても、制作者は一切の責任を負いかねますので、あらかじめご了承ください。ご利用は自己責任でお願いいたします。
+            </p>
+        </div>
+    </div>
     
-    stateToArray: function(state) {
-        const arr = [];
-        for (let i = groupKeys.length - 1; i >= 0; i--) {
-            arr[i] = state % 3;
-            state = Math.floor(state / 3);
-        }
-        return arr;
-    },
-
-    arrayToState: function(arr) {
-        let state = 0;
-        for (let i = 0; i < arr.length; i++) {
-            state = state * 3 + arr[i];
-        }
-        return state;
-    },
-
-    isStateGoal: function(state, endConfigArr) {
-        const currentStateArr = this.stateToArray(state);
-        for (let i = 0; i < groupKeys.length; i++) {
-            if (endConfigArr[i] !== -1 && endConfigArr[i] !== currentStateArr[i]) {
-                return false;
-            }
-        }
-        return true;
-    },
-
-    getAvailableActions: function(allowBoat) {
-        let actions = actionsData;
-        if (!allowBoat) {
-            actions = actions.filter(action => !action.name.includes('ボート'));
-        }
-
-        const achievablePatterns = new Map();
-        achievablePatterns.set(JSON.stringify([]), { name: '何もしない', affectedGroups: new Set() });
+    <div id="tsurumi-info-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="tsurumi-info-modal">&times;</span>
+            <h2>鶴観調整とは？</h2>
+            <p>鶴観調整とは、鶴観マップの一部の精鋭エネミーの「出現パターン」を、プレイヤーが意図的にコントロールするテクニックのことです。</p>
+            <p>その調整の中でも特に複雑で時間のかかる<strong>「何日にどこをロードすれば良いか」というスケジュールの計画を自動で行い、最短ルートを提案するのがこの『鶴観調整プランナー』です。</strong></p>
+            
+            <hr style="margin: 15px 0;">
         
-        for (let i = 1; i < (1 << actions.length); i++) {
-            const currentActions = [];
-            const affectedGroupsSet = new Set();
-            for (let j = 0; j < actions.length; j++) {
-                if ((i >> j) & 1) {
-                    const action = actions[j];
-                    currentActions.push(action);
-                    action.affectedGroups.forEach(group => affectedGroupsSet.add(group));
-                }
-            }
-            const key = JSON.stringify([...affectedGroupsSet].sort());
-            if (!achievablePatterns.has(key)) {
-                achievablePatterns.set(key, {
-                    name: currentActions.map(a => a.name).join(' + '),
-                    affectedGroups: affectedGroupsSet
-                });
-            }
-        }
-        return Array.from(achievablePatterns.values());
-    }
-};
+            <h3>調整の基本的な仕組み</h3>
+            <ul style="text-align: left; list-style: none; padding-left: 0;">
+                <li style="margin-bottom: 10px;"><strong>3つの配置パターン:</strong> 調整対象のエネミーには「A」「B」「C」の3つの出現パターンがあり、それぞれ数や位置が異なります。このパターンは10箇所のエネミーグループごとに独立しています。</li>
+                <li style="margin-bottom: 10px;"><strong>「ロード」による周期の進行:</strong> エネミーのパターンは、ワープや移動でそのエネミーに近づき、<strong>ゲーム内に「ロード」された時にだけ</strong>次のパターンへ1つ進みます。逆を言えば、ロードしなければパターンは変わりません。</li>
+                <li style="margin-bottom: 10px;"><strong>選択的なロード:</strong> 特定の場所へワープしたり、決まったルートを移動したりすることで、一部のエネミーだけを狙ってロードし、周期を進めることができます。これが「調整」の基本となります。</li>
+            </ul>
+        
+            <h4><strong>【重要】調整作業における注意点</strong></h4>
+            <p style="text-align: left;">鶴観調整は、配置の確認から計画の実行まで、<strong>すべての工程で精密な計画と慎重な操作が求められます。</strong><br>特に、意図しないエネミーをロードしてしまうと計画が大きく崩れる可能性があります。当プランナーを利用する際も、ご自身の現在の配置を正確に入力し、算出されたスケジュールを慎重に実行してください。</p>
+        
+            <hr style="margin: 15px 0;">
+        
+            <p style="text-align: center;">鶴観の精鋭の仕組みについて、より深く、正確に知りたい方は、<br>ぜひ、ねこしたさんのこちらの解説動画をご覧ください。<br>
+                <a href="https://youtu.be/2xqllaCTP5c?si=Pp_a3tTTLpFmB54B" target="_blank" rel="noopener noreferrer"><strong>【原神】鶴観の精鋭の仕組みと調整方法</strong></a>
+            </p>
+        </div>
+    </div>
+
+    <div id="cycle-hold-info-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="cycle-hold-info-modal">&times;</span>
+            <h2>周期ホールドとは？</h2>
+            <p>周期ホールドとは、<strong>マルチプレイを利用して</strong>鶴観調整をより効率的に行うための<strong>高度なテクニック</strong>です。</p>
+            <p><strong>このプランナーで「周期ホールドを有効化」すると、この高度なテクニックを前提とした最短の調整スケジュールを自動で算出します。</strong>ソロでの調整よりも手順は複雑になりますが、調整にかかる日数を大幅に短縮できる可能性があります。</p>
+            
+            <hr style="margin: 15px 0;">
+        
+            <h3>周期ホールドの仕組み</h3>
+            <p>通常、エネミーをロードすると周期は1つ進みますが、周期ホールドを使うと<strong>「ロードしたにもかかわらず、周期を進めない」</strong>という特殊な状況を作り出せます。</p>
+            <p>これにより、調整したくないエネミーの周期を「ホールド（維持）」したまま、目的のエネミーの周期だけを進める、という精密な操作が可能になります。</p>
+        
+            <h4>🎨 たとえ話：2人での壁塗り</h4>
+            <p>このテクニックは、2人で行う壁塗りのようなものです。</p>
+            <ul style="text-align: left; list-style: none; padding-left: 0;">
+                <li style="margin-bottom: 5px;"><strong>壁:</strong> 鶴観の10ヶ所の精鋭グループ</li>
+                <li style="margin-bottom: 5px;"><strong>1P (ホスト):</strong> 壁を青く塗る<strong>「ペイント役」</strong>。周期を進めたい人です。</li>
+                <li style="margin-bottom: 5px;"><strong>2P (ゲスト/ホールド役):</strong> 壁が塗られないよう保護する<strong>「マスキングテープ役」</strong>。周期を進めたくない人です。</li>
+            </ul>
+            <p style="text-align: left;">ソロ調整は、ペイント役が1人で作業するのと同じです。塗ろうとした場所はすべて青くなります（周期が進みます）。<br>一方、周期ホールド（マルチ調整）では、まず2Pがマスキングテープで壁を保護します。その後、1Pが塗装をすると、最終的に青く塗られるのは<strong>「1Pが塗ろうとした範囲」から「2Pがマスキングテープで保護した範囲」を<u>除いた部分</u></strong>だけになります。</p>
+            <p style="text-align: left;">このように、周期ホールドは不要な部分の周期進行を防ぐ「マスキングテープ」の役割を果たし、より正確で素早い調整を実現します。</p>
+            <p style="text-align: left; margin-top: 10px;">理論上は複雑に聞こえるかもしれませんが、<strong>当プランナーで計算した後の結果画面では、各日の「手順を確認」ボタンから、ホスト役（1P）とホールド役（2P）がそれぞれ具体的にどの行動をすべきかが示されます。</strong></p>
+        
+            <hr style="margin: 15px 0;">
+        
+            <p style="text-align: center;">周期ホールドの具体的な手順や詳細な解説については、<br>ぜひ、ねこしたさんの動画をご覧ください。（該当の解説箇所から再生されます）<br>
+                <a href="https://www.youtube.com/watch?v=2xqllaCTP5c&t=1194s" target="_blank" rel="noopener noreferrer"><strong>周期ホールドの解説はこちら</strong></a>
+            </p>
+        </div>
+    </div>
 
 
-// --- APP START ---
-document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+    <div id="disclaimer-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="disclaimer-modal">&times;</span>
+            <h2>注意事項</h2>
+            
+            <hr style="margin: 10px 0;">
 
+            <h4>正確性とリスクについて</h4>
+            <p style="text-align: left; line-height: 1.7; font-size: 0.9em;">
+                このサイトは、私が個人的に制作した非公式のファンツールです。<br>
+                計算結果の正確性には万全を期しておりますが、ゲームのアップデート等により情報が古くなる可能性や、予期せぬ不具合が発生する可能性もございます。<br>
+                また、配置を誤って入力した場合、当然ながら正しくない調整スケジュールが出力されます。入力内容が正しいか、十分にご確認ください。
+            </p>
+
+            <h4 style="margin-top: 20px;">免責事項</h4>
+            <p style="text-align: left; line-height: 1.7; font-size: 0.9em;">
+                本サイトを利用したことで生じたいかなる損害についても、制作者は一切の責任を負いかねます。<br>
+                すべての操作は、自己責任の上で慎重に行っていただきますよう、お願いいたします。
+            </p>
+        </div>
+    </div>
+    
+    <div id="zoom-view" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="zoom-view">&times;</span>
+            <h3 id="zoom-title"></h3>
+            <div id="zoom-map-container" class="image-container">
+                <div class="image-loader">読み込み中...</div>
+                <img src="https://placehold.co/800x500/e9e9e9/333?text=Zoomed+Area" alt="ズームマップ">
+            </div>
+        </div>
+    </div>
+
+    <div id="screenshot-popup" class="modal backdrop-blur">
+        <div class="modal-content">
+             <span class="modal-close" data-target="screenshot-popup">&times;</span>
+             <div style="text-align: center; margin-bottom: 15px;">
+                <p style="color: var(--danger-color); font-weight: bold; margin: 0;">この画像と実際のプレイ画面を慎重に比較してください</p>
+                <h3 id="screenshot-title" style="margin: 5px 0 0 0;"></h3>
+             </div>
+             <div class="image-container">
+                <button id="screenshot-prev-btn" class="zoom-nav-btn prev" aria-label="前のパターン"></button>
+                <div class="image-loader">読み込み中...</div>
+                <img id="screenshot-img" src="https://placehold.co/500x300/eef2ff/312e81?text=In-Game+Screenshot" alt="ゲーム内スクリーンショット">
+                <button id="screenshot-next-btn" class="zoom-nav-btn next" aria-label="次のパターン"></button>
+             </div>
+             <button id="confirm-pattern-btn" class="btn btn-primary" style="margin-top: 15px;">確定</button>
+        </div>
+    </div>
+    
+    <div id="loading-modal" class="modal">
+         <div class="modal-content" style="text-align: center;">
+            <h2 style="font-size: 2.5em; margin-bottom: 10px;">計算中...</h2>
+            <p id="loading-text">最適なルートを探索しています。<br>組み合わせが複雑な場合、十数秒かかることがあります。</p>
+            <div class="loader"></div>
+            <div id="calculation-progress"></div>
+         </div>
+    </div>
+    
+    <div id="day-detail-modal" class="modal backdrop-blur">
+         <div class="modal-content">
+              <span class="modal-close" data-target="day-detail-modal">&times;</span>
+              <h2 id="day-detail-title"></h2>
+              <div id="day-detail-content"></div>
+       </div>
+    </div>
+
+    <div id="credit-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="credit-modal">&times;</span>
+            <h2>Special Thanks</h2>
+            <p>このツールの開発にあたり、「ねこした」さんより多大なるご協力をいただきました。<br>心より感謝申し上げます。</p>
+            
+            <hr style="margin: 20px 0;">
+            
+            <h4>■ 画像・情報提供</h4>
+            <p>ツール内で使用している各配置の画像や、精鋭エネミーの出現パターンに関する情報は、以下のnote記事を参考にさせていただきました。非常に分かりやすくまとめられており、開発の大きな助けとなりました。</p>
+            <p style="padding-left: 1em;"><strong>note記事:</strong> <a href="https://note.com/nekoshita_g/n/nba4aff6a13ff" target="_blank" rel="noopener noreferrer">【原神】鶴観の精鋭の仕組みと調整方法</a></p>
+            
+            <h4>■ 調整方法の解説</h4>
+            <p>本ツールの計算ロジックは、以下の動画で解説されている調整方法を基にプログラムとして実装したものです。鶴観調整の仕組みそのものについて、大変分かりやすく解説されていますので、ぜひご覧ください。</p>
+            <p style="padding-left: 1em;"><strong>解説動画:</strong> <a href="https://youtu.be/2xqllaCTP5c?si=jY3Vn64mj6y91Vte" target="_blank" rel="noopener noreferrer">【原神】鶴観の精鋭の仕組みと調整方法 (YouTube)</a></p>
+            
+            <hr style="margin: 20px 0;">
+            
+            <p style="text-align: center;">
+                <a href="https://www.youtube.com/@nekoshita_g" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="text-decoration: none;">ねこしたさんのYouTubeチャンネルはこちら</a>
+            </p>
+        </div>
+    </div>
+    
+    <div id="load-plan-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="load-plan-modal">&times;</span>
+            <h2>保存したプランを読み込む</h2>
+            <ul id="saved-plans-list">
+                <!-- Saved plans will be dynamically inserted here -->
+            </ul>
+            <p id="no-saved-plans">保存されたプランはありません。</p>
+        </div>
+    </div>
+
+    <!-- Logic & Author Modal -->
+    <div id="logic-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="logic-modal">&times;</span>
+            <h2>製作者と計算の仕組みについて</h2>
+
+            <h3>製作者について</h3>
+            <p>はじめまして、「あの時の鳥です」と申します。この「鶴観調整プランナー」を制作・運営しています。</p>
+            <p>精鋭狩りRTAに挑戦する中で、多くの人が直面する「鶴観調整」という高い壁を少しでも低くしたい。そして、この界隈に挑戦する仲間が一人でも増えてくれたら嬉しい。そんな想いで、このツールを丹精込めて制作しました。</p>
+            <p>
+                <a href="https://x.com/PIpXlMz1tB5ASjF" target="_blank" rel="noopener noreferrer"><strong>X (旧Twitter) アカウント: @PIpXlMz1tB5ASjF</strong></a>
+            </p>
+            
+            <hr style="margin: 20px 0;">
+            
+            <button id="open-request-form-from-logic-btn" class="btn btn-secondary" style="width: 100%; margin-bottom: 25px;">改善案・ご要望はこちら</button>
+
+            <h3>計算ロジックの正しさと「最短」であることの証明</h3>
+            <p>このプランナーが提示するスケジュールは、なぜ<strong>正しく</strong>、かつ<strong>「最短」</strong>であると保証できるのでしょうか？<br>
+            それは、当てずっぽうや魔法のような方法ではなく、<strong>ゲーム内の確定的なルール</strong>を土台とし、それを<strong>正確な数式モデル</strong>へ変換、その上で<strong>数学的に証明されたアルゴリズム</strong>を用いて解を探索しているからです。</p>
+
+            <h4 style="margin-top:20px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Step 1: 前提となる「ゲームのルール」</h4>
+            <p style="text-align: left;">まず、大前提として、プランナーは以下の<strong>ゲーム内の確定的な法則</strong>に基づいて計算を行っています。</p>
+            <ul style="text-align: left; list-style: none; padding-left: 1em;">
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span><strong>ルール1：</strong>調整対象の精鋭は10グループあり、各グループは必ず「A, B, C」の3パターンのいずれかの状態になります。</li>
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span><strong>ルール2：</strong>パターンは、プレイヤーがその場に近づき「ロード」するという行為によってのみ、A→B→C→A と1つずつ進みます。</li>
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span><strong>ルール3：</strong>どの行動（ワープや移動）が、どのグループをロードするかは、先人たちの膨大な検証によってデータ化されています。（当サイトもそのデータを基にしています）</li>
+            </ul>
+            <p style="text-align: left;">プランナーは、これらの不変のルールとデータをパズルのピースとして利用します。</p>
+
+            <h4 style="margin-top:20px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Step 2: ルールを「数式モデル」に変換する (正しさの証明)</h4>
+            <p style="text-align: left;">次に、このルールをコンピュータが計算できる「数式モデル」に置き換えます。</p>
+            <ul style="text-align: left; list-style: none; padding-left: 1em;">
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span><strong>ルールの数値化:</strong> 鶴観の10個の精鋭グループがそれぞれ3パターンの状態を持つということは、3の10乗、すなわち<strong>59,049通り</strong>もの膨大な配置パターンが存在することを意味します。プランナーは、この59,049通りの全パターンを、それぞれ重複しないユニークな番号（状態番号）に変換します。</li>
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span>「ワープ②」や「歩き⑬」といった各調整アクションは、「<strong>ある状態番号</strong>を受け取ったら、ルール（`data.js`）に従って影響範囲のパターンを1つ進め、<strong>別の状態番号</strong>を返す関数」としてモデル化されます。</li>
+            </ul>
+            <p style="text-align: left;"><strong>結論:</strong> ゲーム内で起こりうる<strong>全ての配置パターン</strong>と、プレイヤーが取りうる<strong>全ての調整アクション</strong>を、このように漏れなく数値と数式の関係に変換することで、プランナーはゲーム内の鶴観調整をPC上で<strong>完全にシミュレート</strong>することが可能になります。これにより、計算ロジックが<strong>ゲームのルール通りに正しく機能する</strong>ことが保証されます。</p>
+
+            <h4 style="margin-top:20px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Step 3: どうやって最短ルートを探しているのか？</h4>
+            <p style="text-align: left;">ルール通りに動くシミュレーターが完成したら、次はその中から最短ルートを探します。この探し方は、駅の「最短乗り換え案内」のロジックと非常によく似ています。</p>
+            <div style="background-color: #f3f4f6; border-left: 4px solid #d1d5db; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                <p><strong>たとえ話：最短乗り換え案内</strong></p>
+                <ul style="padding-left: 2em; list-style: disc;">
+                    <li><strong>あなたの現在地:</strong> 現在の配置の「状態番号」</li>
+                    <li><strong>目的地:</strong> あなたが設定した理想の配置の「状態番号」</li>
+                    <li><strong>電車での1回の移動:</strong> 1日分の調整作業（状態番号の変化）</li>
+                </ul>
+            </div>
+            <p style="text-align: left;">目的地までの最短ルートを探すため、プランナーは以下のような手順で、可能性のあるルートを<strong>しらみつぶしに</strong>探索します。</p>
+            <ol style="text-align: left; padding-left: 2em;">
+                <li style="margin-bottom: 5px;">まず、「現在地」から<strong>1回の移動（1日）</strong>で行ける全ての「次の駅（次の日の状態番号）」をリストアップします。</li>
+                <li style="margin-bottom: 5px;">次に、リストアップした全ての駅から、さらに<strong>1回の移動（合計2日）</strong>で行ける全ての駅をリストアップします。</li>
+                <li style="margin-bottom: 5px;">これを、「目的地」の状態番号に到着するまで繰り返します。</li>
+            </ol>
+            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/logic-bfs.png?raw=true" alt="ルート探索のイメージ図" style="width:100%; max-width: 500px; border-radius: 8px; margin-top: 10px; display: block; margin-left: auto; margin-right: auto;">
+
+            <h4 style="margin-top:20px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Step 4: なぜそれが「最短」だと証明できるのか</h4>
+            <p style="text-align: left;">この「しらみつぶし」の探し方には、重要な特徴があります。</p>
+            <p style="text-align: left;">それは、<strong>1日で行けるルートを全て探し尽くしてから、初めて2日で行けるルートを探し始める</strong>、という点です。</p>
+            <p style="text-align: left;">このため、「目的地」に<strong>最初に到着した時点で、それが最も日数が少ない（乗り換えが少ない）ルートである</strong>ことが論理的に保証されます。もし3日で着くルートが見つかった後に、実は2日で着く隠れたルートが見つかる、ということは絶対に起こりません。</p>
+            <p style="text-align: left;">この方法は、コンピュータ科学の世界では「<strong>幅優先探索（BFS）</strong>」と呼ばれるアルゴリズムで、最短経路問題の解法として数学的に確立された、非常にポピュラーなものです。当プランナーは、この信頼性の高いアルゴリズムを採用することで、常に最適な解を導き出しています。</p>
+
+        </div>
+    </div>
+
+    <!-- New Request Form Modal -->
+    <div id="request-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="request-modal">&times;</span>
+             <h3>改善案・ご要望フォーム</h3>
+                <p>本サイトの改善案や追加機能のご要望などありましたら、お気軽に相談していただけると幸いです。<br>
+                <small>※このフォームは匿名で送信され、個人情報は一切記録されません。</small>
+                </p>
+                <form id="g-form" 
+                      action="https://docs.google.com/forms/u/0/d/e/1FAIpQLScnbmGsRUGtgFTgBg05rmhRFwvIQ4XJnCKt2PxNJM0fS3JUPw/formResponse"
+                      target="hidden_iframe" 
+                      method="POST"
+                      onsubmit="this.submitted=true;">
+                    <div class="form-group">
+                        <label for="form-category">お問い合わせの種類</label>
+                        <select id="form-category" name="entry.1439214119" required>
+                            <option value="改善案">改善案</option>
+                            <option value="機能要望">機能要望</option>
+                            <option value="不具合報告">不具合報告</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="form-details">詳細</label>
+                        <textarea id="form-details" name="entry.1299178169" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" id="submit-form-btn" class="btn btn-primary">送信する</button>
+                    <p id="form-status-message" style="margin-top: 10px;"></p>
+                </form>
+                <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="if(this.submitted) { TsurumiApp.ui.handleFormSuccess(); }"></iframe>
+        </div>
+    </div>
+
+
+    <footer class="site-credit-footer backdrop-blur">
+        <p>
+            <span id="credit-modal-trigger">Special Thanks: ねこしたさん (詳細はこちら)</span>
+            <span class="credit-separator">|</span>
+            <span>鶴観を研究してくださった先人の方々</span>
+        </p>
+    </footer>
+
+    <!-- JavaScriptファイルを外部から読み込み -->
+    <!-- データ定義を先に、メインロジックを後に読み込む -->
+    <script src="data.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
 
