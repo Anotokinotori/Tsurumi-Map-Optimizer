@@ -224,7 +224,7 @@ const TsurumiApp = {
         const configToUpdate = (configType === 'current') ? this.state.currentConfig : this.state.idealConfig;
         configToUpdate[groupId] = pattern;
         
-        this.ui.updateMarker(configType, groupId);
+        this.ui.updateMarker(configType, groupId, pattern);
         this.ui.updatePatternButtons(configType, groupId, pattern);
         this.ui.updateProgress(configType);
         this.ui.updateGuideTextVisibility();
@@ -530,11 +530,16 @@ const TsurumiApp = {
                 TsurumiApp.elements.calculatePlanBtn.disabled = count !== totalGroups;
             }
         },
-        updateMarker: function(configType, groupId) {
+        updateMarker: function(configType, groupId, pattern) {
             const marker = document.getElementById(`${configType}-marker-${groupId}`);
-            marker.classList.remove('glowing');
-            marker.classList.add('completed');
-            marker.innerHTML = '✔';
+            // Reset all state-related classes
+            marker.classList.remove('glowing', 'completed', 'completed-a', 'completed-b', 'completed-c');
+            
+            // Set the pattern text inside the marker
+            marker.innerHTML = pattern;
+
+            // Add a class corresponding to the selected pattern for color styling
+            marker.classList.add(`completed-${pattern.toLowerCase()}`);
         },
         updatePatternButtons: function(configType, groupId, pattern) {
              document.getElementById(`${configType}-buttons-${groupId}`).querySelectorAll('button').forEach(btn => {
@@ -926,4 +931,5 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
 
