@@ -195,19 +195,18 @@ const TsurumiApp = {
         this.elements.resultTbody.addEventListener('click', (e) => {
             const target = e.target;
             const row = target.closest('tr');
-            if (!row) return;
+            if (!row || !row.dataset.dayIndex) return;
+
+            const dayIndex = parseInt(row.dataset.dayIndex, 10);
 
             // Handle details button click
             if (target.classList.contains('btn-details')) {
-                const dayIndex = parseInt(target.dataset.dayIndex, 10);
                 this.ui.showDayDetail(dayIndex);
                 return;
             }
-
-            // Handle progress tracking click
-            if (row.dataset.dayIndex) {
-                 this.toggleProgress(parseInt(row.dataset.dayIndex, 10));
-            }
+            
+            // Handle progress tracking click (checkbox for desktop, whole row for mobile)
+            this.toggleProgress(dayIndex);
         });
         
         this.elements.recalculateBtn.addEventListener('click', () => {
@@ -316,7 +315,7 @@ const TsurumiApp = {
         }, 50);
     },
 
-    savePlan() {
+    async savePlan() {
         const planName = window.prompt("結果を保存します。名前を入力してください:", "マイプラン " + new Date().toLocaleDateString());
         if (!planName || planName.trim() === "") return;
 
@@ -344,7 +343,7 @@ const TsurumiApp = {
             savedPlans.push(planData);
             localStorage.setItem('tsurumiSavedPlans', JSON.stringify(savedPlans));
             
-            // Re-render the results to attach the new planId to the rows
+            // Re-render the results to attach the new planId to the rows and apply progress
             this.ui.displayResults(this.state.lastCalculatedPlan, planData.isMultiplayer, this.elements.boatCheckbox.checked);
 
         } catch (e) {
@@ -372,11 +371,12 @@ const TsurumiApp = {
         this.elements.multiplayerCheckbox.checked = planToLoad.isMultiplayer;
 
         groupKeys.forEach(groupId => {
-            if (this.state.currentConfig[groupId]) this.updateConfig('current', groupId, this.state.currentConfig[groupId]);
-            if (this.state.idealConfig[groupId]) this.updateConfig('ideal', groupId, this.state.idealConfig[groupId]);
+            // Use a temporary state object to avoid triggering activePlanId reset
+            const tempState = { ...this.state }; 
+            if (tempState.currentConfig[groupId]) this.updateConfig('current', groupId, tempState.currentConfig[groupId]);
+            if (tempState.idealConfig[groupId]) this.updateConfig('ideal', groupId, tempState.idealConfig[groupId]);
         });
         
-        // After loading, we must clear the activePlanId from the state because config changes have been made
         this.state.activePlanId = planToLoad.id;
 
         this.ui.displayResults(this.state.lastCalculatedPlan, planToLoad.isMultiplayer, this.elements.boatCheckbox.checked);
@@ -384,6 +384,7 @@ const TsurumiApp = {
     },
 
     deletePlan(planId) {
+        if (!window.confirm("このプランを削除しますか？進捗もリセットされます。")) return;
         const plans = this.getSavedPlans();
         const updatedPlans = plans.filter(p => p.id !== planId);
         try {
@@ -399,20 +400,10 @@ const TsurumiApp = {
         }
     },
 
-    getSavedPlans() {
-        try {
-            const plansJSON = localStorage.getItem('tsurumiSavedPlans');
-            return plansJSON ? JSON.parse(plansJSON) : [];
-        } catch (e) {
-            console.error("Failed to read saved plans:", e);
-            return [];
-        }
-    },
-
     toggleProgress(dayIndex) {
         if (!this.state.activePlanId) {
             if (window.confirm("結果を保存すると、進捗を記録できます。\n今すぐ保存しますか？")) {
-                this.savePlan();
+                this.savePlan(); // This will re-render and enable progress tracking
             }
             return;
         }
@@ -543,7 +534,7 @@ const TsurumiApp = {
             
             summaryEl.textContent = summaryText;
 
-            TsurumiApp.elements.soloNotice.style.display = isMultiplayer ? 'none' : '';
+            TsurumiApp.elements.soloNotice.style.display = isMultiplayer ? 'none' : 'block';
             
             const recalcBtnText = document.getElementById('recalculate-btn-text');
             if (recalcBtnText) {
@@ -565,7 +556,10 @@ const TsurumiApp = {
                 plan.forEach((day, index) => {
                     const tr = document.createElement('tr');
                     tr.dataset.dayIndex = index;
-                    tr.dataset.planId = TsurumiApp.state.activePlanId || '';
+                    // Only add planId if it exists, for toggling progress
+                    if (TsurumiApp.state.activePlanId) {
+                         tr.dataset.planId = TsurumiApp.state.activePlanId;
+                    }
                     
                     if (window.innerWidth <= 991) {
                         tr.classList.add('mobile-tappable');
@@ -630,14 +624,11 @@ const TsurumiApp = {
         },
         updateMarker: function(configType, groupId, pattern) {
             const marker = document.getElementById(`${configType}-marker-${groupId}`);
-            // Reset all state-related classes
             marker.classList.remove('glowing', 'completed-a', 'completed-b', 'completed-c');
             
-            // Set the pattern text inside the marker
             marker.innerHTML = pattern;
             marker.style.backgroundImage = 'none';
 
-            // Add a class corresponding to the selected pattern for color styling
             marker.classList.add(`completed-${pattern.toLowerCase()}`);
         },
         updatePatternButtons: function(configType, groupId, pattern) {
@@ -675,13 +666,10 @@ const TsurumiApp = {
             this.showModal('zoom-view');
         },
         selectPatternForConfirmation: function(pattern) {
-             // Set the initial pattern when opening the screenshot view
-            TsurumiApp.state.activeSelection.pattern = pattern;
+             TsurumiApp.state.activeSelection.pattern = pattern;
             
-            // Update the view with the initial pattern
             this.updateScreenshotView(pattern);
             
-            // Set up the confirmation button
             document.getElementById('confirm-pattern-btn').onclick = () => {
                const { configType, groupId, pattern } = TsurumiApp.state.activeSelection;
                if (configType && groupId && pattern) TsurumiApp.updateConfig(configType, groupId, pattern);
@@ -689,20 +677,16 @@ const TsurumiApp = {
                this.closeModal('zoom-view');
             };
             
-            // Show the modal
             this.showModal('screenshot-popup');
         },
         updateScreenshotView: function(pattern) {
             const { groupId } = TsurumiApp.state.activeSelection;
             if (!groupId) return;
 
-            // Update the active selection state with the new pattern
             TsurumiApp.state.activeSelection.pattern = pattern;
 
-            // Update the modal title
             document.getElementById('screenshot-title').textContent = `${eliteGroups[groupId].name} - ${pattern} ですか？`;
             
-            // Update the image
             const screenshotImg = document.getElementById('screenshot-img');
             this.setupImageLoader(screenshotImg, screenshotImageUrls[groupId]?.[pattern]);
         },
@@ -713,7 +697,6 @@ const TsurumiApp = {
             const nextIndex = (currentIndex + direction + patterns.length) % patterns.length;
             const nextPattern = patterns[nextIndex];
             
-            // Update the view to show the next pattern
             this.updateScreenshotView(nextPattern);
         },
         setupImageLoader: function(imgElement, src) {
@@ -755,7 +738,6 @@ const TsurumiApp = {
             statusMessage.style.color = 'inherit';
             submitBtn.disabled = true;
             
-            // This is a flag for the iframe's onload event
             const iframe = document.getElementById('hidden_iframe');
             if(iframe) {
                 iframe.submitted = true; 
@@ -773,7 +755,6 @@ const TsurumiApp = {
             submitBtn.disabled = false;
             form.reset();
 
-            // Reset the flag
             const iframe = document.getElementById('hidden_iframe');
             if(iframe) {
                 iframe.submitted = false;
@@ -849,7 +830,7 @@ const TsurumiApp = {
             const noPlansEl = document.getElementById('no-saved-plans');
             listEl.innerHTML = '';
             noPlansEl.style.display = plans.length === 0 ? 'block' : 'none';
-            listEl.style.display = plans.length > 0 ? '' : 'none';
+            listEl.style.display = plans.length > 0 ? 'flex' : 'none';
 
             plans.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(plan => {
                 const li = document.createElement('li');
