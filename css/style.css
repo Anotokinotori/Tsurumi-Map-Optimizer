@@ -20,7 +20,7 @@
     --btn-secondary-bg-hover: #e5e7eb;
     --danger-color: #ef4444;
     --danger-hover-color: #dc2626;
-    --completed-color: #d1d5db;
+    --completed-color: #e5e7eb; /* A bit darker for better visibility */
 }
 
 body {
@@ -1037,10 +1037,12 @@ main {
     opacity: 0.6;
     background-color: var(--completed-color);
 }
-.result-table tbody tr.is-completed td {
+.result-table tbody tr.is-completed td:not(.progress-col) {
     text-decoration: line-through;
+    color: #6b7280;
 }
 /* End of Progress Tracking Styles */
+
 
 /* --- Modals Content --- */
 #guide-modal .modal-content h2 { font-size: 2.2em; margin-bottom: 15px; }
