@@ -1,1464 +1,930 @@
-/* =================================================================== */
-/* 1. General & Root Styles
-/* =================================================================== */
+const TsurumiApp = {
+    // --- STATE ---
+    // Manages the dynamic data of the application.
+    state: {
+        currentConfig: {},
+        idealConfig: {},
+        activeSelection: { configType: null, groupId: null, pattern: null },
+        lastCalculatedPlan: null,
+    },
 
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+    // --- ELEMENTS ---
+    // Caches frequently accessed DOM elements.
+    elements: {},
 
-:root {
-    --bg-color: #f0f2f5;
-    --panel-bg-color: rgba(255, 255, 255, 0.85);
-    --header-bg-color: rgba(26, 32, 44, 0.85);
-    --primary-text-color: #333;
-    --secondary-text-color: #555;
-    --accent-color: #3B82F6; /* Blue accent */
-    --accent-hover-color: #2563EB;
-    --multiplayer-accent-color: #EC4899; /* Pink for multi */
-    --multiplayer-accent-hover-color: #DB2777;
-    --border-color: #e0e0e0;
-    --shadow-color: rgba(0, 0, 0, 0.1);
-    --btn-secondary-bg: #f3f4f6;
-    --btn-secondary-bg-hover: #e5e7eb;
-    --danger-color: #ef4444;
-    --danger-hover-color: #dc2626;
-}
+    // --- INITIALIZATION ---
+    init: function() {
+        this.cacheElements();
+        this.ui.initInputPage('current');
+        this.ui.initInputPage('ideal');
+        this.bindEvents();
 
-body {
-    font-family: 'Noto Sans JP', sans-serif;
-    margin: 0;
-    padding: 0;
-    background-image: url('https://api.mg-dev.net/api/v1/genshin/backgrounds/Tsurumi%20Island');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden; /* Prevent body scroll on desktop */
-}
+        // Check if the info banner was previously closed
+        if (localStorage.getItem('tsurumiBannerClosed') === 'true') {
+            this.elements.infoBanner.style.display = 'none';
+        }
+    },
 
-h1, h2, h3 {
-    color: var(--primary-text-color);
-}
-
-.backdrop-blur {
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-}
-
-/* =================================================================== */
-/* 2. Layout Components (Header, Footer, Main)
-/* =================================================================== */
-
-.site-header {
-    width: 100%;
-    padding: 10px 40px;
-    background-color: var(--header-bg-color);
-    color: white;
-    box-sizing: border-box;
-    flex-shrink: 0;
-    z-index: 10;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.site-credit-footer {
-    width: 100%;
-    padding: 8px 40px;
-    background-color: var(--header-bg-color);
-    color: #ccc;
-    box-sizing: border-box;
-    flex-shrink: 0;
-    z-index: 10;
-    text-align: center;
-    font-size: 0.9em;
-}
-
-main {
-    flex-grow: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    overflow: hidden; 
-    padding: 2vh 2vw;
-    box-sizing: border-box;
-}
-
-.container {
-    width: 100%;
-    height: 100%; 
-    max-width: 1600px;
-    max-height: 900px;
-    background-color: var(--panel-bg-color);
-    border-radius: 20px;
-    box-shadow: 0 10px 40px var(--shadow-color);
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.page-content-wrapper { 
-    width: 100%; 
-    height: 100%; 
-    display: flex; 
-    flex-direction: column; 
-    justify-content: flex-start; 
-}
-
-/* =================================================================== */
-/* 3. Page Structure & Transitions
-/* =================================================================== */
-
-.page {
-    padding: 2vw 4vw;
-    box-sizing: border-box;
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.35s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    pointer-events: none;
-}
-
-.page.active {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-}
-
-/* =================================================================== */
-/* 4. Common Components
-/* =================================================================== */
-
-/* --- Buttons --- */
-.btn { 
-    border: none; 
-    padding: 14px 28px; 
-    border-radius: 50px; 
-    font-size: clamp(1em, 1.5vw, 1.2em); 
-    cursor: pointer; 
-    transition: all 0.3s ease; 
-    font-weight: bold; 
-    text-decoration: none; 
-    display: inline-block; 
-}
-.btn-primary { 
-    background-color: var(--accent-color); 
-    color: white; 
-    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4); 
-}
-.btn-primary:hover { 
-    background-color: var(--accent-hover-color); 
-    transform: translateY(-3px); 
-    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.5); 
-}
-.btn-secondary {
-    background: var(--btn-secondary-bg);
-    color: var(--secondary-text-color);
-    box-shadow: none;
-    text-decoration: none;
-}
-.btn-secondary:hover {
-    background: var(--btn-secondary-bg-hover);
-    transform: translateY(-2px);
-    color: var(--primary-text-color);
-}
-.btn-secondary-link {
-    background: none; 
-    color: var(--secondary-text-color); 
-    font-size: 1em; 
-    text-decoration: underline; 
-    padding: 10px; 
-    box-shadow: none;
-}
-.btn-secondary-link:hover {
-    background: none; 
-    transform: none; 
-    box-shadow: none; 
-    color: var(--primary-text-color);
-}
-.btn-multi { 
-    background-color: var(--multiplayer-accent-color); 
-    color: white; 
-    box-shadow: 0 5px 15px rgba(236, 72, 153, 0.4); 
-}
-.btn-multi:hover { 
-    background-color: var(--multiplayer-accent-hover-color); 
-    transform: translateY(-3px); 
-    box-shadow: 0 8px 20px rgba(236, 72, 153, 0.5); 
-}
-.btn-details { 
-    background-color: #6b7280; 
-    color: white; 
-    padding: 6px 14px; 
-    border-radius: 20px; 
-    font-size: 0.9em; 
-}
-.btn-details:hover { 
-    background-color: #4b5563; 
-}
-.btn-small {
-    padding: 5px 15px;
-    font-size: 0.9em;
-    border-radius: 20px;
-}
-.btn-delete {
-    background-color: var(--danger-color);
-    color: white;
-    padding: 8px 16px;
-    font-size: 0.9em;
-}
-.btn-delete:hover {
-    background-color: var(--danger-hover-color);
-}
-.btn-load {
-    padding: 8px 16px;
-    font-size: 0.9em;
-}
-.btn:disabled { 
-    background-color: #9ca3af; 
-    cursor: not-allowed; 
-    transform: none; 
-    box-shadow: none; 
-}
-
-/* --- Modals --- */
-.modal { 
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    background-color: rgba(0, 0, 0, 0.6); 
-    z-index: 1000; 
-    opacity: 0; 
-    visibility: hidden; 
-    transition: opacity 0.3s ease; 
-    display: none; 
-    justify-content: center; 
-    align-items: center; 
-    padding: 2vh 2vw; 
-    box-sizing: border-box; 
-}
-.modal.active { 
-    opacity: 1; 
-    visibility: visible; 
-    display: flex; 
-}
-.modal-content { 
-    background-color: #fff; 
-    padding: 30px; 
-    border-radius: 15px; 
-    position: relative; 
-    width: 100%; 
-    max-width: 900px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
-    display: flex; 
-    flex-direction: column; 
-    max-height: 95vh; 
-    overflow-y: auto;
-}
-.modal-close { 
-    position: absolute; 
-    top: 15px; 
-    right: 20px; 
-    font-size: 2.5em; 
-    line-height: 1; 
-    cursor: pointer; 
-    color: #aaa; 
-    transition: color 0.2s; 
-}
-.modal-close:hover { 
-    color: #333; 
-}
-
-/* --- Banners --- */
-.info-banner {
-    background-color: rgba(229, 231, 235, 0.95);
-    color: var(--secondary-text-color);
-    text-align: center;
-    padding: 12px 50px;
-    position: relative;
-    font-size: 0.95em;
-    border-bottom: 1px solid var(--border-color);
-    transition: all 0.4s ease-in-out;
-    overflow: hidden;
-}
-.info-banner.hidden {
-    height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-    opacity: 0;
-}
-.info-banner p { margin: 0; }
-.info-banner a {
-    color: var(--accent-color);
-    font-weight: bold;
-    text-decoration: underline;
-}
-.close-banner-btn {
-    position: absolute;
-    top: 50%;
-    right: 15px;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    font-size: 1.8em;
-    line-height: 1;
-    cursor: pointer;
-    color: #a0aec0;
-    padding: 5px;
-}
-.close-banner-btn:hover {
-    color: var(--primary-text-color);
-}
-
-/* --- Image Loader --- */
-.image-container {
-    position: relative;
-    width: 100%;
-    min-height: 150px;
-    background-color: var(--btn-secondary-bg);
-    border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-}
-.image-loader {
-    color: var(--secondary-text-color);
-    font-weight: bold;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1;
-}
-.image-container img {
-    width: 100%;
-    height: auto;
-    display: block;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-.image-container.loaded .image-loader {
-    display: none;
-}
-.image-container.loaded img {
-    opacity: 1;
-}
-
-/* =================================================================== */
-/* 5. Page-Specific Styles
-/* =================================================================== */
-
-/* --- Start Page --- */
-#start-page .page-content-wrapper {
-     height: auto;
-     justify-content: center;
-     display: flex;
-     flex-direction: column;
-     gap: 2vh;
-}
-#start-page h1 {
-    font-size: clamp(2.5em, 5vw, 4.5em);
-    font-weight: 700;
-    color: #1E3A8A;
-    margin-bottom: 10px;
-}
-.start-title-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-}
-.info-btn {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    width: clamp(30px, 4vw, 40px);
-    height: clamp(30px, 4vw, 40px);
-    border-radius: 50%;
-    border: 2px solid #ccc;
-    background-color: transparent;
-    color: #aaa;
-    font-weight: bold;
-    font-size: clamp(1.2em, 2vw, 1.5em);
-    cursor: pointer;
-    transition: all 0.2s;
-    line-height: 1;
-}
-.info-btn:hover {
-    background-color: #f0f0f0;
-    border-color: #999;
-    color: #888;
-}
-
-#start-page .subtitle {
-    font-size: clamp(1em, 1.5vw, 1.2em);
-    color: var(--secondary-text-color);
-    max-width: 600px;
-    margin: 0 auto;
-    margin-bottom: 10px;
-}
-.start-buttons {
-    margin-top: 50px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    width: 100%;
-}
-.start-buttons .btn {
-    width: 100%;
-    max-width: 450px;
-    box-sizing: border-box;
-}
-#go-to-current-btn {
-    padding: 21px 42px;
-    font-size: clamp(1.5em, 2.25vw, 1.8em);
-}
-.start-footer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    margin-top: 20px;
-}
-.multi-mode-toggle {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    color: var(--secondary-text-color);
-}
-.multi-mode-toggle input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-}
-.multi-mode-toggle label {
-    font-size: 1em;
-    cursor: pointer;
-}
-.help-icon {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background-color: #ccc;
-    border: none;
-    color: white;
-    font-weight: bold;
-    text-decoration: none;
-    font-size: 0.9em;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-.help-icon:hover {
-    background-color: #999;
-}
-.footer-links {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-}
-.link-separator {
-    color: var(--secondary-text-color);
-    opacity: 0.5;
-}
+    cacheElements: function() {
+        this.elements.pages = document.querySelectorAll('.page');
+        this.elements.steps = document.querySelectorAll('.step');
+        this.elements.modals = document.querySelectorAll('.modal');
+        this.elements.allMapBgs = document.querySelectorAll('.map-bg');
+        
+        // Banner
+        this.elements.infoBanner = document.getElementById('info-banner');
+        this.elements.closeBannerBtn = document.getElementById('close-banner-btn');
+        
+        // Buttons
+        this.elements.goToCurrentBtn = document.getElementById('go-to-current-btn');
+        this.elements.guideBtn = document.getElementById('guide-btn');
+        this.elements.tsurumiInfoBtn = document.getElementById('tsurumi-info-btn');
+        this.elements.cycleHoldInfoBtn = document.getElementById('cycle-hold-info-btn');
+        this.elements.disclaimerLink = document.getElementById('disclaimer-link');
+        this.elements.disclaimerLinkResultPC = document.getElementById('disclaimer-link-result-pc');
+        this.elements.disclaimerLinkResultMobile = document.getElementById('disclaimer-link-result-mobile');
+        this.elements.creditTrigger = document.getElementById('credit-modal-trigger');
+        this.elements.logicModalTrigger = document.getElementById('logic-modal-trigger');
+        this.elements.loadPlanBtn = document.getElementById('load-plan-btn');
+        this.elements.goToIdealBtn = document.getElementById('go-to-ideal-btn');
+        this.elements.setRecommendedBtn = document.getElementById('set-recommended-btn');
+        this.elements.copyCurrentBtn = document.getElementById('copy-current-btn');
+        this.elements.calculatePlanBtn = document.getElementById('calculate-plan-btn');
+        this.elements.resetBtn = document.getElementById('reset-btn');
+        this.elements.savePlanBtn = document.getElementById('save-plan-btn');
+        this.elements.savePlanIconBtn = document.getElementById('save-plan-icon-btn');
+        this.elements.backToStartBtn = document.getElementById('back-to-start-btn');
+        this.elements.backToCurrentBtn = document.getElementById('back-to-current-btn');
+        this.elements.backToIdealBtn = document.getElementById('back-to-ideal-btn');
+        this.elements.recalculateBtn = document.getElementById('recalculate-alternate-mode-btn');
+        this.elements.screenshotPrevBtn = document.getElementById('screenshot-prev-btn');
+        this.elements.screenshotNextBtn = document.getElementById('screenshot-next-btn');
+        this.elements.openRequestFormBtn = document.getElementById('open-request-form-from-logic-btn');
+        this.elements.requestFormResultMobileBtn = document.getElementById('request-form-result-mobile-btn');
+        this.elements.requestFormResultPcBtn = document.getElementById('request-form-result-pc-btn');
 
 
-/* --- Input Pages (Shared) --- */
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 15px;
-    flex-shrink: 0;
-}
-.page-footer {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 20px;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-}
-.page-footer .left-action {
-     flex: 1 1 0%;
-     display: flex;
-     justify-content: flex-start;
-     gap: 10px;
-}
-.page-footer .center-action {
-     flex: 1 1 0%;
-     display: flex;
-     justify-content: center;
-     gap: 15px;
-}
- .page-footer .right-action {
-     flex: 1 1 0%;
-     display: flex;
-     justify-content: flex-end;
-     gap: 15px;
-     position: relative; /* For validation message */
-}
-.page-footer .progress-text {
-    text-align: center;
-    font-size: 1.1em;
-    font-weight: bold;
-    color: var(--secondary-text-color);
-}
-.view-switcher { 
-    margin-bottom: 15px; 
-    display: flex; 
-    gap: 10px; 
-    border-bottom: 2px solid var(--border-color); 
-    padding-bottom: 5px; 
-    align-items: center; 
-    flex-wrap: wrap; 
-}
-.view-tab { 
-    padding: 10px 20px; 
-    font-size: 1em; 
-    font-weight: bold; 
-    color: var(--secondary-text-color); 
-    background: none; 
-    border: none; 
-    border-bottom: 3px solid transparent; 
-    cursor: pointer; 
-    transition: all 0.3s; 
-}
-.view-tab.active { 
-    color: var(--accent-color); 
-    border-bottom-color: var(--accent-color); 
-}
-.input-views-container { 
-    flex-grow: 1; 
-    position: relative; 
-    width: 100%; 
-    min-height: 200px; 
-}
-.input-view { 
-    width: 100%; 
-    height: 100%; 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    opacity: 0; 
-    visibility: hidden; 
-    transition: opacity 0.3s ease; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center; 
-}
-.input-view.active { 
-    opacity: 1; 
-    visibility: visible; 
-}
+        // Input Tabs
+        this.elements.currentMapTab = document.getElementById('current-map-tab');
+        this.elements.currentListTab = document.getElementById('current-list-tab');
+        this.elements.idealMapTab = document.getElementById('ideal-map-tab');
+        this.elements.idealListTab = document.getElementById('ideal-list-tab');
 
-/* --- Result Page --- */
-#result-page {
-    overflow-y: auto;
-    justify-content: flex-start;
-}
-#result-page .page-content-wrapper {
-    display: block;
-}
-.result-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
-    align-items: flex-start;
-    width: 100%;
-}
-.result-layout-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    width: 100%;
-}
-.result-map-container {
-    width: 100%;
-    height: auto;
-    max-width: 450px;
-    margin: 0 auto;
-}
-.result-map-container img {
-    width: 100%;
-    height: auto;
-    border-radius: 10px;
-}
-.result-actions-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-}
-.result-actions-container .btn {
-    width: 100%;
-    max-width: 450px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-}
-.result-details-container {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-}
-#result-summary { 
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    font-size: 1.5em; 
-    font-weight: bold; 
-    margin-bottom: 20px; 
-    padding: 15px; 
-    background-color: #eef2ff; 
-    border-radius: 10px; 
-    color: #312e81; 
-    flex-shrink: 0;
-}
-#result-summary-text {
-    flex-grow: 1;
-    text-align: center;
-    padding: 0 40px; /* Add padding to prevent text overlap with icon */
-}
-.save-icon-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 5px;
-    width: 32px;
-    height: 32px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24' fill='none' stroke='%23312e81' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z'%3E%3C/path%3E%3C/svg%3E");
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    opacity: 0.7;
-    transition: opacity 0.2s, transform 0.2s;
-    position: absolute;
-    top: 50%;
-    right: 15px;
-    transform: translateY(-50%);
-    display: none; /* Hide by default */
-}
-.save-icon-btn:hover {
-    opacity: 1;
-    transform: translateY(-50%) scale(1.1);
-}
-.result-table-container { 
-    width: 100%;
-}
-.result-table { 
-    width: 100%; 
-    border-collapse: collapse; 
-}
-.result-table th, .result-table td { 
-    padding: 15px; 
-    text-align: left; 
-    border-bottom: 1px solid var(--border-color); 
-}
-.result-table th { 
-    background-color: #f9f9f9; 
-    position: sticky; 
-    top: 0; 
-    z-index: 1; 
-}
-.result-footer-link {
-    text-align: center;
-    margin-top: 25px;
-    padding: 10px;
-}
-.result-footer-link a {
-    color: var(--accent-color);
-    font-weight: bold;
-    text-decoration: underline;
-    transition: color 0.2s;
-}
-.result-footer-link a:hover {
-    color: var(--accent-hover-color);
-}
-#disclaimer-link-result-mobile { display: none; }
-.result-disclaimer-desktop { 
-    display: none;
-    margin-top: 25px;
-    padding: 10px;
-}
+        // Quick Fill Buttons
+        this.elements.fillAllABtn = document.getElementById('fill-all-a-btn');
+        this.elements.fillAllBBtn = document.getElementById('fill-all-b-btn');
+        this.elements.fillAllCBtn = document.getElementById('fill-all-c-btn');
+
+        // Progress Text
+        this.elements.progressText = document.getElementById('progress-text');
+        this.elements.idealProgressText = document.getElementById('ideal-progress-text');
+        this.elements.validationMessage = document.getElementById('validation-message');
+        
+        // Form
+        this.elements.gForm = document.getElementById('g-form');
+        this.elements.formStatusMessage = document.getElementById('form-status-message');
 
 
-/* =================================================================== */
-/* 6. Specific Component Styles
-/* =================================================================== */
+        // Result Page
+        this.elements.resultTbody = document.getElementById('result-tbody');
+        this.elements.resultSummary = document.getElementById('result-summary');
+        this.elements.soloNotice = document.getElementById('solo-mode-notice');
+        this.elements.resultPage = document.getElementById('result-page');
 
-/* --- Step Indicator --- */
-.steps-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
-    flex-grow: 1;
-}
-.step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer; /* Clickable */
-}
-.step-icon {
-    width: 60px;
-    height: 60px;
-    background-color: #fff;
-    border: 3px solid var(--border-color);
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.5em;
-    font-weight: bold;
-    color: var(--secondary-text-color);
-    box-shadow: 0 4px 10px var(--shadow-color);
-    transition: all 0.3s ease;
-}
-.step-label {
-    margin-top: 15px;
-    font-size: 1.1em;
-    font-weight: bold;
-    color: var(--secondary-text-color);
-    transition: all 0.3s ease;
-}
-.step-arrow {
-    font-size: 2.5em;
-    color: var(--border-color);
-}
-.step.active-step .step-icon {
-    border-color: var(--accent-color);
-    color: var(--accent-color);
-    animation: glowing-step 2s infinite ease-in-out;
-}
-.step.active-step .step-label {
-    color: var(--primary-text-color);
-}
-#start-page .step.active-step .step-icon {
-    animation: none;
-    border-color: var(--accent-color);
-    color: var(--accent-color);
-}
-#start-page .step.active-step .step-label {
-    color: var(--primary-text-color);
-}
-@keyframes glowing-step {
-    0% { box-shadow: 0 0 5px var(--accent-color), 0 0 10px var(--accent-color); transform: scale(1); }
-    50% { box-shadow: 0 0 20px var(--accent-color), 0 0 30px var(--accent-color); transform: scale(1.05); }
-    100% { box-shadow: 0 0 5px var(--accent-color), 0 0 10px var(--accent-color); transform: scale(1); }
-}
+        // Modals
+        this.elements.dayDetailModalContent = document.getElementById('day-detail-content');
 
-/* --- Header & Footer Details --- */
-.site-header .header-title-container {
-    flex-grow: 1;
-}
-.site-header h1 {
-    margin: 0;
-    font-size: clamp(1.2em, 2vw, 1.5em);
-    color: white;
-}
-.header-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    font-size: clamp(0.8em, 1.5vw, 0.9em);
-    color: #ccc;
-}
-.header-link-btn {
-    background: none;
-    border: none;
-    color: #ccc;
-    font-family: inherit;
-    font-size: 1em;
-    cursor: pointer;
-    text-decoration: underline;
-    transition: color 0.2s;
-    padding: 0;
-}
-.header-link-btn:hover {
-    color: #fff;
-}
-.site-credit-footer p {
-    margin: 0;
-    padding: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 5px;
-}
-#credit-modal-trigger {
-    cursor: pointer;
-    transition: color 0.2s;
-}
-#credit-modal-trigger:hover {
-    color: #fff;
-    text-decoration: underline;
-}
-.credit-separator { margin: 0 10px; }
-.site-credit-footer a {
-    color: #fff;
-    text-decoration: underline;
-    transition: color 0.2s;
-}
-.site-credit-footer a:hover {
-    color: #ccc;
-    text-decoration: none;
-}
-.title-short { display: none; }
-.btn-back {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    width: 40px;
-    height: 40px;
-    background-image: url('https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/chevron_backward_41dp_1F1F1F_FILL0_wght400_GRAD0_opsz40.png?raw=true');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    opacity: 0.6;
-    transition: opacity 0.2s;
-}
-.btn-back:hover { opacity: 1; }
-.header-placeholder { width: 40px; flex-shrink: 0; }
+        // Checkboxes
+        this.elements.multiplayerCheckbox = document.getElementById('multiplayer-mode-checkbox');
+        this.elements.boatCheckbox = document.getElementById('boat-mode-checkbox');
+    },
 
-/* --- Map & List Input Views --- */
-.map-container { 
-    position: relative; 
-    width: 100%; 
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-.map-guide-text {
-    position: absolute;
-    top: 5%;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(0, 0, 0, 0.6);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 1em;
-    font-weight: bold;
-    pointer-events: none;
-    z-index: 5;
-    opacity: 0.8;
-    transition: opacity 0.5s ease-in-out;
-    animation: pulsing-text 2.5s infinite ease-in-out;
-}
-.map-guide-text.hidden {
-    opacity: 0;
-    animation: none;
-}
-@keyframes pulsing-text {
-    0% { opacity: 0.7; transform: translateX(-50%) scale(1); }
-    50% { opacity: 1; transform: translateX(-50%) scale(1.03); }
-    100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
-}
-.map-container img.map-bg {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-    object-fit: contain; 
-    border-radius: 10px; 
-}
-.map-marker { 
-    position: absolute; 
-    width: clamp(28px, 5vw, 40px);
-    height: clamp(28px, 5vw, 40px);
-    background-color: rgba(59, 130, 246, 0.7); 
-    background-size: cover;
-    background-position: center;
-    border-radius: 50%; border: 3px solid var(--accent-color); 
-    cursor: pointer; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    font-weight: bold; 
-    color: white; 
-    font-size: 1.1em; 
-    transition: all 0.3s ease; 
-}
-.map-marker.glowing { animation: glowing 2s infinite; }
-.map-marker.completed { 
-    background-color: #10B981; 
-    border-color: white; 
-    animation: none; 
-    background-image: none !important;
-}
-@keyframes glowing { 
-    0% { box-shadow: 0 0 8px var(--accent-color); } 
-    50% { box-shadow: 0 0 55px var(--accent-color); } 
-    100% { box-shadow: 0 0 8px var(--accent-color); } 
-}
-.config-list { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-    gap: 15px; 
-    width: 100%; 
-    max-width: 1000px; 
-    overflow-y: auto; 
-    padding: 15px; 
-    height: 100%;
-}
-.config-item { 
-    background-color: #f9f9f9; 
-    padding: 15px; 
-    border-radius: 10px; 
-    border: 1px solid var(--border-color); 
-    text-align: left;
-}
-.config-item-label { 
-    font-size: 1.1em; 
-    font-weight: bold; 
-    margin-bottom: 10px; 
-    display: block; 
-}
-.pattern-buttons button { 
-    background: #fff; 
-    color: var(--secondary-text-color); 
-    border: 2px solid var(--border-color); 
-    padding: 10px; 
-    margin: 2px; 
-    border-radius: 5px; 
-    cursor: pointer; 
-    width: 50px; 
-    font-size: 1em; 
-    transition: all 0.2s; 
-}
-.pattern-buttons button:hover { border-color: var(--accent-hover-color); }
-.pattern-buttons button.selected { 
-    background: var(--accent-color); 
-    color: white; 
-    border-color: var(--accent-color); 
-}
+    bindEvents: function() {
+        // Banner close button
+        this.elements.closeBannerBtn.addEventListener('click', () => {
+            this.elements.infoBanner.classList.add('hidden');
+            localStorage.setItem('tsurumiBannerClosed', 'true');
+        });
+        
+        // Page Navigation
+        this.elements.goToCurrentBtn.addEventListener('click', () => this.ui.showPage('current-config-page'));
+        this.elements.backToStartBtn.addEventListener('click', () => this.ui.showPage('start-page'));
+        this.elements.backToCurrentBtn.addEventListener('click', () => this.ui.showPage('current-config-page'));
+        this.elements.backToIdealBtn.addEventListener('click', () => this.ui.showPage('ideal-config-page'));
 
-/* --- Form & Validation --- */
-.validation-message {
-    color: #ef4444;
-    font-weight: bold;
-    font-size: 0.9em;
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid #ef4444;
-    position: absolute;
-    bottom: 110%;
-    right: 0;
-    opacity: 0;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    transform: translateY(10px);
-    pointer-events: none;
-    z-index: 10;
-}
-.validation-message.show {
-    opacity: 1;
-    transform: translateY(0);
-}
-@keyframes shake {
- 10%, 90% { transform: translateX(-1px); }
- 20%, 80% { transform: translateX(2px); }
- 30%, 50%, 70% { transform: translateX(-3px); }
- 40%, 60% { transform: translateX(3px); }
-}
-.shake {
-    animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
-}
-.quick-fill-buttons {
-    align-items: center;
-    gap: 5px;
-}
-.quick-fill-label {
-    font-size: 0.9em;
-    color: var(--secondary-text-color);
-    margin-right: 5px;
-    font-weight: bold;
-}
+        this.elements.goToIdealBtn.addEventListener('click', (e) => {
+            if (e.currentTarget.disabled) {
+                this.ui.showValidationMessage('すべての配置を入力してください。', e.currentTarget);
+            } else {
+                this.ui.showPage('ideal-config-page');
+            }
+        });
+        
+        // Main Actions
+        this.elements.calculatePlanBtn.addEventListener('click', () => this.calculatePlan());
+        this.elements.resetBtn.addEventListener('click', () => this.resetApp());
+        this.elements.savePlanBtn.addEventListener('click', () => this.savePlan());
+        this.elements.savePlanIconBtn.addEventListener('click', () => this.savePlan());
+        this.elements.loadPlanBtn.addEventListener('click', () => this.ui.openLoadModal());
 
-/* --- Result Table --- */
-.mode-solo { color: var(--accent-color); font-weight: bold; }
-.mode-multi { color: var(--multiplayer-accent-color); font-weight: bold; }
+        // Input Helpers
+        this.elements.setRecommendedBtn.addEventListener('click', () => this.setRecommendedConfig());
+        this.elements.copyCurrentBtn.addEventListener('click', () => this.copyCurrentConfigToIdeal());
+        this.elements.fillAllABtn.addEventListener('click', () => this.fillAllConfigs('A'));
+        this.elements.fillAllBBtn.addEventListener('click', () => this.fillAllConfigs('B'));
+        this.elements.fillAllCBtn.addEventListener('click', () => this.fillAllConfigs('C'));
 
-/* --- Modals Content --- */
-#guide-modal .modal-content h2 { font-size: 2.2em; margin-bottom: 15px; }
-#guide-modal .modal-content h3 { font-size: 1.6em; margin-top: 10px; margin-bottom: 15px; }
-#guide-modal .modal-content hr {
-    border: none;
-    height: 4px;
-    background-color: #adb5bd;
-    border-radius: 2px;
-    margin: 30px 0;
-}
-#zoom-view .modal-content { overflow: hidden; }
-#zoom-map-container {
-    position: relative;
-    width: 100%;
-    margin: 20px auto 0;
-    aspect-ratio: 16 / 9;
-    flex-shrink: 1;
-    min-height: 0;
-}
-#zoom-map-container img { /* Added */
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-}
-.pattern-marker {
-    position: absolute;
-    width: clamp(25px, 4vw, 35px);
-    height: clamp(25px, 4vw, 35px);
-    background-color: rgba(59, 130, 246, 0.8);
-    border: 2px solid var(--accent-color);
-    animation: glowing 2s infinite;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 1.1em;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    background-size: cover;
-    background-position: center;
-}
-.pattern-marker .pattern-label {
-    background-color: transparent;
-    padding: 0;
-    border-radius: 0;
-}
-.pattern-marker.completed {
-    background-color: #10B981;
-    border-color: white;
-    animation: none;
-    background-image: none !important;
-}
+        // Tab Switching
+        this.elements.currentMapTab.addEventListener('click', () => this.ui.switchInputView('current', 'map'));
+        this.elements.currentListTab.addEventListener('click', () => this.ui.switchInputView('current', 'list'));
+        this.elements.idealMapTab.addEventListener('click', () => this.ui.switchInputView('ideal', 'map'));
+        this.elements.idealListTab.addEventListener('click', () => this.ui.switchInputView('ideal', 'list'));
 
-.zoom-nav-btn {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 44px;
-    height: 44px;
-    background-color: rgba(0, 0, 0, 0.4);
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 10;
-    transition: background-color 0.2s;
-}
-.zoom-nav-btn:hover {
-    background-color: rgba(0, 0, 0, 0.7);
-}
-.zoom-nav-btn::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 12px;
-    height: 12px;
-    border-top: 3px solid white;
-    border-right: 3px solid white;
-}
-.zoom-nav-btn.prev {
-    left: 15px;
-}
-.zoom-nav-btn.prev::before {
-    transform: translate(-50%, -50%) rotate(-135deg);
-    left: 55%;
-}
-.zoom-nav-btn.next {
-    right: 15px;
-}
-.zoom-nav-btn.next::before {
-    transform: translate(-50%, -50%) rotate(45deg);
-    left: 45%;
-}
-#screenshot-popup .image-container {
-    aspect-ratio: 500 / 300;
-    min-height: 0;
-    position: relative;
-}
-.loader {
-    border: 8px solid #f3f3f3;
-    border-top: 8px solid var(--accent-color);
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    animation: spin 1.5s linear infinite;
-    margin: 20px auto;
-}
-#calculation-progress {
-    margin-top: 15px;
-    color: var(--secondary-text-color);
-    font-weight: bold;
-    height: 2em;
-}
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-#day-detail-content ul { list-style: none; padding: 0; margin-top: 15px; text-align: left; }
-#day-detail-content li {
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-left: 5px solid var(--accent-color);
-}
-#day-detail-content h3 { margin-bottom: 20px; text-align: center; }
-#day-detail-content h4 {
-    margin-top: 25px;
-    margin-bottom: 10px;
-    border-bottom: 2px solid var(--border-color);
-    padding-bottom: 5px;
-    text-align: left;
-}
-#day-detail-content .video-container {
-    position: relative;
-    padding-bottom: 56.25%; /* 16:9 */
-    height: 0;
-    overflow: hidden;
-    max-width: 100%;
-    background: #000;
-    margin-top: 10px;
-    border-radius: 8px;
-}
-#day-detail-content .video-container iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-#credit-modal .modal-content p,
-#logic-modal .modal-content p { 
-    text-align: left; 
-    line-height: 1.8; 
-}
-#credit-modal .modal-content h4,
-#logic-modal .modal-content h3 {
-    margin-top: 20px;
-    margin-bottom: 10px;
-    text-align: left;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 8px;
-}
-/* Request Form Styles */
-#request-form-container .form-group,
-#request-modal .form-group {
-    margin-bottom: 15px;
-    text-align: left;
-}
-#request-form-container label,
-#request-modal label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: var(--primary-text-color);
-}
-#request-form-container select,
-#request-form-container textarea,
-#request-modal select,
-#request-modal textarea {
-    width: 100%;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid var(--border-color);
-    font-family: inherit;
-    font-size: 1em;
-    box-sizing: border-box;
-}
-#request-form-container #submit-form-btn,
-#request-modal #submit-form-btn {
-    width: 100%;
-}
+        // Modals
+        this.elements.guideBtn.addEventListener('click', () => this.ui.showModal('guide-modal'));
+        this.elements.tsurumiInfoBtn.addEventListener('click', () => this.ui.showModal('tsurumi-info-modal'));
+        this.elements.cycleHoldInfoBtn.addEventListener('click', () => this.ui.showModal('cycle-hold-info-modal'));
+        this.elements.disclaimerLink.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
+        this.elements.disclaimerLinkResultPC.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
+        this.elements.disclaimerLinkResultMobile.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
+        this.elements.creditTrigger.addEventListener('click', () => this.ui.showModal('credit-modal'));
+        this.elements.logicModalTrigger.addEventListener('click', () => this.ui.showModal('logic-modal'));
+        this.elements.openRequestFormBtn.addEventListener('click', () => this.ui.showModal('request-modal'));
+        this.elements.requestFormResultMobileBtn.addEventListener('click', () => this.ui.showModal('request-modal'));
+        this.elements.requestFormResultPcBtn.addEventListener('click', () => this.ui.showModal('request-modal'));
+        document.querySelectorAll('.modal-close').forEach(el => {
+            el.addEventListener('click', () => this.ui.closeModal(el.dataset.target));
+        });
+        
+        // Screenshot Modal Navigation
+        this.elements.screenshotPrevBtn.addEventListener('click', () => this.ui.navigateScreenshotPattern(-1));
+        this.elements.screenshotNextBtn.addEventListener('click', () => this.ui.navigateScreenshotPattern(1));
 
-#saved-plans-list {
-    list-style: none;
-    padding: 0;
-    margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-.saved-plan-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    background-color: var(--btn-secondary-bg);
-    border-radius: 10px;
-    border: 1px solid var(--border-color);
-}
-.saved-plan-item-name {
-    font-weight: bold;
-    font-size: 1.1em;
-    color: var(--primary-text-color);
-}
-.saved-plan-item-actions { display: flex; gap: 10px; }
-#no-saved-plans {
-    text-align: center;
-    color: var(--secondary-text-color);
-    margin-top: 30px;
-    font-size: 1.1em;
-}
-
-/* --- Misc --- */
-.solo-notice {
-    font-size: 0.9em;
-    color: var(--secondary-text-color);
-    background-color: var(--btn-secondary-bg);
-    padding: 12px 15px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    max-width: 450px;
-    width: 100%;
-    box-sizing: border-box;
-    text-align: center;
-    line-height: 1.6;
-}
-.solo-notice a {
-    color: var(--accent-hover-color);
-}
-
-.show-on-desktop { display: none; }
-.show-flex-on-desktop { display: none; }
-
-.btn-icon {
-    display: inline-block;
-    width: 1.2em;
-    height: 1.2em;
-    background-color: currentColor;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    mask-position: center;
-    -webkit-mask-size: contain;
-    mask-size: contain;
-}
-.icon-save {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z'%3E%3C/path%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z'%3E%3C/path%3E%3C/svg%3E");
-}
-.icon-reset {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='23 4 23 10 17 10'%3E%3C/polyline%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'%3E%3C/path%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='23 4 23 10 17 10'%3E%3C/polyline%3E%3Cpath d='M20.49 15a9 9 0 1 1-2.12-9.36L23 10'%3E%3C/path%3E%3C/svg%3E");
-}
-.icon-recalc {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='2' width='16' height='20' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='8' y1='6' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='16' y1='14' x2='8' y2='14'%3E%3C/line%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='2' width='16' height='20' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='8' y1='6' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='16' y1='14' x2='8' y2='14'%3E%3C/line%3E%3C/svg%3E");
-}
+        // Form Submission
+        if (this.elements.gForm) {
+            this.elements.gForm.addEventListener('submit', (e) => {
+                this.ui.handleFormSubmit(e);
+            });
+        }
 
 
-/* =================================================================== */
-/* 7. Responsive Design
-/* =================================================================== */
+        // Step Indicator Click Events
+        this.elements.steps.forEach(stepEl => {
+            stepEl.addEventListener('click', () => {
+                const step = stepEl.dataset.step;
+                switch (step) {
+                    case '1':
+                        this.ui.showPage('current-config-page');
+                        break;
+                    case '2':
+                        if (!this.elements.goToIdealBtn.disabled) {
+                            this.ui.showPage('ideal-config-page');
+                        }
+                        break;
+                    case '3':
+                        if (this.state.lastCalculatedPlan) {
+                            this.ui.showPage('result-page');
+                        }
+                        break;
+                }
+            });
+        });
 
-/* --- Desktop (Large Screens) --- */
-@media (min-width: 992px) {
-    body {
-        background-color: #000; /* Fallback for older browsers */
-        background-image: url('https://cdn.jsdelivr.net/gh/Anotokinotori/Tsurumi-Map-Optimizer@main/20250927140652.png');
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
+        // Result Page Actions
+        this.elements.resultTbody.addEventListener('click', (e) => {
+            if (e.target && e.target.classList.contains('btn-details')) {
+                const dayIndex = parseInt(e.target.dataset.dayIndex, 10);
+                this.ui.showDayDetail(dayIndex);
+            }
+        });
+        this.elements.recalculateBtn.addEventListener('click', () => {
+            const currentMode = this.elements.multiplayerCheckbox.checked;
+            this.elements.multiplayerCheckbox.checked = !currentMode;
+            this.calculatePlan();
+        });
+
+        // Robust layout updates
+        window.addEventListener('resize', () => {
+            this.ui.updateMapLayout('current-map-container');
+            this.ui.updateMapLayout('ideal-map-container');
+        });
+
+        this.elements.allMapBgs.forEach(img => {
+            const containerId = img.closest('.map-container').id;
+            if (img.complete && img.naturalWidth > 0) {
+                this.ui.updateMapLayout(containerId);
+            } else {
+                img.addEventListener('load', () => this.ui.updateMapLayout(containerId));
+            }
+        });
+    },
+
+    // --- CORE LOGIC ---
+    updateConfig(configType, groupId, pattern) {
+        const configToUpdate = (configType === 'current') ? this.state.currentConfig : this.state.idealConfig;
+        configToUpdate[groupId] = pattern;
+        
+        this.ui.updateMarker(configType, groupId);
+        this.ui.updatePatternButtons(configType, groupId, pattern);
+        this.ui.updateProgress(configType);
+        this.ui.updateGuideTextVisibility();
+    },
+
+    fillAllConfigs(pattern) {
+        groupKeys.forEach(groupId => this.updateConfig('current', groupId, pattern));
+    },
+
+    setRecommendedConfig() {
+        groupKeys.forEach(groupId => {
+            if (recommendedConfig[groupId]) {
+                this.updateConfig('ideal', groupId, recommendedConfig[groupId]);
+            }
+        });
+    },
+
+    copyCurrentConfigToIdeal() {
+        groupKeys.forEach(groupId => {
+            if (this.state.currentConfig[groupId]) {
+                this.updateConfig('ideal', groupId, this.state.currentConfig[groupId]);
+            }
+        });
+    },
+
+    resetApp() {
+        this.state.currentConfig = {};
+        this.state.idealConfig = {};
+        this.state.lastCalculatedPlan = null;
+        this.ui.initInputPage('current');
+        this.ui.initInputPage('ideal');
+        this.ui.updateProgress('current');
+        this.ui.updateProgress('ideal');
+        this.ui.updateGuideTextVisibility();
+        this.ui.showPage('start-page');
+    },
+
+    calculatePlan() {
+        const isMultiplayer = this.elements.multiplayerCheckbox.checked;
+        const allowBoat = this.elements.boatCheckbox.checked;
+
+        if (Object.keys(this.state.currentConfig).length !== totalGroups || Object.keys(this.state.idealConfig).length !== totalGroups) {
+            this.ui.showValidationMessage('全ての現在配置と理想配置を入力してください。', this.elements.calculatePlanBtn);
+            return;
+        }
+
+        const loadingTextEl = document.getElementById('loading-text');
+        if (loadingTextEl) {
+            loadingTextEl.innerHTML = `<span style="display: block; font-size: 1.1em; font-weight: bold; margin-bottom: 15px;">このツールは、<a href="https://youtu.be/2xqllaCTP5c?si=m9yyxXo5GS0rwFG9" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold;">ねこしたさんの解説</a>に基づき、プログラムされました！<br>ぜひ解説動画もご覧ください。</span><span style="font-size: 0.9em; color: var(--secondary-text-color);">計算には数分かかる場合がありますので、しばらくお待ちください。</span>`;
+        }
+        
+        const progressEl = document.getElementById('calculation-progress');
+        const onProgress = (verifiedCount) => {
+            if(progressEl) {
+                progressEl.textContent = `検証済みパターン: ${verifiedCount} / 59049`;
+            }
+        };
+
+        this.ui.showModal('loading-modal');
+        
+        setTimeout(() => {
+            PlanCalculator.findShortestPlan(
+                this.state.currentConfig,
+                this.state.idealConfig,
+                { isMultiplayer, allowBoat, onProgress }
+            ).then(plan => {
+                this.state.lastCalculatedPlan = plan;
+                this.ui.displayResults(plan, isMultiplayer, allowBoat);
+                this.ui.closeModal('loading-modal');
+                if(progressEl) progressEl.textContent = '';
+            });
+        }, 50);
+    },
+
+    savePlan() {
+        const planName = window.prompt("結果を保存します。名前を入力してください:", "マイプラン " + new Date().toLocaleDateString());
+        if (!planName || planName.trim() === "") return;
+
+        const serializablePlan = this.state.lastCalculatedPlan.map(day => ({
+            ...day,
+            holdAction: { ...day.holdAction, affectedGroups: Array.from(day.holdAction.affectedGroups || []) },
+            advanceAction: { ...day.advanceAction, affectedGroups: Array.from(day.advanceAction.affectedGroups || []) }
+        }));
+
+        const planData = {
+            id: Date.now().toString(),
+            name: planName.trim(),
+            currentConfig: this.state.currentConfig,
+            idealConfig: this.state.idealConfig,
+            plan: serializablePlan,
+            isMultiplayer: this.elements.multiplayerCheckbox.checked,
+            createdAt: new Date().toISOString()
+        };
+
+        try {
+            const savedPlans = this.getSavedPlans();
+            savedPlans.push(planData);
+            localStorage.setItem('tsurumiSavedPlans', JSON.stringify(savedPlans));
+        } catch (e) {
+            console.error("Failed to save plan:", e);
+        }
+    },
+
+    loadPlan(planId) {
+        const plans = this.getSavedPlans();
+        const planToLoad = plans.find(p => p.id === planId);
+        if (!planToLoad) {
+            return;
+        }
+
+        const deserializedPlan = planToLoad.plan.map(day => ({
+            ...day,
+            holdAction: { ...day.holdAction, affectedGroups: new Set(day.holdAction.affectedGroups || []) },
+            advanceAction: { ...day.advanceAction, affectedGroups: new Set(day.advanceAction.affectedGroups || []) }
+        }));
+
+        this.state.currentConfig = planToLoad.currentConfig;
+        this.state.idealConfig = planToLoad.idealConfig;
+        this.state.lastCalculatedPlan = deserializedPlan;
+        this.elements.multiplayerCheckbox.checked = planToLoad.isMultiplayer;
+
+        groupKeys.forEach(groupId => {
+            if (this.state.currentConfig[groupId]) this.updateConfig('current', groupId, this.state.currentConfig[groupId]);
+            if (this.state.idealConfig[groupId]) this.updateConfig('ideal', groupId, this.state.idealConfig[groupId]);
+        });
+
+        this.ui.displayResults(this.state.lastCalculatedPlan, planToLoad.isMultiplayer, this.elements.boatCheckbox.checked);
+        this.ui.closeModal('load-plan-modal');
+    },
+
+    deletePlan(planId) {
+        const plans = this.getSavedPlans();
+        const updatedPlans = plans.filter(p => p.id !== planId);
+        try {
+            localStorage.setItem('tsurumiSavedPlans', JSON.stringify(updatedPlans));
+            this.ui.renderSavedPlans();
+        } catch (e) {
+            console.error("Failed to delete plan:", e);
+        }
+    },
+
+    getSavedPlans() {
+        try {
+            const plansJSON = localStorage.getItem('tsurumiSavedPlans');
+            return plansJSON ? JSON.parse(plansJSON) : [];
+        } catch (e) {
+            console.error("Failed to read saved plans:", e);
+            return [];
+        }
+    },
+
+    // --- UI LOGIC ---
+    ui: {
+        initInputPage: function(configType) {
+            const mapContainer = document.getElementById(`${configType}-map-container`);
+            const listContainer = document.getElementById(`${configType}-config-list`);
+            mapContainer.querySelectorAll('.map-marker').forEach(marker => marker.remove());
+            listContainer.innerHTML = '';
+            
+            groupKeys.forEach(groupId => {
+                const group = eliteGroups[groupId];
+                // Map Marker
+                const marker = document.createElement('div');
+                marker.className = 'map-marker glowing';
+                marker.id = `${configType}-marker-${groupId}`;
+                marker.style.backgroundImage = `url(${group.iconUrl})`;
+                marker.addEventListener('click', () => TsurumiApp.ui.openGroupSelector(configType, groupId));
+                mapContainer.appendChild(marker);
+
+                // List Item
+                const item = document.createElement('div');
+                item.className = 'config-item';
+                item.innerHTML = `<span class="config-item-label">${group.name}</span>`;
+                const buttons = document.createElement('div');
+                buttons.className = 'pattern-buttons';
+                buttons.id = `${configType}-buttons-${groupId}`;
+                ['A', 'B', 'C'].forEach(pattern => {
+                    const btn = document.createElement('button');
+                    btn.textContent = pattern;
+                    btn.addEventListener('click', () => TsurumiApp.updateConfig(configType, groupId, pattern));
+                    buttons.appendChild(btn);
+                });
+                item.appendChild(buttons);
+                listContainer.appendChild(item);
+            });
+        },
+
+        showPage: function(pageId) {
+            TsurumiApp.elements.pages.forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+
+            TsurumiApp.elements.steps.forEach(step => step.classList.remove('active-step'));
+            let activeStepNumber = 1;
+            if (pageId.includes('current')) activeStepNumber = 1;
+            else if (pageId.includes('ideal')) activeStepNumber = 2;
+            else if (pageId.includes('result')) activeStepNumber = 3;
+            
+            document.querySelectorAll(`.step[data-step="${activeStepNumber}"]`).forEach(stepEl => stepEl.classList.add('active-step'));
+            
+            if (pageId.includes('config')) {
+                const containerId = `${pageId.split('-')[0]}-map-container`;
+                this.updateMapLayout(containerId);
+            }
+        },
+
+        updateMapLayout: function(containerId) {
+            const mapContainer = document.getElementById(containerId);
+            if (!mapContainer || !mapContainer.offsetParent) return;
+
+            const mapImage = mapContainer.querySelector('.map-bg');
+            if (!mapImage || !mapImage.complete || mapImage.naturalWidth === 0) return;
+
+            const markers = mapContainer.querySelectorAll('.map-marker');
+            const containerRect = mapContainer.getBoundingClientRect();
+            const imageAspectRatio = mapImage.naturalWidth / mapImage.naturalHeight;
+            const containerAspectRatio = containerRect.width / containerRect.height;
+
+            let renderedWidth, renderedHeight, offsetX, offsetY;
+            if (imageAspectRatio > containerAspectRatio) {
+                renderedWidth = containerRect.width;
+                renderedHeight = renderedWidth / imageAspectRatio;
+                offsetX = 0;
+                offsetY = (containerRect.height - renderedHeight) / 2;
+            } else {
+                renderedHeight = containerRect.height;
+                renderedWidth = renderedHeight * imageAspectRatio;
+                offsetX = (containerRect.width - renderedWidth) / 2;
+                offsetY = 0;
+            }
+
+            markers.forEach(marker => {
+                const groupId = marker.id.split('-')[2];
+                const pos = markerPositions[groupId];
+                if (pos) {
+                    const newLeft = offsetX + (renderedWidth * (parseFloat(pos.left) / 100));
+                    const newTop = offsetY + (renderedHeight * (parseFloat(pos.top) / 100));
+                    marker.style.left = `${newLeft - marker.offsetWidth / 2}px`;
+                    marker.style.top = `${newTop - marker.offsetHeight / 2}px`;
+                }
+            });
+        },
+
+        displayResults: function(plan, isMultiplayer, allowBoat) {
+            const summaryEl = document.getElementById('result-summary-text');
+            const summaryText = !plan ? '8日以内に完了する調整プランは見つかりませんでした。'
+                              : plan.length === 0 ? '調整は不要です！'
+                              : `最短 ${plan.length} 日で調整可能！`;
+            
+            summaryEl.textContent = summaryText;
+
+            TsurumiApp.elements.soloNotice.style.display = isMultiplayer ? 'none' : '';
+            
+            const recalcBtnText = document.getElementById('recalculate-btn-text');
+            if (recalcBtnText) {
+                recalcBtnText.textContent = isMultiplayer ? '周期ホールドOFFで再計算' : '周期ホールドONで再計算';
+            }
+            TsurumiApp.elements.recalculateBtn.className = isMultiplayer ? 'btn btn-primary' : 'btn btn-multi';
+            
+            const showSaveButtons = plan && plan.length > 0;
+            document.getElementById('save-plan-btn').style.display = showSaveButtons ? '' : 'none';
+            document.getElementById('save-plan-icon-btn').style.display = showSaveButtons ? '' : 'none';
+
+            const tbody = TsurumiApp.elements.resultTbody;
+            tbody.innerHTML = '';
+            if (plan) {
+                plan.forEach((day, index) => {
+                    const tr = document.createElement('tr');
+                    const modeClass = day.mode === 'ソロ' ? 'mode-solo' : 'mode-multi';
+                    tr.innerHTML = `
+                        <td>${index + 1}日目</td>
+                        <td><span class="${modeClass}">${day.mode}</span></td>
+                        <td>${day.holdAction.name}</td>
+                        <td>${day.advanceAction.name}</td>
+                        <td><button class="btn btn-details" data-day-index="${index}">手順を確認</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            this.showPage('result-page');
+
+            TsurumiApp.elements.resultPage.scrollTop = 0;
+            try { window.scrollTo(0, 0); } catch(e) {/* ignore */}
+        },
+
+        showModal: function(modalId) { document.getElementById(modalId).classList.add('active'); },
+        closeModal: function(modalId) { document.getElementById(modalId).classList.remove('active'); },
+        switchInputView: function(configType, view) {
+            document.getElementById(`${configType}-map-tab`).classList.toggle('active', view === 'map');
+            document.getElementById(`${configType}-list-tab`).classList.toggle('active', view === 'list');
+            document.getElementById(`${configType}-map-view`).classList.toggle('active', view === 'map');
+            document.getElementById(`${configType}-list-view`).classList.toggle('active', view === 'list');
+            if (view === 'map') this.updateMapLayout(`${configType}-map-container`);
+        },
+        updateProgress: function(configType) {
+            const config = (configType === 'current') ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig;
+            const progressEl = (configType === 'current') ? TsurumiApp.elements.progressText : TsurumiApp.elements.idealProgressText;
+            const count = Object.keys(config).length;
+            progressEl.textContent = `入力完了: ${count} / ${totalGroups}`;
+            if (configType === 'current') {
+                TsurumiApp.elements.goToIdealBtn.disabled = count !== totalGroups;
+            }
+            if (configType === 'ideal') {
+                TsurumiApp.elements.calculatePlanBtn.disabled = count !== totalGroups;
+            }
+        },
+        updateMarker: function(configType, groupId) {
+            const marker = document.getElementById(`${configType}-marker-${groupId}`);
+            marker.classList.remove('glowing');
+            marker.classList.add('completed');
+            marker.innerHTML = '✔';
+        },
+        updatePatternButtons: function(configType, groupId, pattern) {
+             document.getElementById(`${configType}-buttons-${groupId}`).querySelectorAll('button').forEach(btn => {
+                btn.classList.toggle('selected', btn.textContent === pattern);
+            });
+        },
+        openGroupSelector: function(configType, groupId) {
+            TsurumiApp.state.activeSelection = { configType, groupId };
+            document.getElementById('zoom-title').textContent = `${eliteGroups[groupId].name} のパターンを選択`;
+            const zoomContainer = document.getElementById('zoom-map-container');
+            const zoomMapImage = zoomContainer.querySelector('img');
+            this.setupImageLoader(zoomMapImage, eliteGroups[groupId].zoomMapUrl);
+
+            zoomContainer.querySelectorAll('.pattern-marker').forEach(m => m.remove());
+            const selectedPattern = (configType === 'current' ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig)[groupId];
+
+            ['A', 'B', 'C'].forEach(pattern => {
+                const pos = patternMarkerPositions[groupId]?.[pattern];
+                if (!pos) return;
+
+                const marker = document.createElement('div');
+                marker.className = 'pattern-marker';
+                marker.innerHTML = `<span class="pattern-label">${pattern}</span>`;
+                if (pattern === selectedPattern) {
+                    marker.classList.add('completed');
+                    marker.innerHTML = '✔';
+                }
+
+                marker.style.top = `${100 - parseFloat(pos.bottom)}%`;
+                marker.style.left = `${100 - parseFloat(pos.right)}%`;
+                marker.addEventListener('click', () => this.selectPatternForConfirmation(pattern));
+                zoomContainer.appendChild(marker);
+            });
+            this.showModal('zoom-view');
+        },
+        selectPatternForConfirmation: function(pattern) {
+             // Set the initial pattern when opening the screenshot view
+            TsurumiApp.state.activeSelection.pattern = pattern;
+            
+            // Update the view with the initial pattern
+            this.updateScreenshotView(pattern);
+            
+            // Set up the confirmation button
+            document.getElementById('confirm-pattern-btn').onclick = () => {
+               const { configType, groupId, pattern } = TsurumiApp.state.activeSelection;
+               if (configType && groupId && pattern) TsurumiApp.updateConfig(configType, groupId, pattern);
+               this.closeModal('screenshot-popup');
+               this.closeModal('zoom-view');
+            };
+            
+            // Show the modal
+            this.showModal('screenshot-popup');
+        },
+        updateScreenshotView: function(pattern) {
+            const { groupId } = TsurumiApp.state.activeSelection;
+            if (!groupId) return;
+
+            // Update the active selection state with the new pattern
+            TsurumiApp.state.activeSelection.pattern = pattern;
+
+            // Update the modal title
+            document.getElementById('screenshot-title').textContent = `${eliteGroups[groupId].name} - パターン ${pattern} で合っていますか？`;
+            
+            // Update the image
+            const screenshotImg = document.getElementById('screenshot-img');
+            this.setupImageLoader(screenshotImg, screenshotImageUrls[groupId]?.[pattern]);
+        },
+        navigateScreenshotPattern: function(direction) {
+            const patterns = ['A', 'B', 'C'];
+            const { pattern } = TsurumiApp.state.activeSelection;
+            const currentIndex = patterns.indexOf(pattern);
+            const nextIndex = (currentIndex + direction + patterns.length) % patterns.length;
+            const nextPattern = patterns[nextIndex];
+            
+            // Update the view to show the next pattern
+            this.updateScreenshotView(nextPattern);
+        },
+        setupImageLoader: function(imgElement, src) {
+            const container = imgElement.parentElement;
+            if (!container || !container.classList.contains('image-container')) return;
+            container.classList.remove('loaded');
+            imgElement.onload = () => container.classList.add('loaded');
+            imgElement.onerror = () => { container.querySelector('.image-loader').textContent = '読込失敗'; };
+            imgElement.src = src || 'https://placehold.co/1x1/ffffff/ffffff?text=';
+        },
+        showValidationMessage: function(message, targetElement) {
+            const validationMessage = TsurumiApp.elements.validationMessage;
+            validationMessage.textContent = message;
+            validationMessage.classList.add('show');
+            targetElement.classList.add('shake');
+            setTimeout(() => validationMessage.classList.remove('show'), 2000);
+            setTimeout(() => targetElement.classList.remove('shake'), 600);
+        },
+        updateGuideTextVisibility: function() {
+            const isCurrentStarted = Object.keys(TsurumiApp.state.currentConfig).length > 0;
+            const isIdealStarted = Object.keys(TsurumiApp.state.idealConfig).length > 0;
+            document.querySelector('#current-map-container .map-guide-text').classList.toggle('hidden', isCurrentStarted);
+            document.querySelector('#ideal-map-container .map-guide-text').classList.toggle('hidden', isIdealStarted);
+        },
+        
+        handleFormSubmit: function(event) {
+            event.preventDefault();
+            const form = TsurumiApp.elements.gForm;
+            const statusMessage = TsurumiApp.elements.formStatusMessage;
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            if (!form.checkValidity()) {
+                statusMessage.textContent = '入力されていない項目があります。';
+                statusMessage.style.color = 'red';
+                return;
+            }
+
+            statusMessage.textContent = '送信中...';
+            statusMessage.style.color = 'inherit';
+            submitBtn.disabled = true;
+            
+            // This is a flag for the iframe's onload event
+            const iframe = document.getElementById('hidden_iframe');
+            if(iframe) {
+                iframe.submitted = true; 
+            }
+            
+            form.submit();
+        },
+        handleFormSuccess: function() {
+            const form = TsurumiApp.elements.gForm;
+            const statusMessage = TsurumiApp.elements.formStatusMessage;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            
+            statusMessage.textContent = '送信しました！ご協力ありがとうございます。';
+            statusMessage.style.color = 'green';
+            submitBtn.disabled = false;
+            form.reset();
+
+            // Reset the flag
+            const iframe = document.getElementById('hidden_iframe');
+            if(iframe) {
+                iframe.submitted = false;
+            }
+        },
+        
+        showDayDetail: function(dayIndex) {
+            const plan = TsurumiApp.state.lastCalculatedPlan;
+            if (!plan || isNaN(dayIndex) || !plan[dayIndex]) return;
+
+            const dayData = plan[dayIndex];
+            const dayNumber = dayIndex + 1;
+            document.getElementById('day-detail-title').textContent = `${dayNumber}日目の手順詳細`;
+            TsurumiApp.elements.dayDetailModalContent.innerHTML = this.generateDayDetailHTML(dayData);
+            TsurumiApp.elements.dayDetailModalContent.querySelectorAll('.image-container img').forEach(img => {
+                this.setupImageLoader(img, img.dataset.src);
+                img.src = img.dataset.src;
+            });
+            this.showModal('day-detail-modal');
+        },
+        generateDayDetailHTML: function(dayData) {
+            let html = '<p style="text-align:center; color: var(--secondary-text-color);"><strong>【重要】</strong>「歩き」や「ボート」での移動は、<strong>ルートを慎重に確認し、チャスカのような飛行系キャラは使用しないでください。</strong></p>';
+            if (dayData.mode === 'ソロ') {
+                html += `<h3>ソロモードでの行動</h3>` + this.generateActionDetailsHTML(dayData.advanceAction);
+            } else {
+                 html += `<h3>マルチモード（周期ホールド）での行動</h3>
+                        <h4>Step 1: 準備</h4>
+                        <p>ホスト(1P)は鶴観以外の安全な場所に移動し、ゲスト(2P)を世界に招き入れます。</p>
+                        <h4>Step 2: 周期のホールド (ゲストの操作)</h4>
+                        <p><strong>[重要]</strong> まずホスト(1P)が層岩巨淵・地下鉱区など、<strong>テイワット以外のマップに移動</strong>するのを待ちます。</p>
+                        <p>ホストの移動後、ゲスト(2P)は以下の行動で指定されたグループの周期を読み込みます。</p>`
+                        + this.generateActionDetailsHTML(dayData.holdAction) +
+                        `<p><strong>[重要]</strong> ゲストは上記行動を終えたら、速やかにホストの世界から退出してください。</p>
+                        <h4 style="margin-top: 25px;">Step 3: 周期の進行 (ホストの操作)</h4>
+                        <p>ゲストが退出してソロ状態に戻った後、ホスト(1P)は以下の行動で、ゲストが<strong>読み込まなかった</strong>グループの周期を1つ<strong>進めます</strong>。</p>`
+                        + this.generateActionDetailsHTML(dayData.advanceAction, dayData.holdAction);
+            }
+            return html;
+        },
+        generateActionDetailsHTML: function(actionData, holdActionData = {affectedGroups: new Set()}) {
+            if (!actionData || !actionData.name || actionData.name === '---' || actionData.name === '何もしない') return '<p>特別な行動は不要です。</p>';
+
+            const effectiveGroups = new Set([...actionData.affectedGroups].filter(x => !holdActionData.affectedGroups.has(x)));
+            if (effectiveGroups.size === 0) return '<p>特別な行動は不要です。</p>';
+            
+            const affectedGroupsList = Array.from(effectiveGroups).map(key => `「${eliteGroups[key].name}」`).join('、');
+            let html = `<p><strong>影響を受けるグループ:</strong> ${affectedGroupsList}</p><ul>`;
+            const actions = actionData.name.split(' + ');
+            
+            actions.forEach(actionName => {
+                const action = actionsData.find(a => a.name === actionName);
+                if (!action || ![...action.affectedGroups].some(g => effectiveGroups.has(g))) return;
+
+                const details = actionDetails[action.id] || {};
+                html += `<li><strong>${actionName}</strong><p>${(details.note || '').replace(/\n/g, '<br>')}</p>`;
+                if (details.images) {
+                    details.images.forEach(imgUrl => {
+                        html += `<div class="image-container"><div class="image-loader">読込中...</div><img data-src="${imgUrl}" alt="${actionName}のルート図"></div>`;
+                    });
+                }
+                if (details.videoUrl) html += `<div class="video-container"><iframe src="${details.videoUrl.replace('youtu.be/','youtube.com/embed/').split('?si=')[0]}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+                html += `</li>`;
+            });
+            return html + '</ul>';
+        },
+        openLoadModal: function() {
+            this.renderSavedPlans();
+            this.showModal('load-plan-modal');
+        },
+        renderSavedPlans: function() {
+            const plans = TsurumiApp.getSavedPlans();
+            const listEl = document.getElementById('saved-plans-list');
+            const noPlansEl = document.getElementById('no-saved-plans');
+            listEl.innerHTML = '';
+            noPlansEl.style.display = plans.length === 0 ? 'block' : 'none';
+            listEl.style.display = plans.length > 0 ? '' : 'none';
+
+            plans.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(plan => {
+                const li = document.createElement('li');
+                li.className = 'saved-plan-item';
+                li.innerHTML = `<span class="saved-plan-item-name">${plan.name}</span>
+                                <div class="saved-plan-item-actions">
+                                    <button class="btn btn-primary btn-load" data-plan-id="${plan.id}">読込</button>
+                                    <button class="btn btn-delete" data-plan-id="${plan.id}">削除</button>
+                                </div>`;
+                li.querySelector('.btn-load').addEventListener('click', () => TsurumiApp.loadPlan(plan.id));
+                li.querySelector('.btn-delete').addEventListener('click', () => TsurumiApp.deletePlan(plan.id));
+                listEl.appendChild(li);
+            });
+        }
     }
-    main {
-        background: none;
-    }
-    .result-grid {
-        grid-template-columns: minmax(350px, 4fr) 6fr;
-        gap: 40px;
-        align-items: flex-start;
-    }
-    .result-layout-container {
-        position: sticky;
-        top: 20px;
-    }
-    .show-on-desktop { display: block; }
-    .show-flex-on-desktop { display: flex; }
-    #disclaimer-link-result-mobile { display: none; }
-    .result-disclaimer-desktop { display: flex; }
-}
+};
 
-/* --- Tablet & Mobile --- */
-@media (max-width: 991px) {
-    body {
-        overflow: auto;
-        height: auto;
-        min-height: 100vh;
-        padding-bottom: 50px; /* Space for fixed footer */
-    }
-    main {
-         padding: 0;
-         height: auto;
-         flex-grow: 1;
-    }
-    .container { 
-        width: 100%; 
-        height: auto;
-        min-height: 0;
-        max-height: none; 
-        border-radius: 0; 
-        overflow: visible;
-    }
-    .page { 
-        padding: 20px; 
-        height: auto;
-        position: relative;
-        opacity: 1;
-        visibility: visible;
-        transform: none;
-        display: none; 
-        justify-content: flex-start;
-    }
-    .page.active {
-        display: flex;
-    }
-    .page-content-wrapper {
-        height: auto;
-        min-height: calc(100vh - 80px); /* Header height approx */
-    }
-    #start-page {
-        justify-content: center;
-        padding-top: 2vh;
-        padding-bottom: 2vh;
-        flex-grow: 1; 
-    }
-    #start-page .page-content-wrapper {
-        min-height: 0; 
-        flex-grow: 1; 
-    }
-    .site-header, .site-credit-footer { padding: 10px 20px; }
-    .title-long { display: none; }
-    .title-short { display: inline; }
-    .header-version,
-    .header-version + .credit-separator {
-        display: none;
-    }
-    #start-page h1 { font-size: 2.5em; }
-    .steps-container { gap: 10px; }
-    .step-icon { width: 50px; height: 50px; font-size: 1.2em;}
-    .step-label { font-size: 0.9em; }
-    .step-arrow { font-size: 2em; }
-    h2 { font-size: 1.5em; }
-    .config-list { grid-template-columns: 1fr; height: 100%; max-height: none; }
-    .modal-content { width: 90%; padding: 20px; }
-    .result-table th, .result-table td { padding: 10px; font-size: 0.9em;}
-    .input-views-container {
-        flex-grow: 0;
-        height: 43vh;
-    }
-    .input-views-container .map-container {
-        height: 100%;
-        aspect-ratio: unset;
-    }
-    .site-credit-footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-    }
-    /* Reorder result page for mobile */
-    .result-details-container {
-        order: 1;
-    }
-    .result-layout-container {
-        order: 2;
-    }
-    .result-footer-link {
-        display: none;
-    }
-    .result-disclaimer-desktop {
-        display: none;
-    }
-    #disclaimer-link-result-mobile { display: block; }
-    .save-icon-btn {
-        display: block; /* Show on mobile */
-    }
-}
+// --- CALCULATION SERVICE ---
+// A pure object for handling complex calculations without side effects.
+const PlanCalculator = {
+    findShortestPlan: function(startConfig, idealConfig, options) {
+        return new Promise(resolve => {
+            const { isMultiplayer, allowBoat, onProgress } = options;
+            const actionsToUse = this.getAvailableActions(allowBoat);
+            
+            const PATTERN_MAP = { 'A': 0, 'B': 1, 'C': 2 };
+            const endConfigArr = groupKeys.map(k => idealConfig[k] ? PATTERN_MAP[idealConfig[k]] : -1);
+    
+            let startState = 0;
+            for (let i = 0; i < groupKeys.length; i++) {
+                startState = startState * 3 + PATTERN_MAP[startConfig[groupKeys[i]]];
+            }
+    
+            if (this.isStateGoal(startState, endConfigArr)) {
+                resolve([]);
+                return;
+            }
+    
+            const queue = [{ state: startState, path: [] }];
+            const visited = new Set([startState]);
+            let verifiedCount = 0;
 
-/* --- Small Mobile --- */
-@media (max-width: 480px) {
-    #start-page h1 { font-size: 2em; }
-    .steps-container { gap: 5px; margin-top: 15px; margin-bottom: 10px;}
-    .step-icon { width: 40px; height: 40px; font-size: 1em; }
-    .step-label { font-size: 0.7em; margin-top: 8px; }
-    .step-arrow { font-size: 1.5em; }
-    .btn { font-size: 1em; padding: 12px 24px; }
-    #go-to-current-btn { padding: 18px 36px; font-size: 1.3em; }
-    .page { padding: 15px; }
-    .config-item-label { font-size: 1em; }
-    .pattern-buttons button { width: 40px; height: 40px; padding: 5px; font-size: 0.9em;}
-    .page-footer { 
-        flex-direction: row; 
-        flex-wrap: wrap;
-        gap: 10px;
-        padding-bottom: 15px;
-    }
-    .page-footer .left-action, .page-footer .right-action {
-        flex-basis: auto;
-        flex-grow: 0;
-    }
-    .page-footer .center-action {
-        flex-basis: 100%;
-        order: 3;
-    }
-    .page-footer .right-action {
-        margin-left: auto;
-    }
-    .page-footer .btn { font-size: 0.9em; padding: 10px 20px; }
-    .page-footer .btn-secondary-link { font-size: 0.9em; padding: 5px; }
-}
+            const processChunk = () => {
+                const startTime = Date.now();
+                while (queue.length > 0 && (Date.now() - startTime < 50)) {
+                    const { state, path } = queue.shift();
+                    verifiedCount++;
 
-/* --- Height Constrained Desktop --- */
-@media (min-width: 992px) and (max-height: 800px) {
-    #current-config-page .step-icon,
-    #ideal-config-page .step-icon,
-    #result-page .step-icon {
-        width: 45px;
-        height: 45px;
-        font-size: 1.2em;
+                    if (path.length >= 8) continue;
+    
+                    const currentStateArr = this.stateToArray(state);
+                    let solutionPath = null;
+    
+                    // Solo mode actions
+                    for (const soloAction of actionsToUse) {
+                        const nextState = this.applyAction(currentStateArr, soloAction.affectedGroups);
+                        if (!visited.has(nextState)) {
+                            const newPath = [...path, { holdAction: { name: '---' }, advanceAction: soloAction, mode: 'ソロ' }];
+                            if (this.isStateGoal(nextState, endConfigArr)) {
+                                solutionPath = newPath;
+                                break;
+                            }
+                            visited.add(nextState);
+                            queue.push({ state: nextState, path: newPath });
+                        }
+                    }
+                    if (solutionPath) {
+                        resolve(solutionPath);
+                        return;
+                    }
+                    
+                    if (isMultiplayer) {
+                        for (const holdAction of actionsToUse) {
+                            for (const advanceAction of actionsToUse) {
+                                const effectiveAdvance = new Set([...advanceAction.affectedGroups].filter(x => !holdAction.affectedGroups.has(x)));
+                                if (effectiveAdvance.size === 0) continue;
+        
+                                const nextState = this.applyAction(currentStateArr, effectiveAdvance);
+                                if (!visited.has(nextState)) {
+                                     const newPath = [...path, { holdAction, advanceAction, mode: 'マルチ' }];
+                                     if (this.isStateGoal(nextState, endConfigArr)) {
+                                        solutionPath = newPath;
+                                        break;
+                                     }
+                                     visited.add(nextState);
+                                     queue.push({ state: nextState, path: newPath });
+                                }
+                            }
+                            if (solutionPath) break;
+                        }
+                    }
+                    if (solutionPath) {
+                        resolve(solutionPath);
+                        return;
+                    }
+                }
+    
+                if (queue.length > 0) {
+                    if (onProgress) onProgress(verifiedCount);
+                    setTimeout(processChunk, 0);
+                } else {
+                    if (onProgress) onProgress(verifiedCount);
+                    resolve(null);
+                }
+            };
+            
+            processChunk();
+        });
+    },
+
+    applyAction: function(stateArr, affectedGroups) {
+        const nextStateArr = [...stateArr];
+        for (const group of affectedGroups) {
+            const idx = groupKeys.indexOf(group);
+            nextStateArr[idx] = (nextStateArr[idx] + 1) % 3;
+        }
+        return this.arrayToState(nextStateArr);
+    },
+    
+    stateToArray: function(state) {
+        const arr = [];
+        for (let i = groupKeys.length - 1; i >= 0; i--) {
+            arr[i] = state % 3;
+            state = Math.floor(state / 3);
+        }
+        return arr;
+    },
+
+    arrayToState: function(arr) {
+        let state = 0;
+        for (let i = 0; i < arr.length; i++) {
+            state = state * 3 + arr[i];
+        }
+        return state;
+    },
+
+    isStateGoal: function(state, endConfigArr) {
+        const currentStateArr = this.stateToArray(state);
+        for (let i = 0; i < groupKeys.length; i++) {
+            if (endConfigArr[i] !== -1 && endConfigArr[i] !== currentStateArr[i]) {
+                return false;
+            }
+        }
+        return true;
+    },
+
+    getAvailableActions: function(allowBoat) {
+        let actions = actionsData;
+        if (!allowBoat) {
+            actions = actions.filter(action => !action.name.includes('ボート'));
+        }
+
+        const achievablePatterns = new Map();
+        achievablePatterns.set(JSON.stringify([]), { name: '何もしない', affectedGroups: new Set() });
+        
+        for (let i = 1; i < (1 << actions.length); i++) {
+            const currentActions = [];
+            const affectedGroupsSet = new Set();
+            for (let j = 0; j < actions.length; j++) {
+                if ((i >> j) & 1) {
+                    const action = actions[j];
+                    currentActions.push(action);
+                    action.affectedGroups.forEach(group => affectedGroupsSet.add(group));
+                }
+            }
+            const key = JSON.stringify([...affectedGroupsSet].sort());
+            if (!achievablePatterns.has(key)) {
+                achievablePatterns.set(key, {
+                    name: currentActions.map(a => a.name).join(' + '),
+                    affectedGroups: affectedGroupsSet
+                });
+            }
+        }
+        return Array.from(achievablePatterns.values());
     }
-    #current-config-page .step-label,
-    #ideal-config-page .step-label,
-    #result-page .step-label {
-        margin-top: 10px;
-        font-size: 0.9em;
-    }
-}
+};
+
+
+// --- APP START ---
+document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
 
 
