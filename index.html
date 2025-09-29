@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>鶴観調整プランナー（周期ホールド対応）</title>
     <!-- CSSファイルを外部から読み込み -->
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header class="site-header backdrop-blur">
@@ -380,7 +380,10 @@
     <div id="screenshot-popup" class="modal backdrop-blur">
         <div class="modal-content">
              <span class="modal-close" data-target="screenshot-popup">&times;</span>
-             <h3 id="screenshot-title"></h3>
+             <div style="text-align: center; margin-bottom: 15px;">
+                <p style="color: var(--danger-color); font-weight: bold; margin: 0;">この画像と実際のプレイ画面を慎重に比較してください</p>
+                <h3 id="screenshot-title" style="margin: 5px 0 0 0;"></h3>
+             </div>
              <div class="image-container">
                 <button id="screenshot-prev-btn" class="zoom-nav-btn prev" aria-label="前のパターン"></button>
                 <div class="image-loader">読み込み中...</div>
@@ -552,8 +555,7 @@
 
     <!-- JavaScriptファイルを外部から読み込み -->
     <!-- データ定義を先に、メインロジックを後に読み込む -->
-    <script src="js/data.js"></script>
-    <script src="js/main.js"></script>
+    <script src="data.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>
-
