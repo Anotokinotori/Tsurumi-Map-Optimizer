@@ -220,6 +220,10 @@ const TsurumiApp = {
         window.addEventListener('resize', () => {
             this.ui.updateMapLayout('current-map-container');
             this.ui.updateMapLayout('ideal-map-container');
+            // Re-render results on resize to toggle mobile/desktop progress UI
+            if (document.getElementById('result-page').classList.contains('active')) {
+                this.ui.displayResults(this.state.lastCalculatedPlan, this.elements.multiplayerCheckbox.checked, this.elements.boatCheckbox.checked);
+            }
         });
 
         this.elements.allMapBgs.forEach(img => {
@@ -233,8 +237,10 @@ const TsurumiApp = {
     },
 
     // --- CORE LOGIC ---
-    updateConfig(configType, groupId, pattern) {
-        this.state.activePlanId = null; // Any config change invalidates the current plan ID
+    updateConfig(configType, groupId, pattern, options = {}) {
+        if (!options.isInitializing) {
+            this.state.activePlanId = null; // Any user config change invalidates the current plan ID
+        }
         const configToUpdate = (configType === 'current') ? this.state.currentConfig : this.state.idealConfig;
         configToUpdate[groupId] = pattern;
         
@@ -364,17 +370,15 @@ const TsurumiApp = {
             advanceAction: { ...day.advanceAction, affectedGroups: new Set(day.advanceAction.affectedGroups || []) }
         }));
 
-        this.state.currentConfig = planToLoad.currentConfig;
-        this.state.idealConfig = planToLoad.idealConfig;
+        this.state.currentConfig = { ...planToLoad.currentConfig };
+        this.state.idealConfig = { ...planToLoad.idealConfig };
         this.state.lastCalculatedPlan = deserializedPlan;
         this.state.activePlanId = planToLoad.id;
         this.elements.multiplayerCheckbox.checked = planToLoad.isMultiplayer;
 
         groupKeys.forEach(groupId => {
-            // Use a temporary state object to avoid triggering activePlanId reset
-            const tempState = { ...this.state }; 
-            if (tempState.currentConfig[groupId]) this.updateConfig('current', groupId, tempState.currentConfig[groupId]);
-            if (tempState.idealConfig[groupId]) this.updateConfig('ideal', groupId, tempState.idealConfig[groupId]);
+            if (this.state.currentConfig[groupId]) this.updateConfig('current', groupId, this.state.currentConfig[groupId], { isInitializing: true });
+            if (this.state.idealConfig[groupId]) this.updateConfig('ideal', groupId, this.state.idealConfig[groupId], { isInitializing: true });
         });
         
         this.state.activePlanId = planToLoad.id;
@@ -556,7 +560,7 @@ const TsurumiApp = {
                 plan.forEach((day, index) => {
                     const tr = document.createElement('tr');
                     tr.dataset.dayIndex = index;
-                    // Only add planId if it exists, for toggling progress
+                    tr.dataset.dayText = `${index + 1}日目`;
                     if (TsurumiApp.state.activePlanId) {
                          tr.dataset.planId = TsurumiApp.state.activePlanId;
                     }
@@ -568,7 +572,7 @@ const TsurumiApp = {
                     const modeClass = day.mode === 'ソロ' ? 'mode-solo' : 'mode-multi';
                     tr.innerHTML = `
                         <td class="progress-col"><input type="checkbox" ${currentPlanProgress[index] ? 'checked' : ''}></td>
-                        <td>${index + 1}日目</td>
+                        <td class="date-col">${index + 1}日目</td>
                         <td><span class="${modeClass}">${day.mode}</span></td>
                         <td>${day.holdAction.name}</td>
                         <td>${day.advanceAction.name}</td>
@@ -577,7 +581,7 @@ const TsurumiApp = {
                     tbody.appendChild(tr);
 
                     if (currentPlanProgress[index]) {
-                        tr.classList.add('is-completed');
+                        this.updateProgressView(TsurumiApp.state.activePlanId, index);
                     }
                 });
             }
@@ -595,9 +599,13 @@ const TsurumiApp = {
             const isCompleted = allProgress[planId] && allProgress[planId][dayIndex];
 
             row.classList.toggle('is-completed', isCompleted);
+            
             const checkbox = row.querySelector('input[type="checkbox"]');
-            if (checkbox) {
-                checkbox.checked = isCompleted;
+            if (checkbox) checkbox.checked = isCompleted;
+
+            const dateCell = row.querySelector('.date-col');
+            if(dateCell && window.innerWidth <= 991) {
+                dateCell.innerHTML = isCompleted ? '✔ 完了' : row.dataset.dayText;
             }
         },
 
