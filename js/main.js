@@ -370,6 +370,7 @@ const TsurumiApp = {
             advanceAction: { ...day.advanceAction, affectedGroups: new Set(day.advanceAction.affectedGroups || []) }
         }));
 
+        // Use spread operator to create new objects to avoid reference issues
         this.state.currentConfig = { ...planToLoad.currentConfig };
         this.state.idealConfig = { ...planToLoad.idealConfig };
         this.state.lastCalculatedPlan = deserializedPlan;
@@ -580,8 +581,9 @@ const TsurumiApp = {
                     `;
                     tbody.appendChild(tr);
 
+                    // Apply initial completed view state
                     if (currentPlanProgress[index]) {
-                        this.updateProgressView(TsurumiApp.state.activePlanId, index);
+                        this.updateProgressView(TsurumiApp.state.activePlanId, index, true);
                     }
                 });
             }
@@ -591,12 +593,18 @@ const TsurumiApp = {
             try { window.scrollTo(0, 0); } catch(e) {/* ignore */}
         },
 
-        updateProgressView: function(planId, dayIndex) {
+        updateProgressView: function(planId, dayIndex, isInitial = false) {
+            // Find the correct row only if a plan is active
+            if (!planId) return;
             const row = TsurumiApp.elements.resultTbody.querySelector(`tr[data-day-index='${dayIndex}'][data-plan-id='${planId}']`);
             if (!row) return;
 
             const allProgress = TsurumiApp.getProgressData();
             const isCompleted = allProgress[planId] && allProgress[planId][dayIndex];
+            
+            if (!isInitial) { // Avoid animation on initial load
+                row.style.transition = 'background-color 0.3s ease, color 0.3s ease';
+            }
 
             row.classList.toggle('is-completed', isCompleted);
             
@@ -606,6 +614,10 @@ const TsurumiApp = {
             const dateCell = row.querySelector('.date-col');
             if(dateCell && window.innerWidth <= 991) {
                 dateCell.innerHTML = isCompleted ? '✔ 完了' : row.dataset.dayText;
+            }
+            
+            if (!isInitial) {
+                setTimeout(() => row.style.transition = '', 300);
             }
         },
 
