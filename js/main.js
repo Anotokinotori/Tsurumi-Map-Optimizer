@@ -927,4 +927,3 @@ const PlanCalculator = {
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
 
-
