@@ -909,16 +909,38 @@ main {
     align-items: center; 
     font-weight: bold; 
     color: white; 
-    font-size: 1.1em; 
+    font-size: 1.5em; /* Increased font size for pattern text */
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.6); /* Added shadow for readability */
     transition: all 0.3s ease; 
 }
 .map-marker.glowing { animation: glowing 2s infinite; }
 .map-marker.completed { 
+    /* This class is now a fallback, the new logic will use pattern-specific classes */
     background-color: #10B981; 
     border-color: white; 
     animation: none; 
     background-image: none !important;
 }
+/* New styles for pattern-specific markers */
+.map-marker.completed-a {
+    background-color: rgba(239, 68, 68, 0.9); /* Red for A */
+    border-color: #fca5a5;
+    animation: none;
+    background-image: none !important;
+}
+.map-marker.completed-b {
+    background-color: rgba(59, 130, 246, 0.9); /* Blue for B */
+    border-color: #93c5fd;
+    animation: none;
+    background-image: none !important;
+}
+.map-marker.completed-c {
+    background-color: rgba(234, 179, 8, 0.9); /* Yellow for C */
+    border-color: #fcd34d;
+    animation: none;
+    background-image: none !important;
+}
+
 @keyframes glowing { 
     0% { box-shadow: 0 0 8px var(--accent-color); } 
     50% { box-shadow: 0 0 55px var(--accent-color); } 
