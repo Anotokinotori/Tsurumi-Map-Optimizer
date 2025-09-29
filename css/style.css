@@ -1031,44 +1031,21 @@ main {
     cursor: pointer;
 }
 .result-table tbody tr {
-    transition: opacity 0.3s ease, background-color 0.3s ease;
-    position: relative; /* For the overlay */
+    transition: background-color 0.3s ease;
 }
-
-/* Desktop completed style */
-@media (min-width: 992px) {
-    .result-table tbody tr.is-completed {
-        opacity: 0.6;
-        background-color: var(--completed-color);
-    }
-    .result-table tbody tr.is-completed td:not(.progress-col) {
-        text-decoration: line-through;
-        color: #6b7280;
-    }
+.result-table tbody tr.is-completed {
+    background-color: var(--completed-color);
 }
-
-/* Mobile completed overlay style */
-@media (max-width: 991px) {
-    .result-table tbody tr.is-completed::after {
-        content: '✔ タスク完了';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(40, 40, 40, 0.75);
-        color: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-weight: bold;
-        font-size: 1.2em;
-        z-index: 1;
-        pointer-events: none; /* Let clicks pass through */
-        border-radius: inherit; /* Match table row radius if any */
-    }
+.result-table tbody tr.is-completed td:not(.date-col) {
+    text-decoration: line-through;
+    color: #6b7280;
+}
+.result-table tbody tr.is-completed td.date-col {
+    font-weight: bold;
+    color: var(--primary-text-color);
 }
 /* End of Progress Tracking Styles */
+
 
 /* --- Modals Content --- */
 #guide-modal .modal-content h2 { font-size: 2.2em; margin-bottom: 15px; }
