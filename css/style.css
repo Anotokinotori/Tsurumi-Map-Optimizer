@@ -20,6 +20,7 @@
     --btn-secondary-bg-hover: #e5e7eb;
     --danger-color: #ef4444;
     --danger-hover-color: #dc2626;
+    --completed-color: #d1d5db;
 }
 
 body {
@@ -909,37 +910,22 @@ main {
     align-items: center; 
     font-weight: bold; 
     color: white; 
-    font-size: 1.5em; /* Increased font size for pattern text */
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.6); /* Added shadow for readability */
+    font-size: 1.1em; 
     transition: all 0.3s ease; 
 }
 .map-marker.glowing { animation: glowing 2s infinite; }
-.map-marker.completed { 
-    /* This class is now a fallback, the new logic will use pattern-specific classes */
-    background-color: #10B981; 
-    border-color: white; 
-    animation: none; 
-    background-image: none !important;
-}
-/* New styles for pattern-specific markers */
-.map-marker.completed-a {
-    background-color: rgba(239, 68, 68, 0.9); /* Red for A */
-    border-color: #fca5a5;
-    animation: none;
-    background-image: none !important;
-}
-.map-marker.completed-b {
-    background-color: rgba(59, 130, 246, 0.9); /* Blue for B */
-    border-color: #93c5fd;
-    animation: none;
-    background-image: none !important;
-}
+
+.map-marker.completed-a,
+.map-marker.completed-b,
 .map-marker.completed-c {
-    background-color: rgba(234, 179, 8, 0.9); /* Yellow for C */
-    border-color: #fcd34d;
     animation: none;
     background-image: none !important;
+    font-size: 1.4em;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
+.map-marker.completed-a { background-color: #ef4444; border-color: white; }
+.map-marker.completed-b { background-color: #3b82f6; border-color: white; }
+.map-marker.completed-c { background-color: #f59e0b; border-color: white; }
 
 @keyframes glowing { 
     0% { box-shadow: 0 0 8px var(--accent-color); } 
@@ -1033,6 +1019,28 @@ main {
 /* --- Result Table --- */
 .mode-solo { color: var(--accent-color); font-weight: bold; }
 .mode-multi { color: var(--multiplayer-accent-color); font-weight: bold; }
+
+/* Styles for Progress Tracking Feature */
+.result-table .progress-col {
+    width: 60px;
+    text-align: center;
+}
+.result-table .progress-col input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+.result-table tbody tr {
+    transition: opacity 0.3s ease, background-color 0.3s ease;
+}
+.result-table tbody tr.is-completed {
+    opacity: 0.6;
+    background-color: var(--completed-color);
+}
+.result-table tbody tr.is-completed td {
+    text-decoration: line-through;
+}
+/* End of Progress Tracking Styles */
 
 /* --- Modals Content --- */
 #guide-modal .modal-content h2 { font-size: 2.2em; margin-bottom: 15px; }
@@ -1431,6 +1439,14 @@ main {
     #disclaimer-link-result-mobile { display: block; }
     .save-icon-btn {
         display: block; /* Show on mobile */
+    }
+    /* Hide progress column on mobile */
+    .result-table .progress-col {
+        display: none;
+    }
+    /* Make rows tappable on mobile */
+    .result-table tbody tr.mobile-tappable {
+        cursor: pointer;
     }
 }
 
