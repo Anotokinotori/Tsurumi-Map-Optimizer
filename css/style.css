@@ -1036,7 +1036,7 @@ main {
 .result-table tbody tr.is-completed {
     background-color: var(--completed-color);
 }
-.result-table tbody tr.is-completed td:not(.date-col) {
+.result-table tbody tr.is-completed td:not(.progress-col):not(.date-col) {
     text-decoration: line-through;
     color: #6b7280;
 }
@@ -1453,6 +1453,26 @@ main {
     .result-table tbody tr.mobile-tappable {
         cursor: pointer;
     }
+
+    #zoom-map-container.mobile-cluster-view {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        padding: 20px;
+    }
+    #zoom-map-container.mobile-cluster-view .pattern-marker {
+        position: static;
+        transform: none;
+        width: 80px;
+        height: 80px;
+        font-size: 2em;
+    }
+    #zoom-map-container.mobile-cluster-view img {
+        display: none;
+    }
+
 }
 
 /* --- Small Mobile --- */
