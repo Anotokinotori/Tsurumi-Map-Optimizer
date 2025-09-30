@@ -479,6 +479,7 @@ const TsurumiApp = {
                     const overlay = document.createElement('div');
                     overlay.className = 'map-marker-overlay';
                     overlay.id = `ideal-overlay-${groupId}`;
+                    overlay.textContent = TsurumiApp.state.currentConfig[groupId] || '';
                     mapContainer.appendChild(overlay);
                 }
 
