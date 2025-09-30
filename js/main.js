@@ -488,7 +488,7 @@ const TsurumiApp = {
                 let labelHTML = `<div class="group-name">${group.name}</div>`;
                 if (configType === 'ideal') {
                     const currentPattern = TsurumiApp.state.currentConfig[groupId] || '?';
-                    labelHTML += `<div class="current-config-display" id="ideal-list-diff-${groupId}">現在: ${currentPattern}</div>`;
+                    labelHTML += `<div class="current-config-display" id="ideal-list-diff-${groupId}">現在配置: ${currentPattern}</div>`;
                 }
                 item.innerHTML = `<div class="config-item-label">${labelHTML}</div>`;
 
@@ -693,7 +693,7 @@ const TsurumiApp = {
         updateIdealDiffDisplay: function(groupId, newCurrentPattern) {
             const diffEl = document.getElementById(`ideal-list-diff-${groupId}`);
             if (diffEl) {
-                diffEl.textContent = `現在: ${newCurrentPattern || '?'}`;
+                diffEl.textContent = `現在配置: ${newCurrentPattern || '?'}`;
             }
         },
         updateIdealMapOverlay: function(groupId) {
@@ -1092,3 +1092,4 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
