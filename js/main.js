@@ -234,7 +234,7 @@ const TsurumiApp = {
     },
 
     // --- CORE LOGIC ---
-    updateConfig(configType, groupId, pattern) {
+    updateConfig: function(configType, groupId, pattern) {
         this.state.activePlanId = null; // Any config change invalidates the current plan ID
         const configToUpdate = (configType === 'current') ? this.state.currentConfig : this.state.idealConfig;
         configToUpdate[groupId] = pattern;
@@ -1061,3 +1061,5 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
+
