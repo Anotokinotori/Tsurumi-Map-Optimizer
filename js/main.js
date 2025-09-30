@@ -241,6 +241,7 @@ const TsurumiApp = {
         
         if (configType === 'current') {
             this.ui.updateIdealDiffDisplay(groupId, pattern);
+            this.ui.updateIdealMapOverlay(groupId, pattern);
         }
 
         this.ui.updateMarker(configType, groupId, pattern);
@@ -454,7 +455,7 @@ const TsurumiApp = {
         initInputPage: function(configType) {
             const mapContainer = document.getElementById(`${configType}-map-container`);
             const listContainer = document.getElementById(`${configType}-config-list`);
-            mapContainer.querySelectorAll('.map-marker').forEach(marker => marker.remove());
+            mapContainer.querySelectorAll('.map-marker, .map-marker-overlay').forEach(el => el.remove());
             listContainer.innerHTML = '';
             
             groupKeys.forEach(groupId => {
@@ -466,6 +467,17 @@ const TsurumiApp = {
                 marker.style.backgroundImage = `url(${group.iconUrl})`;
                 marker.addEventListener('click', () => TsurumiApp.ui.openGroupSelector(configType, groupId));
                 mapContainer.appendChild(marker);
+
+                // Add overlay for ideal map
+                if (configType === 'ideal') {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'map-marker-overlay';
+                    overlay.id = `ideal-overlay-${groupId}`;
+                    const currentPattern = TsurumiApp.state.currentConfig[groupId];
+                    overlay.textContent = currentPattern || '';
+                    overlay.style.display = currentPattern ? 'flex' : 'none';
+                    mapContainer.appendChild(overlay);
+                }
 
                 // List Item
                 const item = document.createElement('div');
@@ -525,7 +537,7 @@ const TsurumiApp = {
             const mapImage = mapContainer.querySelector('.map-bg');
             if (!mapImage || !mapImage.complete || mapImage.naturalWidth === 0) return;
 
-            const markers = mapContainer.querySelectorAll('.map-marker');
+            const markers = mapContainer.querySelectorAll('.map-marker, .map-marker-overlay');
             const containerRect = mapContainer.getBoundingClientRect();
             const imageAspectRatio = mapImage.naturalWidth / mapImage.naturalHeight;
             const containerAspectRatio = containerRect.width / containerRect.height;
@@ -544,7 +556,7 @@ const TsurumiApp = {
             }
 
             markers.forEach(marker => {
-                const groupId = marker.id.split('-')[2];
+                const groupId = marker.id.split('-').pop();
                 const pos = markerPositions[groupId];
                 if (pos) {
                     const newLeft = offsetX + (renderedWidth * (parseFloat(pos.left) / 100));
@@ -893,6 +905,13 @@ const TsurumiApp = {
             const displayEl = document.querySelector(`#ideal-config-list .config-item-label[data-group-id="${groupId}"] .current-config-display`);
             if (displayEl) {
                 displayEl.textContent = `現在: ${newPattern}`;
+            }
+        },
+        updateIdealMapOverlay: function(groupId, newPattern) {
+            const overlayEl = document.getElementById(`ideal-overlay-${groupId}`);
+            if (overlayEl) {
+                overlayEl.textContent = newPattern;
+                overlayEl.style.display = 'flex';
             }
         }
     }
