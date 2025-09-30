@@ -919,7 +919,7 @@ main {
     position: absolute;
     width: clamp(28px, 5vw, 40px);
     height: clamp(28px, 5vw, 40px);
-    background-color: rgba(100, 116, 139, 0.7); /* slate-500 with opacity */
+    background-color: rgba(100, 116, 139, 0.4); /* slate-500 with MORE opacity */
     border-radius: 50%;
     color: white;
     font-size: 1.1em;
