@@ -851,13 +851,12 @@ const TsurumiApp = {
             return html;
         },
         generateActionDetailsHTML: function(actionData, holdActionData = {affectedGroups: new Set()}) {
-            if (!actionData || !actionData.name || actionData.name === '---' || actionData.name === '何もしない') return '<p>特別な行動は不要です。</p>';
+            if (!actionData || !actionData.name || actionData.name === '---' || actionData.name === '何もしない') return '<p>この役割では特別な行動は不要です。</p>';
 
             const effectiveGroups = new Set([...actionData.affectedGroups].filter(x => !holdActionData.affectedGroups.has(x)));
-            if (effectiveGroups.size === 0) return '<p>特別な行動は不要です。</p>';
+            if (effectiveGroups.size === 0) return '<p>この役割では特別な行動は不要です。</p>';
             
-            const affectedGroupsList = Array.from(effectiveGroups).map(key => `「${eliteGroups[key].name}」`).join('、');
-            let html = `<p><strong>影響を受けるグループ:</strong> ${affectedGroupsList}</p><ul>`;
+            let html = '<ul>';
             const actions = actionData.name.split(' + ');
             
             actions.forEach(actionName => {
@@ -866,6 +865,16 @@ const TsurumiApp = {
 
                 const details = actionDetails[action.id] || {};
                 html += `<li><strong>${actionName}</strong><p>${(details.note || '').replace(/\n/g, '<br>')}</p>`;
+
+                const individualEffectiveGroups = [...action.affectedGroups].filter(g => effectiveGroups.has(g));
+                if (individualEffectiveGroups.length > 0) {
+                    const groupsListHtml = individualEffectiveGroups.map(key => `<li>${eliteGroups[key].name}</li>`).join('');
+                    html += `<div class="affected-groups-container">
+                                <strong>この操作で影響を受けるグループ:</strong>
+                                <ul>${groupsListHtml}</ul>
+                             </div>`;
+                }
+
                 if (details.images) {
                     details.images.forEach(imgUrl => {
                         html += `<div class="image-container"><div class="image-loader">読込中...</div><img data-src="${imgUrl}" alt="${actionName}のルート図"></div>`;
@@ -1080,5 +1089,6 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
 
 
