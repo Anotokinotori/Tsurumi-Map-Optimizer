@@ -234,21 +234,28 @@ const TsurumiApp = {
     },
 
     // --- CORE LOGIC ---
-    updateConfig: function(configType, groupId, pattern) {
+    updateConfig(configType, groupId, pattern) {
         this.state.activePlanId = null; // Any config change invalidates the current plan ID
         const configToUpdate = (configType === 'current') ? this.state.currentConfig : this.state.idealConfig;
         configToUpdate[groupId] = pattern;
         
-        if (configType === 'current') {
-            this.ui.updateIdealDiffDisplay(groupId, pattern);
-            this.ui.updateIdealMapOverlay(groupId, pattern);
-        }
-
         this.ui.updateMarker(configType, groupId, pattern);
         this.ui.updatePatternButtons(configType, groupId, pattern);
         this.ui.updateProgress(configType);
+
+        // If CURRENT config changes, it must be reflected in the IDEAL page's display
+        if (configType === 'current') {
+            this.ui.updateIdealDiffDisplay(groupId, pattern);
+            this.ui.updateIdealMapOverlay(groupId); 
+        } 
+        // If IDEAL config changes, we need to update its overlay (to hide it)
+        else if (configType === 'ideal') {
+             this.ui.updateIdealMapOverlay(groupId);
+        }
+
         this.ui.updateGuideTextVisibility();
     },
+
 
     fillAllConfigs(pattern) {
         groupKeys.forEach(groupId => this.updateConfig('current', groupId, pattern));
@@ -468,35 +475,22 @@ const TsurumiApp = {
                 marker.addEventListener('click', () => TsurumiApp.ui.openGroupSelector(configType, groupId));
                 mapContainer.appendChild(marker);
 
-                // Add overlay for ideal map
                 if (configType === 'ideal') {
                     const overlay = document.createElement('div');
                     overlay.className = 'map-marker-overlay';
                     overlay.id = `ideal-overlay-${groupId}`;
-                    const currentPattern = TsurumiApp.state.currentConfig[groupId];
-                    overlay.textContent = currentPattern || '';
-                    overlay.style.display = currentPattern ? 'flex' : 'none';
                     mapContainer.appendChild(overlay);
                 }
 
                 // List Item
                 const item = document.createElement('div');
                 item.className = 'config-item';
-                
-                const label = document.createElement('div');
-                label.className = 'config-item-label';
-                label.dataset.groupId = groupId;
-
+                let labelHTML = `<div class="group-name">${group.name}</div>`;
                 if (configType === 'ideal') {
                     const currentPattern = TsurumiApp.state.currentConfig[groupId] || '?';
-                    label.innerHTML = `
-                        <span class="group-name">${group.name}</span>
-                        <span class="current-config-display">現在: ${currentPattern}</span>
-                    `;
-                } else {
-                    label.innerHTML = `<span class="group-name">${group.name}</span>`;
+                    labelHTML += `<div class="current-config-display" id="ideal-list-diff-${groupId}">現在: ${currentPattern}</div>`;
                 }
-                item.appendChild(label);
+                item.innerHTML = `<div class="config-item-label">${labelHTML}</div>`;
 
                 const buttons = document.createElement('div');
                 buttons.className = 'pattern-buttons';
@@ -536,8 +530,8 @@ const TsurumiApp = {
 
             const mapImage = mapContainer.querySelector('.map-bg');
             if (!mapImage || !mapImage.complete || mapImage.naturalWidth === 0) return;
-
-            const markers = mapContainer.querySelectorAll('.map-marker, .map-marker-overlay');
+            
+            const elementsToPosition = mapContainer.querySelectorAll('.map-marker, .map-marker-overlay');
             const containerRect = mapContainer.getBoundingClientRect();
             const imageAspectRatio = mapImage.naturalWidth / mapImage.naturalHeight;
             const containerAspectRatio = containerRect.width / containerRect.height;
@@ -555,47 +549,21 @@ const TsurumiApp = {
                 offsetY = 0;
             }
 
-            markers.forEach(marker => {
-                const groupId = marker.id.split('-').pop();
+            elementsToPosition.forEach(el => {
+                const isOverlay = el.classList.contains('map-marker-overlay');
+                const idParts = el.id.split('-');
+                const groupId = idParts[isOverlay ? 1 : 2];
+
                 const pos = markerPositions[groupId];
                 if (pos) {
                     const newLeft = offsetX + (renderedWidth * (parseFloat(pos.left) / 100));
                     const newTop = offsetY + (renderedHeight * (parseFloat(pos.top) / 100));
-                    marker.style.left = `${newLeft - marker.offsetWidth / 2}px`;
-                    marker.style.top = `${newTop - marker.offsetHeight / 2}px`;
+                    el.style.left = `${newLeft - el.offsetWidth / 2}px`;
+                    el.style.top = `${newTop - el.offsetHeight / 2}px`;
                 }
             });
-
-            // Also update overlays if it's the ideal map
-            if (containerId === 'ideal-map-container') {
-                const overlays = mapContainer.querySelectorAll('.map-marker-overlay');
-                overlays.forEach(overlay => {
-                    const groupId = overlay.id.split('-')[2];
-                    const pos = markerPositions[groupId];
-                    if (pos) {
-                        const newLeft = offsetX + (renderedWidth * (parseFloat(pos.left) / 100));
-                        const newTop = offsetY + (renderedHeight * (parseFloat(pos.top) / 100));
-                        overlay.style.left = `${newLeft - overlay.offsetWidth / 2}px`;
-                        overlay.style.top = `${newTop - overlay.offsetHeight / 2}px`;
-                    }
-                });
-            }
         },
 
-        updateIdealMapOverlay: function(groupId) {
-            const overlay = document.getElementById(`ideal-overlay-${groupId}`);
-            if (!overlay) return;
-
-            const currentPattern = TsurumiApp.state.currentConfig[groupId];
-            overlay.textContent = currentPattern || '';
-
-            // Hide overlay if ideal config is already set for this group
-            if (TsurumiApp.state.idealConfig[groupId]) {
-                overlay.style.display = 'none';
-            } else {
-                overlay.style.display = 'flex';
-            }
-        },
 
         displayResults: function(plan, isMultiplayer, allowBoat) {
             const summaryEl = document.getElementById('result-summary-text');
@@ -716,10 +684,412 @@ const TsurumiApp = {
             marker.style.backgroundImage = 'none';
 
             marker.classList.add(`completed-${pattern.toLowerCase()}`);
-
-            if (configType === 'ideal') {
-                this.updateIdealMapOverlay(groupId);
+        },
+        updatePatternButtons: function(configType, groupId, pattern) {
+             document.getElementById(`${configType}-buttons-${groupId}`).querySelectorAll('button').forEach(btn => {
+                btn.classList.toggle('selected', btn.textContent === pattern);
+            });
+        },
+        updateIdealDiffDisplay: function(groupId, newCurrentPattern) {
+            const diffEl = document.getElementById(`ideal-list-diff-${groupId}`);
+            if (diffEl) {
+                diffEl.textContent = `現在: ${newCurrentPattern || '?'}`;
             }
         },
-        updatePatternButtons: function(configType, groupId
+        updateIdealMapOverlay: function(groupId) {
+            const overlay = document.getElementById(`ideal-overlay-${groupId}`);
+            if (!overlay) return;
+
+            const isIdealSet = TsurumiApp.state.idealConfig.hasOwnProperty(groupId);
+            overlay.style.display = isIdealSet ? 'none' : 'flex';
+
+            if (!isIdealSet) {
+                const currentPattern = TsurumiApp.state.currentConfig[groupId];
+                overlay.textContent = currentPattern || '';
+            }
+        },
+        openGroupSelector: function(configType, groupId) {
+            TsurumiApp.state.activeSelection = { configType, groupId };
+            document.getElementById('zoom-title').textContent = `${eliteGroups[groupId].name} のパターンを選択`;
+            const zoomContainer = document.getElementById('zoom-map-container');
+            const zoomMapImage = zoomContainer.querySelector('img');
+            this.setupImageLoader(zoomMapImage, eliteGroups[groupId].zoomMapUrl);
+
+            zoomContainer.querySelectorAll('.pattern-marker').forEach(m => m.remove());
+            const selectedPattern = (configType === 'current' ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig)[groupId];
+
+            ['A', 'B', 'C'].forEach(pattern => {
+                const pos = patternMarkerPositions[groupId]?.[pattern];
+                if (!pos) return;
+
+                const marker = document.createElement('div');
+                marker.className = 'pattern-marker';
+                marker.innerHTML = `<span class="pattern-label">${pattern}</span>`;
+                if (pattern === selectedPattern) {
+                    marker.classList.add('completed');
+                    marker.innerHTML = '✔';
+                }
+
+                marker.style.top = `${100 - parseFloat(pos.bottom)}%`;
+                marker.style.left = `${100 - parseFloat(pos.right)}%`;
+                marker.addEventListener('click', () => this.selectPatternForConfirmation(pattern));
+                zoomContainer.appendChild(marker);
+            });
+            this.showModal('zoom-view');
+        },
+        selectPatternForConfirmation: function(pattern) {
+             TsurumiApp.state.activeSelection.pattern = pattern;
+            
+            this.updateScreenshotView(pattern);
+            
+            document.getElementById('confirm-pattern-btn').onclick = () => {
+               const { configType, groupId, pattern } = TsurumiApp.state.activeSelection;
+               if (configType && groupId && pattern) TsurumiApp.updateConfig(configType, groupId, pattern);
+               this.closeModal('screenshot-popup');
+               this.closeModal('zoom-view');
+            };
+            
+            this.showModal('screenshot-popup');
+        },
+        updateScreenshotView: function(pattern) {
+            const { groupId } = TsurumiApp.state.activeSelection;
+            if (!groupId) return;
+
+            TsurumiApp.state.activeSelection.pattern = pattern;
+
+            document.getElementById('screenshot-title').textContent = `${eliteGroups[groupId].name} - ${pattern} ですか？`;
+            
+            const screenshotImg = document.getElementById('screenshot-img');
+            this.setupImageLoader(screenshotImg, screenshotImageUrls[groupId]?.[pattern]);
+        },
+        navigateScreenshotPattern: function(direction) {
+            const patterns = ['A', 'B', 'C'];
+            const { pattern } = TsurumiApp.state.activeSelection;
+            const currentIndex = patterns.indexOf(pattern);
+            const nextIndex = (currentIndex + direction + patterns.length) % patterns.length;
+            const nextPattern = patterns[nextIndex];
+            
+            this.updateScreenshotView(nextPattern);
+        },
+        setupImageLoader: function(imgElement, src) {
+            const container = imgElement.parentElement;
+            if (!container || !container.classList.contains('image-container')) return;
+            container.classList.remove('loaded');
+            imgElement.onload = () => container.classList.add('loaded');
+            imgElement.onerror = () => { container.querySelector('.image-loader').textContent = '読込失敗'; };
+            imgElement.src = src || 'https://placehold.co/1x1/ffffff/ffffff?text=';
+        },
+        showValidationMessage: function(message, targetElement) {
+            const validationMessage = TsurumiApp.elements.validationMessage;
+            validationMessage.textContent = message;
+            validationMessage.classList.add('show');
+            targetElement.classList.add('shake');
+            setTimeout(() => validationMessage.classList.remove('show'), 2000);
+            setTimeout(() => targetElement.classList.remove('shake'), 600);
+        },
+        updateGuideTextVisibility: function() {
+            const isCurrentStarted = Object.keys(TsurumiApp.state.currentConfig).length > 0;
+            const isIdealStarted = Object.keys(TsurumiApp.state.idealConfig).length > 0;
+            document.querySelector('#current-map-container .map-guide-text').classList.toggle('hidden', isCurrentStarted);
+            document.querySelector('#ideal-map-container .map-guide-text').classList.toggle('hidden', isIdealStarted);
+        },
+        
+        handleFormSubmit: function(event) {
+            event.preventDefault();
+            const form = TsurumiApp.elements.gForm;
+            const statusMessage = TsurumiApp.elements.formStatusMessage;
+            const submitBtn = form.querySelector('button[type="submit"]');
+
+            if (!form.checkValidity()) {
+                statusMessage.textContent = '入力されていない項目があります。';
+                statusMessage.style.color = 'red';
+                return;
+            }
+
+            statusMessage.textContent = '送信中...';
+            statusMessage.style.color = 'inherit';
+            submitBtn.disabled = true;
+            
+            const iframe = document.getElementById('hidden_iframe');
+            if(iframe) {
+                iframe.submitted = true; 
+            }
+            
+            form.submit();
+        },
+        handleFormSuccess: function() {
+            const form = TsurumiApp.elements.gForm;
+            const statusMessage = TsurumiApp.elements.formStatusMessage;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            
+            statusMessage.textContent = '送信しました！ご協力ありがとうございます。';
+            statusMessage.style.color = 'green';
+            submitBtn.disabled = false;
+            form.reset();
+
+            const iframe = document.getElementById('hidden_iframe');
+            if(iframe) {
+                iframe.submitted = false;
+            }
+        },
+        
+        showDayDetail: function(dayIndex) {
+            const plan = TsurumiApp.state.lastCalculatedPlan;
+            if (!plan || isNaN(dayIndex) || !plan[dayIndex]) return;
+
+            const dayData = plan[dayIndex];
+            const dayNumber = dayIndex + 1;
+            document.getElementById('day-detail-title').textContent = `${dayNumber}日目の手順詳細`;
+            TsurumiApp.elements.dayDetailModalContent.innerHTML = this.generateDayDetailHTML(dayData);
+            TsurumiApp.elements.dayDetailModalContent.querySelectorAll('.image-container img').forEach(img => {
+                this.setupImageLoader(img, img.dataset.src);
+                img.src = img.dataset.src;
+            });
+            this.showModal('day-detail-modal');
+        },
+        generateDayDetailHTML: function(dayData) {
+            let html = '<p style="text-align:center; color: var(--secondary-text-color);"><strong>【重要】</strong>「歩き」や「ボート」での移動は、<strong>ルートを慎重に確認し、放浪者のような飛行系キャラは使用しないでください。</strong></p>';
+            if (dayData.mode === 'ソロ') {
+                html += `<h3>ソロモードでの行動</h3>` + this.generateActionDetailsHTML(dayData.advanceAction);
+            } else {
+                 html += `<h3>マルチモード（周期ホールド）での行動</h3>
+                        <h4>Step 1: 準備</h4>
+                        <p>ホスト(1P)は鶴観以外の安全な場所に移動し、ゲスト(2P)を世界に招き入れます。</p>
+                        <h4>Step 2: 周期のホールド (ゲストの操作)</h4>
+                        <p><strong>[重要]</strong> まずホスト(1P)が層岩巨淵・地下鉱区など、<strong>テイワット以外のマップに移動</strong>するのを待ちます。</p>
+                        <p>ホストの移動後、ゲスト(2P)は以下の行動で指定されたグループの周期を読み込みます。</p>`
+                        + this.generateActionDetailsHTML(dayData.holdAction) +
+                        `<p><strong>[重要]</strong> ゲストは上記行動を終えたら、速やかにホストの世界から退出してください。</p>
+                        <h4 style="margin-top: 25px;">Step 3: 周期の進行 (ホストの操作)</h4>
+                        <p>ゲストが退出してソロ状態に戻った後、ホスト(1P)は以下の行動で、ゲストが<strong>読み込まなかった</strong>グループの周期を1つ<strong>進めます</strong>。</p>`
+                        + this.generateActionDetailsHTML(dayData.advanceAction, dayData.holdAction);
+            }
+            return html;
+        },
+        generateActionDetailsHTML: function(actionData, holdActionData = {affectedGroups: new Set()}) {
+            if (!actionData || !actionData.name || actionData.name === '---' || actionData.name === '何もしない') return '<p>特別な行動は不要です。</p>';
+
+            const effectiveGroups = new Set([...actionData.affectedGroups].filter(x => !holdActionData.affectedGroups.has(x)));
+            if (effectiveGroups.size === 0) return '<p>特別な行動は不要です。</p>';
+            
+            let html = '<ul>';
+            const actions = actionData.name.split(' + ');
+            
+            actions.forEach(actionName => {
+                const action = actionsData.find(a => a.name === actionName);
+                if (!action || ![...action.affectedGroups].some(g => effectiveGroups.has(g))) return;
+
+                const details = actionDetails[action.id] || {};
+                const affectedGroupsInThisAction = Array.from(action.affectedGroups).filter(g => effectiveGroups.has(g));
+
+                html += `<li><strong>${actionName}</strong>`;
+                
+                if (affectedGroupsInThisAction.length > 0) {
+                    const affectedGroupsList = affectedGroupsInThisAction.map(key => `「${eliteGroups[key].name}」`).join('、');
+                    html += `<div class="affected-groups-container"><strong>影響を受けるグループ:</strong><ul><li>${affectedGroupsList}</li></ul></div>`;
+                }
+
+                html += `<p>${(details.note || '').replace(/\n/g, '<br>')}</p>`;
+
+                if (details.images) {
+                    details.images.forEach(imgUrl => {
+                        html += `<div class="image-container"><div class="image-loader">読込中...</div><img data-src="${imgUrl}" alt="${actionName}のルート図"></div>`;
+                    });
+                }
+                if (details.videoUrl) html += `<div class="video-container"><iframe src="${details.videoUrl.replace('youtu.be/','youtube.com/embed/').split('?si=')[0]}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+                html += `</li>`;
+            });
+            return html + '</ul>';
+        },
+        openLoadModal: function() {
+            this.renderSavedPlans();
+            this.showModal('load-plan-modal');
+        },
+        renderSavedPlans: function() {
+            const plans = TsurumiApp.getSavedPlans();
+            const listEl = document.getElementById('saved-plans-list');
+            const noPlansEl = document.getElementById('no-saved-plans');
+            listEl.innerHTML = '';
+            noPlansEl.style.display = plans.length === 0 ? 'block' : 'none';
+            listEl.style.display = plans.length > 0 ? 'flex' : 'none';
+
+            plans.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).forEach(plan => {
+                const li = document.createElement('li');
+                li.className = 'saved-plan-item';
+                li.innerHTML = `<span class="saved-plan-item-name">${plan.name}</span>
+                                <div class="saved-plan-item-actions">
+                                    <button class="btn btn-primary btn-load" data-plan-id="${plan.id}">読込</button>
+                                    <button class="btn btn-delete" data-plan-id="${plan.id}">削除</button>
+                                </div>`;
+                li.querySelector('.btn-load').addEventListener('click', () => TsurumiApp.loadPlan(plan.id));
+                li.querySelector('.btn-delete').addEventListener('click', () => TsurumiApp.deletePlan(plan.id));
+                listEl.appendChild(li);
+            });
+        }
+    }
+};
+
+// --- CALCULATION SERVICE ---
+// A pure object for handling complex calculations without side effects.
+const PlanCalculator = {
+    findShortestPlan: function(startConfig, idealConfig, options) {
+        return new Promise(resolve => {
+            const { isMultiplayer, allowBoat, onProgress } = options;
+            const actionsToUse = this.getAvailableActions(allowBoat);
+            
+            const PATTERN_MAP = { 'A': 0, 'B': 1, 'C': 2 };
+            const endConfigArr = groupKeys.map(k => idealConfig[k] ? PATTERN_MAP[idealConfig[k]] : -1);
+    
+            let startState = 0;
+            for (let i = 0; i < groupKeys.length; i++) {
+                startState = startState * 3 + PATTERN_MAP[startConfig[groupKeys[i]]];
+            }
+    
+            if (this.isStateGoal(startState, endConfigArr)) {
+                resolve([]);
+                return;
+            }
+    
+            const queue = [{ state: startState, path: [] }];
+            const visited = new Set([startState]);
+            let verifiedCount = 0;
+
+            const processChunk = () => {
+                const startTime = Date.now();
+                while (queue.length > 0 && (Date.now() - startTime < 50)) {
+                    const { state, path } = queue.shift();
+                    verifiedCount++;
+
+                    if (path.length >= 8) continue;
+    
+                    const currentStateArr = this.stateToArray(state);
+                    let solutionPath = null;
+    
+                    // Solo mode actions
+                    for (const soloAction of actionsToUse) {
+                        const nextState = this.applyAction(currentStateArr, soloAction.affectedGroups);
+                        if (!visited.has(nextState)) {
+                            const newPath = [...path, { holdAction: { name: '---' }, advanceAction: soloAction, mode: 'ソロ' }];
+                            if (this.isStateGoal(nextState, endConfigArr)) {
+                                solutionPath = newPath;
+                                break;
+                            }
+                            visited.add(nextState);
+                            queue.push({ state: nextState, path: newPath });
+                        }
+                    }
+                    if (solutionPath) {
+                        resolve(solutionPath);
+                        return;
+                    }
+                    
+                    if (isMultiplayer) {
+                        for (const holdAction of actionsToUse) {
+                            for (const advanceAction of actionsToUse) {
+                                const effectiveAdvance = new Set([...advanceAction.affectedGroups].filter(x => !holdAction.affectedGroups.has(x)));
+                                if (effectiveAdvance.size === 0) continue;
+        
+                                const nextState = this.applyAction(currentStateArr, effectiveAdvance);
+                                if (!visited.has(nextState)) {
+                                     const newPath = [...path, { holdAction, advanceAction, mode: 'マルチ' }];
+                                     if (this.isStateGoal(nextState, endConfigArr)) {
+                                        solutionPath = newPath;
+                                        break;
+                                     }
+                                     visited.add(nextState);
+                                     queue.push({ state: nextState, path: newPath });
+                                }
+                            }
+                            if (solutionPath) break;
+                        }
+                    }
+                    if (solutionPath) {
+                        resolve(solutionPath);
+                        return;
+                    }
+                }
+    
+                if (queue.length > 0) {
+                    if (onProgress) onProgress(verifiedCount);
+                    setTimeout(processChunk, 0);
+                } else {
+                    if (onProgress) onProgress(verifiedCount);
+                    resolve(null);
+                }
+            };
+            
+            processChunk();
+        });
+    },
+
+    applyAction: function(stateArr, affectedGroups) {
+        const nextStateArr = [...stateArr];
+        for (const group of affectedGroups) {
+            const idx = groupKeys.indexOf(group);
+            nextStateArr[idx] = (nextStateArr[idx] + 1) % 3;
+        }
+        return this.arrayToState(nextStateArr);
+    },
+    
+    stateToArray: function(state) {
+        const arr = [];
+        for (let i = groupKeys.length - 1; i >= 0; i--) {
+            arr[i] = state % 3;
+            state = Math.floor(state / 3);
+        }
+        return arr;
+    },
+
+    arrayToState: function(arr) {
+        let state = 0;
+        for (let i = 0; i < arr.length; i++) {
+            state = state * 3 + arr[i];
+        }
+        return state;
+    },
+
+    isStateGoal: function(state, endConfigArr) {
+        const currentStateArr = this.stateToArray(state);
+        for (let i = 0; i < groupKeys.length; i++) {
+            if (endConfigArr[i] !== -1 && endConfigArr[i] !== currentStateArr[i]) {
+                return false;
+            }
+        }
+        return true;
+    },
+
+    getAvailableActions: function(allowBoat) {
+        let actions = actionsData;
+        if (!allowBoat) {
+            actions = actions.filter(action => !action.name.includes('ボート'));
+        }
+
+        const achievablePatterns = new Map();
+        achievablePatterns.set(JSON.stringify([]), { name: '何もしない', affectedGroups: new Set() });
+        
+        for (let i = 1; i < (1 << actions.length); i++) {
+            const currentActions = [];
+            const affectedGroupsSet = new Set();
+            for (let j = 0; j < actions.length; j++) {
+                if ((i >> j) & 1) {
+                    const action = actions[j];
+                    currentActions.push(action);
+                    action.affectedGroups.forEach(group => affectedGroupsSet.add(group));
+                }
+            }
+            const key = JSON.stringify([...affectedGroupsSet].sort());
+            if (!achievablePatterns.has(key)) {
+                achievablePatterns.set(key, {
+                    name: currentActions.map(a => a.name).join(' + '),
+                    affectedGroups: affectedGroupsSet
+                });
+            }
+        }
+        return Array.from(achievablePatterns.values());
+    }
+};
+
+
+// --- APP START ---
+document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
 
