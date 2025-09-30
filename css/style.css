@@ -915,6 +915,23 @@ main {
 }
 .map-marker.glowing { animation: glowing 2s infinite; }
 
+.map-marker-overlay {
+    position: absolute;
+    width: clamp(28px, 5vw, 40px);
+    height: clamp(28px, 5vw, 40px);
+    background-color: rgba(100, 116, 139, 0.7); /* slate-500 with opacity */
+    border-radius: 50%;
+    color: white;
+    font-size: 1.1em;
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none; /* Make it non-interactive */
+    z-index: 2; /* Ensure it's above the map background but below the main marker if needed */
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
 .map-marker.completed-a,
 .map-marker.completed-b,
 .map-marker.completed-c {
