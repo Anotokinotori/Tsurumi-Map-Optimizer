@@ -1208,8 +1208,6 @@ main {
 .affected-groups-container {
     font-size: 0.9em;
     margin-top: 15px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border-color);
 }
 .affected-groups-container strong {
     color: var(--primary-text-color);
