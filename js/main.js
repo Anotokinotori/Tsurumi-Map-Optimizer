@@ -565,6 +565,36 @@ const TsurumiApp = {
                     marker.style.top = `${newTop - marker.offsetHeight / 2}px`;
                 }
             });
+
+            // Also update overlays if it's the ideal map
+            if (containerId === 'ideal-map-container') {
+                const overlays = mapContainer.querySelectorAll('.map-marker-overlay');
+                overlays.forEach(overlay => {
+                    const groupId = overlay.id.split('-')[2];
+                    const pos = markerPositions[groupId];
+                    if (pos) {
+                        const newLeft = offsetX + (renderedWidth * (parseFloat(pos.left) / 100));
+                        const newTop = offsetY + (renderedHeight * (parseFloat(pos.top) / 100));
+                        overlay.style.left = `${newLeft - overlay.offsetWidth / 2}px`;
+                        overlay.style.top = `${newTop - overlay.offsetHeight / 2}px`;
+                    }
+                });
+            }
+        },
+
+        updateIdealMapOverlay: function(groupId) {
+            const overlay = document.getElementById(`ideal-overlay-${groupId}`);
+            if (!overlay) return;
+
+            const currentPattern = TsurumiApp.state.currentConfig[groupId];
+            overlay.textContent = currentPattern || '';
+
+            // Hide overlay if ideal config is already set for this group
+            if (TsurumiApp.state.idealConfig[groupId]) {
+                overlay.style.display = 'none';
+            } else {
+                overlay.style.display = 'flex';
+            }
         },
 
         displayResults: function(plan, isMultiplayer, allowBoat) {
@@ -1089,6 +1119,7 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
 
 
 
