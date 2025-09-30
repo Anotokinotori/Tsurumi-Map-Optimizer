@@ -479,7 +479,6 @@ const TsurumiApp = {
                     const overlay = document.createElement('div');
                     overlay.className = 'map-marker-overlay';
                     overlay.id = `ideal-overlay-${groupId}`;
-                    overlay.textContent = TsurumiApp.state.currentConfig[groupId] || '';
                     mapContainer.appendChild(overlay);
                 }
 
@@ -551,9 +550,9 @@ const TsurumiApp = {
             }
 
             elementsToPosition.forEach(el => {
-                const isOverlay = el.classList.contains('map-marker-overlay');
                 const idParts = el.id.split('-');
-                const groupId = idParts[isOverlay ? 1 : 2];
+                // MODIFIED: Robustly get the groupId from the last part of the ID string.
+                const groupId = idParts[idParts.length - 1];
 
                 const pos = markerPositions[groupId];
                 if (pos) {
