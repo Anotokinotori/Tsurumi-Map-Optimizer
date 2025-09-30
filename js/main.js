@@ -239,6 +239,10 @@ const TsurumiApp = {
         const configToUpdate = (configType === 'current') ? this.state.currentConfig : this.state.idealConfig;
         configToUpdate[groupId] = pattern;
         
+        if (configType === 'current') {
+            this.ui.updateIdealDiffDisplay(groupId, pattern);
+        }
+
         this.ui.updateMarker(configType, groupId, pattern);
         this.ui.updatePatternButtons(configType, groupId, pattern);
         this.ui.updateProgress(configType);
@@ -466,7 +470,22 @@ const TsurumiApp = {
                 // List Item
                 const item = document.createElement('div');
                 item.className = 'config-item';
-                item.innerHTML = `<span class="config-item-label">${group.name}</span>`;
+                
+                const label = document.createElement('div');
+                label.className = 'config-item-label';
+                label.dataset.groupId = groupId;
+
+                if (configType === 'ideal') {
+                    const currentPattern = TsurumiApp.state.currentConfig[groupId] || '?';
+                    label.innerHTML = `
+                        <span class="group-name">${group.name}</span>
+                        <span class="current-config-display">現在: ${currentPattern}</span>
+                    `;
+                } else {
+                    label.innerHTML = `<span class="group-name">${group.name}</span>`;
+                }
+                item.appendChild(label);
+
                 const buttons = document.createElement('div');
                 buttons.className = 'pattern-buttons';
                 buttons.id = `${configType}-buttons-${groupId}`;
@@ -869,6 +888,12 @@ const TsurumiApp = {
                 li.querySelector('.btn-delete').addEventListener('click', () => TsurumiApp.deletePlan(plan.id));
                 listEl.appendChild(li);
             });
+        },
+        updateIdealDiffDisplay: function(groupId, newPattern) {
+            const displayEl = document.querySelector(`#ideal-config-list .config-item-label[data-group-id="${groupId}"] .current-config-display`);
+            if (displayEl) {
+                displayEl.textContent = `現在: ${newPattern}`;
+            }
         }
     }
 };
@@ -1036,4 +1061,3 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
-
