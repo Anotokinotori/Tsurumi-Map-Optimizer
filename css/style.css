@@ -616,7 +616,6 @@ main {
     align-items: center;
     justify-content: center;
     width: 100%;
-    position: relative;
 }
 .result-actions-container .btn {
     width: 100%;
