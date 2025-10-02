@@ -371,6 +371,10 @@
             
             <p style="margin-top: 20px;">計算結果がおかしい、バグかもしれないと思われた場合は、ヘッダーの「製作者: あの時の鳥です」から開けるモーダル内のご要望フォームよりご連絡いただけると幸いです。</p>
             
+            <p style="margin-top: 20px; font-size: 0.9em; color: #555;">
+                本サイトでは、サービスの品質向上と利用状況の把握のため、個人を特定しない形で、プランの計算実行回数などの統計データを収集しています。入力された配置パターンや、個人を識別できる情報が送信されることは一切ありませんので、ご安心ください。
+            </p>
+            
             <p style="text-align: right; font-size: 0.8em; color: #888; margin-top: 20px;">最終更新日：2025/10/02</p>
         </div>
     </div>
@@ -561,6 +565,24 @@
             <span>鶴観を研究してくださった先人の方々</span>
         </p>
     </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script>
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyAK6YhrTdQdrXCO9Ym8ebjI2lZFvMhAxyM",
+        authDomain: "tsurumi-map-optimizer.firebaseapp.com",
+        projectId: "tsurumi-map-optimizer",
+        storageBucket: "tsurumi-map-optimizer.appspot.com",
+        messagingSenderId: "305470903539",
+        appId: "1:305470903539:web:9cfc1cca6bc04e25b81386",
+        measurementId: "G-9TGFNL1YH4"
+      };
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+    </script>
 
     <!-- JavaScriptファイルを外部から読み込み -->
     <!-- データ定義を先に、メインロジックを後に読み込む -->
