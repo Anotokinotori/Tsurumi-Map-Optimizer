@@ -26,16 +26,24 @@ const TsurumiApp = {
 
         // 3) Bind all events.
         this.bindEvents();
-
+        
         // 4) If loaded from URL, update the UI and move to the input page.
         if (loadedFromUrl) {
             groupKeys.forEach(key => {
-                if (this.state.currentConfig[key]) this.updateConfig('current', key, this.state.currentConfig[key]);
-                if (this.state.idealConfig[key])   this.updateConfig('ideal', key, this.state.idealConfig[key]);
+                if (this.state.currentConfig[key]) {
+                    this.updateConfig('current', key, this.state.currentConfig[key]);
+                }
+                if (this.state.idealConfig[key]) {
+                    this.updateConfig('ideal', key, this.state.idealConfig[key]);
+                }
             });
 
+            this.ui.updateProgress('current');
+            this.ui.updateProgress('ideal');
             this.ui.updateGuideTextVisibility();
+            
             this._updateMapsWhenReady();
+
             this.ui.showPage('current-config-page');
         }
 
@@ -544,14 +552,16 @@ const TsurumiApp = {
 
     applyStateFromURL: function() {
         const params = new URLSearchParams(window.location.search);
-        const currentStr = params.get('c');
-        const idealStr = params.get('i');
+        
+        const currentStr = params.get('c') || params.get('current');
+        const idealStr = params.get('i') || params.get('ideal');
 
         if (!currentStr || !idealStr || currentStr.length !== totalGroups || idealStr.length !== totalGroups) {
             return false;
         }
 
         try {
+            console.debug('[Permalink] parsing URL', {currentStr, idealStr});
             const currentConfig = {};
             const idealConfig = {};
             const patterns = ['A', 'B', 'C'];
@@ -803,6 +813,10 @@ const TsurumiApp = {
         },
         updateMarker: function(configType, groupId, pattern) {
             const marker = document.getElementById(`${configType}-marker-${groupId}`);
+            if (!marker) {
+                console.warn('[updateMarker] marker not found', configType, groupId);
+                return;
+            }
             marker.classList.remove('glowing', 'completed-a', 'completed-b', 'completed-c');
             
             marker.innerHTML = pattern;
@@ -811,7 +825,12 @@ const TsurumiApp = {
             marker.classList.add(`completed-${pattern.toLowerCase()}`);
         },
         updatePatternButtons: function(configType, groupId, pattern) {
-             document.getElementById(`${configType}-buttons-${groupId}`).querySelectorAll('button').forEach(btn => {
+             const container = document.getElementById(`${configType}-buttons-${groupId}`);
+            if (!container) {
+                console.warn('[updatePatternButtons] buttons container not found', configType, groupId);
+                return;
+            }
+            container.querySelectorAll('button').forEach(btn => {
                 btn.classList.toggle('selected', btn.textContent === pattern);
             });
         },
