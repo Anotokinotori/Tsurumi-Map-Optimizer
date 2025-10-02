@@ -30,7 +30,16 @@ const TsurumiApp = {
         
         // If loaded from URL, update UI and calculate
         if (loadedFromUrl) {
-            this.ui.updateAllInputsFromState();
+            // Re-use the reliable updateConfig function for each item
+            // to ensure all UI elements are correctly updated.
+            groupKeys.forEach(key => {
+                if (this.state.currentConfig[key]) {
+                    this.updateConfig('current', key, this.state.currentConfig[key]);
+                }
+                if (this.state.idealConfig[key]) {
+                    this.updateConfig('ideal', key, this.state.idealConfig[key]);
+                }
+            });
             this.calculatePlan();
         }
     },
@@ -788,6 +797,8 @@ const TsurumiApp = {
             setTimeout(() => el.classList.remove('show'), 3000);
         },
         
+        // This function is no longer needed and can be removed.
+        /*
         updateAllInputsFromState: function() {
             ['current', 'ideal'].forEach(configType => {
                 const config = (configType === 'current') ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig;
@@ -808,6 +819,7 @@ const TsurumiApp = {
             });
             this.updateGuideTextVisibility();
         },
+        */
 
         updateIdealDiffDisplay: function(groupId, newCurrentPattern) {
             const diffEl = document.getElementById(`ideal-list-diff-${groupId}`);
@@ -1211,5 +1223,6 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
 
 
