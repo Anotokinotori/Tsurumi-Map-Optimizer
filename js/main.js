@@ -16,6 +16,7 @@ const TsurumiApp = {
     // --- INITIALIZATION ---
     init: function() {
         this.cacheElements();
+        const loadedFromUrl = this.applyStateFromURL(); // URL parameter check
         this.ui.initInputPage('current');
         this.ui.initInputPage('ideal');
         this.bindEvents();
@@ -23,6 +24,12 @@ const TsurumiApp = {
         // Check if the info banner was previously closed
         if (localStorage.getItem('tsurumiBannerClosed') === 'true') {
             this.elements.infoBanner.style.display = 'none';
+        }
+        
+        // If loaded from URL, update UI and calculate
+        if (loadedFromUrl) {
+            this.ui.updateAllInputsFromState();
+            this.calculatePlan();
         }
     },
 
@@ -58,6 +65,7 @@ const TsurumiApp = {
         this.elements.backToCurrentBtn = document.getElementById('back-to-current-btn');
         this.elements.backToIdealBtn = document.getElementById('back-to-ideal-btn');
         this.elements.recalculateBtn = document.getElementById('recalculate-alternate-mode-btn');
+        this.elements.shareUrlBtn = document.getElementById('share-url-btn');
         this.elements.screenshotPrevBtn = document.getElementById('screenshot-prev-btn');
         this.elements.screenshotNextBtn = document.getElementById('screenshot-next-btn');
         this.elements.openRequestFormBtn = document.getElementById('open-request-form-from-logic-btn');
@@ -91,6 +99,7 @@ const TsurumiApp = {
         this.elements.resultSummary = document.getElementById('result-summary');
         this.elements.soloNotice = document.getElementById('solo-mode-notice');
         this.elements.resultPage = document.getElementById('result-page');
+        this.elements.urlCopyMessage = document.getElementById('url-copy-message');
 
         // Modals
         this.elements.dayDetailModalContent = document.getElementById('day-detail-content');
@@ -127,6 +136,7 @@ const TsurumiApp = {
         this.elements.savePlanBtn.addEventListener('click', () => this.savePlan());
         this.elements.savePlanIconBtn.addEventListener('click', () => this.savePlan());
         this.elements.loadPlanBtn.addEventListener('click', () => this.ui.openLoadModal());
+        this.elements.shareUrlBtn.addEventListener('click', () => this.generatePermalink());
 
         // Input Helpers
         this.elements.setRecommendedBtn.addEventListener('click', () => this.setRecommendedConfig());
@@ -456,6 +466,81 @@ const TsurumiApp = {
         }
     },
 
+    // --- NEW: Permalink Functions ---
+    generatePermalink: function() {
+        if (Object.keys(this.state.currentConfig).length !== totalGroups || Object.keys(this.state.idealConfig).length !== totalGroups) {
+            this.ui.showCopyMessage('現在の配置と理想の配置をすべて入力してください', true);
+            return;
+        }
+
+        const currentStr = groupKeys.map(k => this.state.currentConfig[k]).join('');
+        const idealStr = groupKeys.map(k => this.state.idealConfig[k]).join('');
+        const multiStr = this.elements.multiplayerCheckbox.checked ? '1' : '0';
+        const boatStr = this.elements.boatCheckbox.checked ? '1' : '0';
+
+        const params = new URLSearchParams({
+            c: currentStr,
+            i: idealStr,
+            m: multiStr,
+            b: boatStr
+        });
+
+        const url = new URL(window.location.href);
+        url.search = params.toString();
+
+        // Create a temporary textarea to copy the text
+        const textarea = document.createElement('textarea');
+        textarea.value = url.toString();
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            this.ui.showCopyMessage('URLをクリップボードにコピーしました！');
+        } catch (err) {
+            this.ui.showCopyMessage('コピーに失敗しました', true);
+        }
+        document.body.removeChild(textarea);
+    },
+
+    applyStateFromURL: function() {
+        const params = new URLSearchParams(window.location.search);
+        const currentStr = params.get('c');
+        const idealStr = params.get('i');
+
+        if (!currentStr || !idealStr || currentStr.length !== totalGroups || idealStr.length !== totalGroups) {
+            return false;
+        }
+
+        try {
+            const currentConfig = {};
+            const idealConfig = {};
+            const patterns = ['A', 'B', 'C'];
+
+            for (let i = 0; i < totalGroups; i++) {
+                const key = groupKeys[i];
+                if (!patterns.includes(currentStr[i]) || !patterns.includes(idealStr[i])) {
+                     throw new Error('Invalid character in URL parameter');
+                }
+                currentConfig[key] = currentStr[i];
+                idealConfig[key] = idealStr[i];
+            }
+            
+            this.state.currentConfig = currentConfig;
+            this.state.idealConfig = idealConfig;
+            this.elements.multiplayerCheckbox.checked = params.get('m') === '1';
+            this.elements.boatCheckbox.checked = params.get('b') === '1';
+            
+            // Clear hash to prevent re-triggering if user reloads
+            history.pushState(null, '', window.location.pathname);
+
+            return true;
+
+        } catch (e) {
+            console.error("Failed to parse URL parameters:", e);
+            history.pushState(null, '', window.location.pathname); // Clear invalid params
+            return false;
+        }
+    },
 
     // --- UI LOGIC ---
     ui: {
@@ -584,6 +669,8 @@ const TsurumiApp = {
             const showSaveButtons = plan && plan.length > 0;
             document.getElementById('save-plan-btn').style.display = showSaveButtons ? '' : 'none';
             document.getElementById('save-plan-icon-btn').style.display = showSaveButtons ? '' : 'none';
+            document.getElementById('share-url-btn').style.display = '';
+
 
             const tbody = TsurumiApp.elements.resultTbody;
             tbody.innerHTML = '';
@@ -690,6 +777,36 @@ const TsurumiApp = {
                 btn.classList.toggle('selected', btn.textContent === pattern);
             });
         },
+        
+        showCopyMessage: function(message, isError = false) {
+            const el = TsurumiApp.elements.urlCopyMessage;
+            el.textContent = message;
+            el.style.backgroundColor = isError ? 'var(--danger-color)' : 'rgba(0, 0, 0, 0.75)';
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 3000);
+        },
+        
+        updateAllInputsFromState: function() {
+            ['current', 'ideal'].forEach(configType => {
+                const config = (configType === 'current') ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig;
+                 groupKeys.forEach(groupId => {
+                    const pattern = config[groupId];
+                    if (pattern) {
+                        this.updateMarker(configType, groupId, pattern);
+                        this.updatePatternButtons(configType, groupId, pattern);
+                        if (configType === 'current') {
+                           this.updateIdealDiffDisplay(groupId, pattern);
+                           this.updateIdealMapOverlay(groupId);
+                        } else {
+                           this.updateIdealMapOverlay(groupId);
+                        }
+                    }
+                });
+                this.updateProgress(configType);
+            });
+            this.updateGuideTextVisibility();
+        },
+
         updateIdealDiffDisplay: function(groupId, newCurrentPattern) {
             const diffEl = document.getElementById(`ideal-list-diff-${groupId}`);
             if (diffEl) {
@@ -1092,4 +1209,5 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
 
