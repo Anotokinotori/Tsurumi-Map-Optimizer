@@ -16,20 +16,55 @@ const TsurumiApp = {
     // --- INITIALIZATION ---
     init: function() {
         this.cacheElements();
+
+        // 1) First, try to load state from the URL.
+        const loadedFromUrl = this.applyStateFromURL();
+
+        // 2) Initialize the UI. If state was loaded from URL, it will be used.
         this.ui.initInputPage('current');
         this.ui.initInputPage('ideal');
+
+        // 3) Bind all events.
         this.bindEvents();
+
+        // 4) If loaded from URL, update the UI and move to the input page.
+        if (loadedFromUrl) {
+            groupKeys.forEach(key => {
+                if (this.state.currentConfig[key]) this.updateConfig('current', key, this.state.currentConfig[key]);
+                if (this.state.idealConfig[key])   this.updateConfig('ideal', key, this.state.idealConfig[key]);
+            });
+
+            this.ui.updateGuideTextVisibility();
+            this._updateMapsWhenReady();
+            this.ui.showPage('current-config-page');
+        }
 
         // Check if the info banner was previously closed
         if (localStorage.getItem('tsurumiBannerClosed') === 'true') {
             this.elements.infoBanner.style.display = 'none';
         }
-        
-        // Schedule the permalink check to run after the initial render.
-        // This ensures all UI elements are ready before being manipulated.
+    },
+    
+    _updateMapsWhenReady: function() {
+        this.elements.allMapBgs.forEach(img => {
+            const containerId = img.closest('.map-container').id;
+            const attemptUpdate = () => {
+                requestAnimationFrame(() => {
+                    this.ui.updateMapLayout(containerId);
+                });
+            };
+
+            if (img.complete && img.naturalWidth > 0) {
+                attemptUpdate();
+            } else {
+                img.addEventListener('load', () => attemptUpdate());
+            }
+        });
+
         setTimeout(() => {
-            this.runFromPermalink();
-        }, 0);
+            this.ui.updateMapLayout('current-map-container');
+            this.ui.updateMapLayout('ideal-map-container');
+        }, 120);
     },
 
     cacheElements: function() {
@@ -465,28 +500,7 @@ const TsurumiApp = {
         }
     },
 
-    // --- NEW: Permalink Functions ---
-    runFromPermalink: function() {
-        const loadedFromUrl = this.applyStateFromURL();
-        if (loadedFromUrl) {
-            // Re-use the reliable updateConfig function for each item
-            // to ensure all UI elements are correctly updated.
-            groupKeys.forEach(key => {
-                if (this.state.currentConfig[key]) {
-                    this.updateConfig('current', key, this.state.currentConfig[key]);
-                }
-                if (this.state.idealConfig[key]) {
-                    this.updateConfig('ideal', key, this.state.idealConfig[key]);
-                }
-            });
-            
-            // --- STRATEGY CHANGE ---
-            // Instead of calculating automatically, show the pre-filled input page.
-            // This is more robust and avoids timing issues.
-            this.ui.showPage('ideal-config-page');
-        }
-    },
-
+    // --- Permalink Functions ---
     generatePermalink: function() {
         if (Object.keys(this.state.currentConfig).length !== totalGroups || Object.keys(this.state.idealConfig).length !== totalGroups) {
             this.ui.showCopyMessage('現在の配置と理想の配置をすべて入力してください', true);
@@ -507,19 +521,25 @@ const TsurumiApp = {
 
         const url = new URL(window.location.href);
         url.search = params.toString();
+        const finalUrl = url.toString();
 
-        // Create a temporary textarea to copy the text
-        const textarea = document.createElement('textarea');
-        textarea.value = url.toString();
-        document.body.appendChild(textarea);
-        textarea.select();
-        try {
-            document.execCommand('copy');
-            this.ui.showCopyMessage('URLをクリップボードにコピーしました！');
-        } catch (err) {
-            this.ui.showCopyMessage('コピーに失敗しました', true);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(finalUrl)
+                .then(() => this.ui.showCopyMessage('URLをクリップボードにコピーしました！'))
+                .catch(() => this.ui.showCopyMessage('コピーに失敗しました', true));
+        } else {
+            const textarea = document.createElement('textarea');
+            textarea.value = finalUrl;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                this.ui.showCopyMessage('URLをクリップボードにコピーしました！');
+            } catch (err) {
+                this.ui.showCopyMessage('コピーに失敗しました', true);
+            }
+            document.body.removeChild(textarea);
         }
-        document.body.removeChild(textarea);
     },
 
     applyStateFromURL: function() {
@@ -550,17 +570,18 @@ const TsurumiApp = {
             this.elements.multiplayerCheckbox.checked = params.get('m') === '1';
             this.elements.boatCheckbox.checked = params.get('b') === '1';
             
-            // Clear hash to prevent re-triggering if user reloads
-            history.pushState(null, '', window.location.pathname);
+            console.info('Loaded config from URL', { currentStr, idealStr, m: params.get('m'), b: params.get('b') });
 
+            history.pushState(null, '', window.location.pathname);
             return true;
 
         } catch (e) {
             console.error("Failed to parse URL parameters:", e);
-            history.pushState(null, '', window.location.pathname); // Clear invalid params
+            history.pushState(null, '', window.location.pathname);
             return false;
         }
     },
+
 
     // --- UI LOGIC ---
     ui: {
@@ -656,7 +677,6 @@ const TsurumiApp = {
 
             elementsToPosition.forEach(el => {
                 const idParts = el.id.split('-');
-                // MODIFIED: Robustly get the groupId from the last part of the ID string.
                 const groupId = idParts[idParts.length - 1];
 
                 const pos = markerPositions[groupId];
@@ -689,8 +709,6 @@ const TsurumiApp = {
             const showSaveButtons = plan && plan.length > 0;
             document.getElementById('save-plan-btn').style.display = showSaveButtons ? '' : 'none';
             document.getElementById('save-plan-icon-btn').style.display = showSaveButtons ? '' : 'none';
-            document.getElementById('share-url-btn').style.display = '';
-
 
             const tbody = TsurumiApp.elements.resultTbody;
             tbody.innerHTML = '';
@@ -797,39 +815,6 @@ const TsurumiApp = {
                 btn.classList.toggle('selected', btn.textContent === pattern);
             });
         },
-        
-        showCopyMessage: function(message, isError = false) {
-            const el = TsurumiApp.elements.urlCopyMessage;
-            el.textContent = message;
-            el.style.backgroundColor = isError ? 'var(--danger-color)' : 'rgba(0, 0, 0, 0.75)';
-            el.classList.add('show');
-            setTimeout(() => el.classList.remove('show'), 3000);
-        },
-        
-        // This function is no longer needed and can be removed.
-        /*
-        updateAllInputsFromState: function() {
-            ['current', 'ideal'].forEach(configType => {
-                const config = (configType === 'current') ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig;
-                 groupKeys.forEach(groupId => {
-                    const pattern = config[groupId];
-                    if (pattern) {
-                        this.updateMarker(configType, groupId, pattern);
-                        this.updatePatternButtons(configType, groupId, pattern);
-                        if (configType === 'current') {
-                           this.updateIdealDiffDisplay(groupId, pattern);
-                           this.updateIdealMapOverlay(groupId);
-                        } else {
-                           this.updateIdealMapOverlay(groupId);
-                        }
-                    }
-                });
-                this.updateProgress(configType);
-            });
-            this.updateGuideTextVisibility();
-        },
-        */
-
         updateIdealDiffDisplay: function(groupId, newCurrentPattern) {
             const diffEl = document.getElementById(`ideal-list-diff-${groupId}`);
             if (diffEl) {
@@ -1065,6 +1050,13 @@ const TsurumiApp = {
                 li.querySelector('.btn-delete').addEventListener('click', () => TsurumiApp.deletePlan(plan.id));
                 listEl.appendChild(li);
             });
+        },
+        showCopyMessage: function(message, isError = false) {
+            const el = TsurumiApp.elements.urlCopyMessage;
+            el.textContent = message;
+            el.style.backgroundColor = isError ? 'var(--danger-color)' : 'rgba(0, 0, 0, 0.75)';
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 3000);
         }
     }
 };
@@ -1232,9 +1224,4 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
-
-
-
-
-
 
