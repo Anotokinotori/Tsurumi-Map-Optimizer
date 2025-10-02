@@ -16,63 +16,14 @@ const TsurumiApp = {
     // --- INITIALIZATION ---
     init: function() {
         this.cacheElements();
-
-        // 1) First, try to load state from the URL.
-        const loadedFromUrl = this.applyStateFromURL();
-
-        // 2) Initialize the UI. If state was loaded from URL, it will be used.
         this.ui.initInputPage('current');
         this.ui.initInputPage('ideal');
-
-        // 3) Bind all events.
         this.bindEvents();
-        
-        // 4) If loaded from URL, update the UI and move to the input page.
-        if (loadedFromUrl) {
-            groupKeys.forEach(key => {
-                if (this.state.currentConfig[key]) {
-                    this.updateConfig('current', key, this.state.currentConfig[key]);
-                }
-                if (this.state.idealConfig[key]) {
-                    this.updateConfig('ideal', key, this.state.idealConfig[key]);
-                }
-            });
-
-            this.ui.updateProgress('current');
-            this.ui.updateProgress('ideal');
-            this.ui.updateGuideTextVisibility();
-            
-            this._updateMapsWhenReady();
-
-            this.ui.showPage('current-config-page');
-        }
 
         // Check if the info banner was previously closed
         if (localStorage.getItem('tsurumiBannerClosed') === 'true') {
             this.elements.infoBanner.style.display = 'none';
         }
-    },
-    
-    _updateMapsWhenReady: function() {
-        this.elements.allMapBgs.forEach(img => {
-            const containerId = img.closest('.map-container').id;
-            const attemptUpdate = () => {
-                requestAnimationFrame(() => {
-                    this.ui.updateMapLayout(containerId);
-                });
-            };
-
-            if (img.complete && img.naturalWidth > 0) {
-                attemptUpdate();
-            } else {
-                img.addEventListener('load', () => attemptUpdate());
-            }
-        });
-
-        setTimeout(() => {
-            this.ui.updateMapLayout('current-map-container');
-            this.ui.updateMapLayout('ideal-map-container');
-        }, 120);
     },
 
     cacheElements: function() {
@@ -107,7 +58,6 @@ const TsurumiApp = {
         this.elements.backToCurrentBtn = document.getElementById('back-to-current-btn');
         this.elements.backToIdealBtn = document.getElementById('back-to-ideal-btn');
         this.elements.recalculateBtn = document.getElementById('recalculate-alternate-mode-btn');
-        this.elements.shareUrlBtn = document.getElementById('share-url-btn');
         this.elements.screenshotPrevBtn = document.getElementById('screenshot-prev-btn');
         this.elements.screenshotNextBtn = document.getElementById('screenshot-next-btn');
         this.elements.openRequestFormBtn = document.getElementById('open-request-form-from-logic-btn');
@@ -141,7 +91,6 @@ const TsurumiApp = {
         this.elements.resultSummary = document.getElementById('result-summary');
         this.elements.soloNotice = document.getElementById('solo-mode-notice');
         this.elements.resultPage = document.getElementById('result-page');
-        this.elements.urlCopyMessage = document.getElementById('url-copy-message');
 
         // Modals
         this.elements.dayDetailModalContent = document.getElementById('day-detail-content');
@@ -178,7 +127,6 @@ const TsurumiApp = {
         this.elements.savePlanBtn.addEventListener('click', () => this.savePlan());
         this.elements.savePlanIconBtn.addEventListener('click', () => this.savePlan());
         this.elements.loadPlanBtn.addEventListener('click', () => this.ui.openLoadModal());
-        this.elements.shareUrlBtn.addEventListener('click', () => this.generatePermalink());
 
         // Input Helpers
         this.elements.setRecommendedBtn.addEventListener('click', () => this.setRecommendedConfig());
@@ -508,90 +456,6 @@ const TsurumiApp = {
         }
     },
 
-    // --- Permalink Functions ---
-    generatePermalink: function() {
-        if (Object.keys(this.state.currentConfig).length !== totalGroups || Object.keys(this.state.idealConfig).length !== totalGroups) {
-            this.ui.showCopyMessage('現在の配置と理想の配置をすべて入力してください', true);
-            return;
-        }
-
-        const currentStr = groupKeys.map(k => this.state.currentConfig[k]).join('');
-        const idealStr = groupKeys.map(k => this.state.idealConfig[k]).join('');
-        const multiStr = this.elements.multiplayerCheckbox.checked ? '1' : '0';
-        const boatStr = this.elements.boatCheckbox.checked ? '1' : '0';
-
-        const params = new URLSearchParams({
-            c: currentStr,
-            i: idealStr,
-            m: multiStr,
-            b: boatStr
-        });
-
-        const url = new URL(window.location.href);
-        url.search = params.toString();
-        const finalUrl = url.toString();
-
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(finalUrl)
-                .then(() => this.ui.showCopyMessage('URLをクリップボードにコピーしました！'))
-                .catch(() => this.ui.showCopyMessage('コピーに失敗しました', true));
-        } else {
-            const textarea = document.createElement('textarea');
-            textarea.value = finalUrl;
-            document.body.appendChild(textarea);
-            textarea.select();
-            try {
-                document.execCommand('copy');
-                this.ui.showCopyMessage('URLをクリップボードにコピーしました！');
-            } catch (err) {
-                this.ui.showCopyMessage('コピーに失敗しました', true);
-            }
-            document.body.removeChild(textarea);
-        }
-    },
-
-    applyStateFromURL: function() {
-        const params = new URLSearchParams(window.location.search);
-        
-        const currentStr = params.get('c') || params.get('current');
-        const idealStr = params.get('i') || params.get('ideal');
-
-        if (!currentStr || !idealStr || currentStr.length !== totalGroups || idealStr.length !== totalGroups) {
-            return false;
-        }
-
-        try {
-            console.debug('[Permalink] parsing URL', {currentStr, idealStr});
-            const currentConfig = {};
-            const idealConfig = {};
-            const patterns = ['A', 'B', 'C'];
-
-            for (let i = 0; i < totalGroups; i++) {
-                const key = groupKeys[i];
-                if (!patterns.includes(currentStr[i]) || !patterns.includes(idealStr[i])) {
-                     throw new Error('Invalid character in URL parameter');
-                }
-                currentConfig[key] = currentStr[i];
-                idealConfig[key] = idealStr[i];
-            }
-            
-            this.state.currentConfig = currentConfig;
-            this.state.idealConfig = idealConfig;
-            this.elements.multiplayerCheckbox.checked = params.get('m') === '1';
-            this.elements.boatCheckbox.checked = params.get('b') === '1';
-            
-            console.info('Loaded config from URL', { currentStr, idealStr, m: params.get('m'), b: params.get('b') });
-
-            history.pushState(null, '', window.location.pathname);
-            return true;
-
-        } catch (e) {
-            console.error("Failed to parse URL parameters:", e);
-            history.pushState(null, '', window.location.pathname);
-            return false;
-        }
-    },
-
 
     // --- UI LOGIC ---
     ui: {
@@ -687,6 +551,7 @@ const TsurumiApp = {
 
             elementsToPosition.forEach(el => {
                 const idParts = el.id.split('-');
+                // MODIFIED: Robustly get the groupId from the last part of the ID string.
                 const groupId = idParts[idParts.length - 1];
 
                 const pos = markerPositions[groupId];
@@ -813,10 +678,6 @@ const TsurumiApp = {
         },
         updateMarker: function(configType, groupId, pattern) {
             const marker = document.getElementById(`${configType}-marker-${groupId}`);
-            if (!marker) {
-                console.warn('[updateMarker] marker not found', configType, groupId);
-                return;
-            }
             marker.classList.remove('glowing', 'completed-a', 'completed-b', 'completed-c');
             
             marker.innerHTML = pattern;
@@ -825,12 +686,7 @@ const TsurumiApp = {
             marker.classList.add(`completed-${pattern.toLowerCase()}`);
         },
         updatePatternButtons: function(configType, groupId, pattern) {
-             const container = document.getElementById(`${configType}-buttons-${groupId}`);
-            if (!container) {
-                console.warn('[updatePatternButtons] buttons container not found', configType, groupId);
-                return;
-            }
-            container.querySelectorAll('button').forEach(btn => {
+             document.getElementById(`${configType}-buttons-${groupId}`).querySelectorAll('button').forEach(btn => {
                 btn.classList.toggle('selected', btn.textContent === pattern);
             });
         },
