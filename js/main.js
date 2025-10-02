@@ -16,9 +16,11 @@ const TsurumiApp = {
     // --- INITIALIZATION ---
     init: function() {
         this.cacheElements();
-        const loadedFromUrl = this.applyStateFromURL(); // URL parameter check
         this.ui.initInputPage('current');
         this.ui.initInputPage('ideal');
+        
+        const loadedFromUrl = this.applyStateFromURL(); // URL parameter check
+        
         this.bindEvents();
 
         // Check if the info banner was previously closed
