@@ -18,9 +18,6 @@ const TsurumiApp = {
         this.cacheElements();
         this.ui.initInputPage('current');
         this.ui.initInputPage('ideal');
-        
-        const loadedFromUrl = this.applyStateFromURL(); // URL parameter check
-        
         this.bindEvents();
 
         // Check if the info banner was previously closed
@@ -28,20 +25,11 @@ const TsurumiApp = {
             this.elements.infoBanner.style.display = 'none';
         }
         
-        // If loaded from URL, update UI and calculate
-        if (loadedFromUrl) {
-            // Re-use the reliable updateConfig function for each item
-            // to ensure all UI elements are correctly updated.
-            groupKeys.forEach(key => {
-                if (this.state.currentConfig[key]) {
-                    this.updateConfig('current', key, this.state.currentConfig[key]);
-                }
-                if (this.state.idealConfig[key]) {
-                    this.updateConfig('ideal', key, this.state.idealConfig[key]);
-                }
-            });
-            this.calculatePlan();
-        }
+        // Schedule the permalink check to run after the initial render.
+        // This ensures all UI elements are ready before being manipulated.
+        setTimeout(() => {
+            this.runFromPermalink();
+        }, 0);
     },
 
     cacheElements: function() {
@@ -478,6 +466,23 @@ const TsurumiApp = {
     },
 
     // --- NEW: Permalink Functions ---
+    runFromPermalink: function() {
+        const loadedFromUrl = this.applyStateFromURL();
+        if (loadedFromUrl) {
+            // Re-use the reliable updateConfig function for each item
+            // to ensure all UI elements are correctly updated.
+            groupKeys.forEach(key => {
+                if (this.state.currentConfig[key]) {
+                    this.updateConfig('current', key, this.state.currentConfig[key]);
+                }
+                if (this.state.idealConfig[key]) {
+                    this.updateConfig('ideal', key, this.state.idealConfig[key]);
+                }
+            });
+            this.calculatePlan();
+        }
+    },
+
     generatePermalink: function() {
         if (Object.keys(this.state.currentConfig).length !== totalGroups || Object.keys(this.state.idealConfig).length !== totalGroups) {
             this.ui.showCopyMessage('現在の配置と理想の配置をすべて入力してください', true);
@@ -1223,6 +1228,7 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
 
 
 
