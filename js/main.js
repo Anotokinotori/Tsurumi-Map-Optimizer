@@ -13,8 +13,19 @@ const TsurumiApp = {
     // Caches frequently accessed DOM elements.
     elements: {},
 
+    // --- FIREBASE ---
+    firebase: {
+        db: null,
+    },
+
     // --- INITIALIZATION ---
     init: function() {
+        try {
+            this.firebase.db = firebase.firestore();
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+        }
+
         this.cacheElements();
         this.ui.initInputPage('current');
         this.ui.initInputPage('ideal');
@@ -300,6 +311,9 @@ const TsurumiApp = {
             return;
         }
 
+        // Increment the anonymous calculation counter on Firestore
+        this.incrementCalculationCount();
+
         const loadingTextEl = document.getElementById('loading-text');
         if (loadingTextEl) {
             loadingTextEl.innerHTML = `<span style="display: block; font-size: 1.1em; font-weight: bold; margin-bottom: 15px;">このツールは、<a href="https://youtu.be/2xqllaCTP5c?si=m9yyxXo5GS0rwFG9" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold;">ねこしたさんの解説</a>に基づき、プログラムされました！<br>ぜひ解説動画もご覧ください。</span><span style="font-size: 0.9em; color: var(--secondary-text-color);">計算には数分かかる場合がありますので、しばらくお待ちください。</span>`;
@@ -454,6 +468,28 @@ const TsurumiApp = {
             console.error("Failed to read progress data", e);
             return {};
         }
+    },
+
+    incrementCalculationCount: function() {
+        if (!this.firebase.db) {
+            console.warn("Firestore is not initialized. Skipping count increment.");
+            return;
+        }
+
+        const counterRef = this.firebase.db.collection('statistics').doc('planCalculations');
+        const increment = firebase.firestore.FieldValue.increment(1);
+
+        // Atomically increment the counter.
+        counterRef.update({ count: increment }).catch((error) => {
+            // If the document doesn't exist yet, create it.
+            if (error.code === 'not-found') {
+                counterRef.set({ count: 1 }).catch(err => {
+                    console.error("Error setting initial calculation count:", err);
+                });
+            } else {
+                console.error("Error incrementing calculation count:", error);
+            }
+        });
     },
 
 
@@ -1099,4 +1135,5 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
 
