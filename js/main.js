@@ -479,7 +479,11 @@ const TsurumiApp = {
                     this.updateConfig('ideal', key, this.state.idealConfig[key]);
                 }
             });
-            this.calculatePlan();
+            
+            // --- STRATEGY CHANGE ---
+            // Instead of calculating automatically, show the pre-filled input page.
+            // This is more robust and avoids timing issues.
+            this.ui.showPage('ideal-config-page');
         }
     },
 
@@ -1228,6 +1232,8 @@ const PlanCalculator = {
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
+
+
 
 
 
