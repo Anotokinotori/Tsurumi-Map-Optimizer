@@ -843,7 +843,7 @@ main {
     padding: 0;
     width: 40px;
     height: 40px;
-    background-image: url('https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/chevron_backward_41dp_1F1F1F_FILL0_wght400_GRAD0_opsz40.png?raw=true');
+    background-image: url('../images/icons/chevron_back.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
