@@ -1,0 +1,222 @@
+/* =================================================================== */
+/* 4. Common Components
+/* =================================================================== */
+
+/* --- Buttons --- */
+.btn { 
+    border: none; 
+    padding: 14px 28px; 
+    border-radius: 50px; 
+    font-size: clamp(1em, 1.5vw, 1.2em); 
+    cursor: pointer; 
+    transition: all 0.3s ease; 
+    font-weight: bold; 
+    text-decoration: none; 
+    display: inline-block; 
+}
+.btn-primary { 
+    background-color: var(--accent-color); 
+    color: white; 
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4); 
+}
+.btn-primary:hover { 
+    background-color: var(--accent-hover-color); 
+    transform: translateY(-3px); 
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.5); 
+}
+.btn-secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--secondary-text-color);
+    box-shadow: none;
+    text-decoration: none;
+}
+.btn-secondary:hover {
+    background: var(--btn-secondary-bg-hover);
+    transform: translateY(-2px);
+    color: var(--primary-text-color);
+}
+.btn-secondary-link {
+    background: none; 
+    color: var(--secondary-text-color); 
+    font-size: 1em; 
+    text-decoration: underline; 
+    padding: 10px; 
+    box-shadow: none;
+}
+.btn-secondary-link:hover {
+    background: none; 
+    transform: none; 
+    box-shadow: none; 
+    color: var(--primary-text-color);
+}
+.btn-multi { 
+    background-color: var(--multiplayer-accent-color); 
+    color: white; 
+    box-shadow: 0 5px 15px rgba(236, 72, 153, 0.4); 
+}
+.btn-multi:hover { 
+    background-color: var(--multiplayer-accent-hover-color); 
+    transform: translateY(-3px); 
+    box-shadow: 0 8px 20px rgba(236, 72, 153, 0.5); 
+}
+.btn-details { 
+    background-color: #6b7280; 
+    color: white; 
+    padding: 6px 14px; 
+    border-radius: 20px; 
+    font-size: 0.9em; 
+}
+.btn-details:hover { 
+    background-color: #4b5563; 
+}
+.btn-small {
+    padding: 5px 15px;
+    font-size: 0.9em;
+    border-radius: 20px;
+}
+.btn-delete {
+    background-color: var(--danger-color);
+    color: white;
+    padding: 8px 16px;
+    font-size: 0.9em;
+}
+.btn-delete:hover {
+    background-color: var(--danger-hover-color);
+}
+.btn-load {
+    padding: 8px 16px;
+    font-size: 0.9em;
+}
+.btn:disabled { 
+    background-color: #9ca3af; 
+    cursor: not-allowed; 
+    transform: none; 
+    box-shadow: none; 
+}
+
+/* --- Modals --- */
+.modal { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background-color: rgba(0, 0, 0, 0.6); 
+    z-index: 1000; 
+    opacity: 0; 
+    visibility: hidden; 
+    transition: opacity 0.3s ease; 
+    display: none; 
+    justify-content: center; 
+    align-items: center; 
+    padding: 2vh 2vw; 
+    box-sizing: border-box; 
+}
+.modal.active { 
+    opacity: 1; 
+    visibility: visible; 
+    display: flex; 
+}
+.modal-content { 
+    background-color: #fff; 
+    padding: 30px; 
+    border-radius: 15px; 
+    position: relative; 
+    width: 100%; 
+    max-width: 900px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+    display: flex; 
+    flex-direction: column; 
+    max-height: 95vh; 
+    overflow-y: auto;
+}
+.modal-close { 
+    position: absolute; 
+    top: 15px; 
+    right: 20px; 
+    font-size: 2.5em; 
+    line-height: 1; 
+    cursor: pointer; 
+    color: #aaa; 
+    transition: color 0.2s; 
+}
+.modal-close:hover { 
+    color: #333; 
+}
+
+/* --- Banners --- */
+.info-banner {
+    background-color: rgba(229, 231, 235, 0.95);
+    color: var(--secondary-text-color);
+    text-align: center;
+    padding: 12px 50px;
+    position: relative;
+    font-size: 0.95em;
+    border-bottom: 1px solid var(--border-color);
+    transition: all 0.4s ease-in-out;
+    overflow: hidden;
+}
+.info-banner.hidden {
+    height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+    opacity: 0;
+}
+.info-banner p { margin: 0; }
+.info-banner a {
+    color: var(--accent-color);
+    font-weight: bold;
+    text-decoration: underline;
+}
+.close-banner-btn {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.8em;
+    line-height: 1;
+    cursor: pointer;
+    color: #a0aec0;
+    padding: 5px;
+}
+.close-banner-btn:hover {
+    color: var(--primary-text-color);
+}
+
+/* --- Image Loader --- */
+.image-container {
+    position: relative;
+    width: 100%;
+    min-height: 150px;
+    background-color: var(--btn-secondary-bg);
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+.image-loader {
+    color: var(--secondary-text-color);
+    font-weight: bold;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+}
+.image-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.image-container.loaded .image-loader {
+    display: none;
+}
+.image-container.loaded img {
+    opacity: 1;
+}
