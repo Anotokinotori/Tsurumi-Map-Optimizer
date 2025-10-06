@@ -6,7 +6,7 @@
 @media (min-width: 992px) {
     body {
         background-color: #000; /* Fallback for older browsers */
-        background-image: url('https://cdn.jsdelivr.net/gh/Anotokinotori/Tsurumi-Map-Optimizer@main/20250927140652.png');
+        background-image: url('../images/backgrounds/desktop-background.png');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
