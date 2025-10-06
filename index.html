@@ -23,39 +23,39 @@
         </div>
     </header>
 
-    <div id="info-banner" class="info-banner">
+    <aside id="info-banner" class="info-banner">
         <p>鶴観の精鋭の仕組みについて詳しく知りたい方は、<a href="https://youtu.be/2xqllaCTP5c?si=m9yyxXo5GS0rwFG9" target="_blank" rel="noopener noreferrer">こちらの解説動画</a>をご覧ください。</p>
-        <button id="close-banner-btn" class="close-banner-btn" title="閉じる">&times;</button>
-    </div>
+        <button id="close-banner-btn" class="close-banner-btn" title="閉じる" aria-label="閉じる">&times;</button>
+    </aside>
 
     <main>
         <div class="container backdrop-blur">
 
             <!-- Page 1: Start Screen -->
-            <div id="start-page" class="page active">
+            <section id="start-page" class="page active" aria-labelledby="start-page-title">
                 <div class="page-content-wrapper">
-                    <div class="start-header">
+                    <header class="start-header">
                         <div class="start-title-container">
-                             <h1>鶴観調整プランナー</h1>
-                             <button id="tsurumi-info-btn" class="info-btn" title="鶴観調整とは？">？</button>
+                             <h1 id="start-page-title">鶴観調整プランナー</h1>
+                             <button id="tsurumi-info-btn" class="info-btn" title="鶴観調整とは？" aria-label="鶴観調整とは？">？</button>
                         </div>
                         <p class="subtitle">現在と理想の配置を入力すると、最短調整スケジュールを計算します<br>※PCでの使用をおすすめします。</p>
-                    </div>
+                    </header>
                     
-                    <div class="steps-container">
+                    <nav class="steps-container" aria-label="調整手順">
                         <div class="step" data-step="1"> <div class="step-icon">①</div> <div class="step-label">現在の配置を入力</div> </div>
-                        <div class="step-arrow">→</div>
+                        <div class="step-arrow" aria-hidden="true">→</div>
                         <div class="step" data-step="2"> <div class="step-icon">②</div> <div class="step-label">理想の配置を入力</div> </div>
-                        <div class="step-arrow">→</div>
+                        <div class="step-arrow" aria-hidden="true">→</div>
                         <div class="step" data-step="3"> <div class="step-icon">③</div> <div class="step-label">調整スケジュール</div> </div>
-                    </div>
+                    </nav>
 
                     <div class="start-buttons">
                         <button id="go-to-current-btn" class="btn btn-primary">調整を始める</button>
                         <button id="load-plan-btn" class="btn btn-secondary">保存したプランを読み込む</button>
                     </div>
 
-                    <div class="start-footer">
+                    <footer class="start-footer">
                         <div class="multi-mode-toggle">
                             <input type="checkbox" id="boat-mode-checkbox">
                             <label for="boat-mode-checkbox">ボートでの配置調整を許可</label>
@@ -63,51 +63,52 @@
                         <div class="multi-mode-toggle">
                             <input type="checkbox" id="multiplayer-mode-checkbox">
                             <label for="multiplayer-mode-checkbox">周期ホールドを有効化</label>
-                            <button id="cycle-hold-info-btn" class="help-icon" title="周期ホールドとは？">?</button>
+                            <button id="cycle-hold-info-btn" class="help-icon" title="周期ホールドとは？" aria-label="周期ホールドとは？">?</button>
                         </div>
                          <div class="footer-links">
                              <button id="guide-btn" class="btn btn-secondary-link">使い方ガイド</button>
                              <span class="link-separator">|</span>
                              <button id="disclaimer-link" class="btn btn-secondary-link">注意事項</button>
                          </div>
-                    </div>
+                    </footer>
                 </div>
-            </div>
+            </section>
 
             <!-- Page 2: Current Configuration Input -->
-            <div id="current-config-page" class="page">
+            <section id="current-config-page" class="page" aria-labelledby="current-config-title">
                 <div class="page-content-wrapper">
-                    <div class="page-header">
+                    <header class="page-header">
                         <button id="back-to-start-btn" class="btn-back" aria-label="戻る"></button>
-                        <div class="steps-container">
+                        <h2 id="current-config-title" class="visually-hidden">現在の配置入力</h2>
+                        <nav class="steps-container" aria-label="調整手順">
                             <div class="step" data-step="1"> <div class="step-icon">①</div> <div class="step-label">現在の配置を入力</div> </div>
-                            <div class="step-arrow">→</div>
+                            <div class="step-arrow" aria-hidden="true">→</div>
                             <div class="step" data-step="2"> <div class="step-icon">②</div> <div class="step-label">理想の配置を入力</div> </div>
-                            <div class="step-arrow">→</div>
+                            <div class="step-arrow" aria-hidden="true">→</div>
                             <div class="step" data-step="3"> <div class="step-icon">③</div> <div class="step-label">調整スケジュール</div> </div>
-                        </div>
+                        </nav>
                         <div class="header-placeholder"></div>
-                    </div>
+                    </header>
 
                     <div class="view-switcher">
-                        <button id="current-map-tab" class="view-tab active" data-view="map">マップ表示</button>
-                        <button id="current-list-tab" class="view-tab" data-view="list">リスト表示</button>
+                        <button id="current-map-tab" class="view-tab active" data-view="map" aria-controls="current-map-view">マップ表示</button>
+                        <button id="current-list-tab" class="view-tab" data-view="list" aria-controls="current-list-view">リスト表示</button>
                     </div>
 
                     <div class="input-views-container">
-                        <div id="current-map-view" class="input-view active">
+                        <div id="current-map-view" class="input-view active" role="tabpanel">
                             <div class="map-container" id="current-map-container">
                                  <div class="map-guide-text">アイコンをタップして選択</div>
-                                 <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/input_page_map.png?raw=true" alt="鶴観マップ" class="map-bg">
+                                 <img src="images/maps/input_page_map.png" alt="鶴観マップ" class="map-bg">
                             </div>
                         </div>
-                        <div id="current-list-view" class="input-view">
+                        <div id="current-list-view" class="input-view" role="tabpanel">
                             <div class="config-list" id="current-config-list">
                             </div>
                         </div>
                     </div>
                     
-                    <div class="page-footer">
+                    <footer class="page-footer">
                         <div class="left-action">
                             <div class="quick-fill-buttons show-flex-on-desktop">
                                 <span class="quick-fill-label">一括入力:</span>
@@ -117,98 +118,100 @@
                             </div>
                         </div>
                         <div class="center-action">
-                            <div class="progress-text" id="progress-text">入力完了: 0 / 10</div>
+                            <div class="progress-text" id="progress-text" aria-live="polite">入力完了: 0 / 10</div>
                         </div>
                         <div class="right-action">
-                            <div id="validation-message" class="validation-message"></div>
+                            <div id="validation-message" class="validation-message" role="alert"></div>
                             <button id="go-to-ideal-btn" class="btn btn-primary" disabled>理想の配置へ</button>
                         </div>
-                   </div>
+                   </footer>
                 </div>
-            </div>
+            </section>
             
             <!-- Page 3: Ideal Configuration Input -->
-            <div id="ideal-config-page" class="page">
+            <section id="ideal-config-page" class="page" aria-labelledby="ideal-config-title">
                 <div class="page-content-wrapper">
-                     <div class="page-header">
+                     <header class="page-header">
                         <button id="back-to-current-btn" class="btn-back" aria-label="戻る"></button>
-                        <div class="steps-container">
+                        <h2 id="ideal-config-title" class="visually-hidden">理想の配置入力</h2>
+                        <nav class="steps-container" aria-label="調整手順">
                             <div class="step" data-step="1"> <div class="step-icon">①</div> <div class="step-label">現在の配置を入力</div> </div>
-                            <div class="step-arrow">→</div>
+                            <div class="step-arrow" aria-hidden="true">→</div>
                             <div class="step" data-step="2"> <div class="step-icon">②</div> <div class="step-label">理想の配置を入力</div> </div>
-                            <div class="step-arrow">→</div>
+                            <div class="step-arrow" aria-hidden="true">→</div>
                             <div class="step" data-step="3"> <div class="step-icon">③</div> <div class="step-label">調整スケジュール</div> </div>
-                        </div>
+                        </nav>
                         <div class="header-placeholder"></div>
-                    </div>
+                    </header>
 
                     <div class="view-switcher">
-                        <button id="ideal-map-tab" class="view-tab active" data-view="map">マップ表示</button>
-                        <button id="ideal-list-tab" class="view-tab" data-view="list">リスト表示</button>
+                        <button id="ideal-map-tab" class="view-tab active" data-view="map" aria-controls="ideal-map-view">マップ表示</button>
+                        <button id="ideal-list-tab" class="view-tab" data-view="list" aria-controls="ideal-list-view">リスト表示</button>
                     </div>
 
                     <div class="input-views-container">
-                        <div id="ideal-map-view" class="input-view active">
+                        <div id="ideal-map-view" class="input-view active" role="tabpanel">
                             <div class="map-container" id="ideal-map-container">
                                  <div class="map-guide-text">アイコンをタップして選択</div>
-                                 <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/input_page_map.png?raw=true" alt="鶴観マップ" class="map-bg">
+                                 <img src="images/maps/input_page_map.png" alt="鶴観マップ" class="map-bg">
                             </div>
                         </div>
-                        <div id="ideal-list-view" class="input-view">
+                        <div id="ideal-list-view" class="input-view" role="tabpanel">
                             <div class="config-list" id="ideal-config-list">
                             </div>
                         </div>
                     </div>
 
-                     <div class="page-footer">
+                     <footer class="page-footer">
                         <div class="left-action">
                              <button class="btn btn-secondary" id="set-recommended-btn">環境配置</button>
                              <button class="btn btn-secondary show-on-desktop" id="copy-current-btn">現在配置をコピー</button>
                         </div>
                         <div class="center-action">
-                            <div class="progress-text" id="ideal-progress-text">入力完了: 0 / 10</div>
+                            <div class="progress-text" id="ideal-progress-text" aria-live="polite">入力完了: 0 / 10</div>
                         </div>
                         <div class="right-action">
                             <button id="calculate-plan-btn" class="btn btn-primary" disabled>調整プランを計算</button>
                         </div>
-                   </div>
+                   </footer>
                 </div>
-            </div>
+            </section>
 
             <!-- Page 4: Result Page -->
-            <div id="result-page" class="page">
+            <section id="result-page" class="page" aria-labelledby="result-page-title">
                 <div class="page-content-wrapper">
-                     <div class="page-header">
+                     <header class="page-header">
                         <button id="back-to-ideal-btn" class="btn-back" aria-label="戻る"></button>
-                         <div class="steps-container">
+                        <h2 id="result-page-title" class="visually-hidden">調整スケジュール結果</h2>
+                         <nav class="steps-container" aria-label="調整手順">
                             <div class="step" data-step="1"> <div class="step-icon">①</div> <div class="step-label">現在の配置を入力</div> </div>
-                            <div class="step-arrow">→</div>
+                            <div class="step-arrow" aria-hidden="true">→</div>
                             <div class="step" data-step="2"> <div class="step-icon">②</div> <div class="step-label">理想の配置を入力</div> </div>
-                            <div class="step-arrow">→</div>
+                            <div class="step-arrow" aria-hidden="true">→</div>
                             <div class="step" data-step="3"> <div class="step-icon">③</div> <div class="step-label">調整スケジュール</div> </div>
-                        </div>
+                        </nav>
                         <div class="header-placeholder"></div>
-                    </div>
+                    </header>
 
                     <div class="result-grid">
-                        <div class="result-layout-container">
+                        <aside class="result-layout-container">
                             <div class="result-map-container">
-                                <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88%202025-09-21%20161308.png?raw=true" alt="鶴観マップ 結果表示" class="map-bg">
+                                <img src="images/maps/result_map.png" alt="鶴観マップ 結果表示" class="map-bg">
                             </div>
                             <div class="result-actions-container">
                                 <div id="solo-mode-notice" class="solo-notice show-on-desktop">
 周期ホールドを使わない調整方法です。使用すると期間をもっと短縮できるかもしれません。<a href="https://youtu.be/2xqllaCTP5c?si=UyMkRCct-Z1Pp5HI&t=1194" target="_blank" rel="noopener noreferrer">詳しくは動画で</a>
                                 </div>
                                 <button id="recalculate-alternate-mode-btn" class="btn">
-                                    <span class="btn-icon icon-recalc"></span>
+                                    <span class="btn-icon icon-recalc" aria-hidden="true"></span>
                                     <span id="recalculate-btn-text"></span>
                                 </button>
                                 <button id="save-plan-btn" class="btn btn-secondary">
-                                    <span class="btn-icon icon-save"></span>
+                                    <span class="btn-icon icon-save" aria-hidden="true"></span>
                                     <span>結果を保存</span>
                                 </button>
                                 <button id="reset-btn" class="btn btn-secondary">
-                                    <span class="btn-icon icon-reset"></span>
+                                    <span class="btn-icon icon-reset" aria-hidden="true"></span>
                                     <span>リセット</span>
                                 </button>
                                 <div class="footer-links hide-on-desktop">
@@ -217,23 +220,24 @@
                                     <button id="request-form-result-mobile-btn" class="btn btn-secondary-link">リクエストフォーム</button>
                                 </div>
                             </div>
-                        </div>
+                        </aside>
 
-                        <div id="result-details" class="result-details-container">
+                        <section id="result-details" class="result-details-container" aria-labelledby="result-summary-text">
                              <div id="result-summary">
-                                 <button id="save-plan-icon-btn" class="save-icon-btn" title="結果を保存"></button>
-                                 <span id="result-summary-text"></span>
+                                 <button id="save-plan-icon-btn" class="save-icon-btn" title="結果を保存" aria-label="結果を保存"></button>
+                                 <h3 id="result-summary-text" class="result-summary-text"></h3>
                              </div>
                              <div class="result-table-container">
                                  <table class="result-table">
+                                     <caption>調整スケジュール詳細</caption>
                                      <thead>
                                          <tr>
-                                             <th class="progress-col">完了</th>
-                                             <th>日付</th>
-                                             <th>モード</th>
-                                             <th>2P(ホールド役)の行動</th>
-                                             <th>1P(ホスト)の行動</th>
-                                             <th>詳細</th>
+                                             <th class="progress-col" scope="col">完了</th>
+                                             <th scope="col">日付</th>
+                                             <th scope="col">モード</th>
+                                             <th scope="col">2P(ホールド役)の行動</th>
+                                             <th scope="col">1P(ホスト)の行動</th>
+                                             <th scope="col">詳細</th>
                                          </tr>
                                      </thead>
                                      <tbody id="result-tbody"></tbody>
@@ -247,44 +251,44 @@
                                 <span class="link-separator">|</span>
                                 <button id="request-form-result-pc-btn" class="btn btn-secondary-link">リクエストフォーム</button>
                              </div>
-                        </div>
+                        </section>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
     </main>
     <!-- Modals -->
-    <div id="guide-modal" class="modal backdrop-blur">
+    <div id="guide-modal" class="modal backdrop-blur" role="dialog" aria-modal="true" aria-labelledby="guide-modal-title">
         <div class="modal-content">
-            <span class="modal-close" data-target="guide-modal">&times;</span>
-            <h2>使い方ガイド</h2>
+            <button class="modal-close" data-target="guide-modal" aria-label="閉じる">&times;</button>
+            <h2 id="guide-modal-title">使い方ガイド</h2>
             <p>このプランナーは、鶴観の精鋭エネミーの配置を、最短日数で理想の配置に調整するためのスケジュールを計算します。</p>
             
             <hr>
 
             <h3>Step 1: 現在の配置を正確に入力する</h3>
             <p>まず、あなたのゲーム世界での、現在のエネミー配置を10ヶ所すべて入力します。</p>
-            <p>マップ上のアイコンをタップすると、より詳細なマップが表示されます。**表示されたA/B/Cの各パターンを、ゲーム内のスクリーンショット画像と比較しながら、あなたの世界と完全に一致するものを選択してください。** これが最も重要なステップです！</p>
-            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%8F%BE%E5%9C%A8.gif?raw=true" alt="マップ入力画面" style="width:100%; border-radius: 8px; margin-top: 10px;">
+            <p>マップ上のアイコンをタップすると、より詳細なマップが表示されます。**表示されたA/B/Cの各パターンを、ゲーム内のスクリーンショット画像と比較しながら、あなたの世界と完全に一致するものを選択し  ください。** これが最も重要なステップです！</p>
+            <img src="images/guides/current.gif" alt="マップ入力画面の操作デモ" style="width:100%; border-radius: 8px; margin-top: 10px;">
             
             <hr>
 
             <h3>Step 2: 理想の配置を設定する</h3>
             <p>次に、あなたが目標とする理想の配置を10ヶ所すべて入力します。</p>
             <p>どの配置にすれば良いか分からない場合は、**「環境配置」ボタンを押すのがおすすめです。** これは、多くの熟練者が推奨する、狩り効率の良い配置パターンをワンボタンで入力できる機能です。<br>また、「現在配置をコピー」ボタンを使えば、現在の配置をベースに少しだけ変更したい場合に便利です。</p>
-            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%90%86%E6%83%B3.gif?raw=true" alt="理想配置の入力" style="width:100%; border-radius: 8px; margin-top: 10px;">
+            <img src="images/guides/ideal.gif" alt="理想配置の入力デモ" style="width:100%; border-radius: 8px; margin-top: 10px;">
             
             <hr>
             
             <h3>Step 3: 調整プランを確認・実行する</h3>
             <p>入力が終わったら、「調整プランを計算」ボタンを押します。（スタートページで「周期ホールドを有効化」にチェックを入れていると、マルチプレイを前提とした最短ルートを計算します。）</p>
             <p>計算が完了すると、最短の調整スケジュールが日数ごとに表示されます。<br>**各日の「手順を確認」ボタンを押すと、その日にどのワープポイントを使い、どう移動すればいいかといった具体的な手順を、画像や動画付きの詳細ガイドで確認できます。**</p>
-            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%B5%B0%E6%9E%9C.gif?raw=true" alt="結果表示画面" style="width:100%; border-radius: 8px; margin-top: 10px;">
+            <img src="images/guides/result.gif" alt="結果表示画面の操作デモ" style="width:100%; border-radius: 8px; margin-top: 10px;">
 
             <hr>
             
             <h3>プランの保存と読み込み</h3>
-            <p>計算結果は、名前を付けて保存することができます。後日、スタートページの「保存したプランを読み込む」ボタンからいつでも呼び出して、調整の続きから再開できます。</p>
+            <p>計算結果は、名前を付けて保存することができます。後日、スタートページの「保存した  ランを読み込む」ボタンからいつでも呼び出して、調整の続きから再開できます。</p>
 
             <hr>
 
@@ -296,10 +300,10 @@
         </div>
     </div>
     
-    <div id="tsurumi-info-modal" class="modal backdrop-blur">
+    <div id="tsurumi-info-modal" class="modal backdrop-blur" role="dialog" aria-modal="true" aria-labelledby="tsurumi-info-modal-title">
         <div class="modal-content">
-            <span class="modal-close" data-target="tsurumi-info-modal">&times;</span>
-            <h2>鶴観調整とは？</h2>
+            <button class="modal-close" data-target="tsurumi-info-modal" aria-label="閉じる">&times;</button>
+            <h2 id="tsurumi-info-modal-title">鶴観調整とは？</h2>
             <p>鶴観調整とは、鶴観マップの一部の精鋭エネミーの「出現パターン」を、プレイヤーが意図的にコントロールするテクニックのことです。</p>
             <p>その調整の中でも特に複雑で時間のかかる<strong>「何日にどこをロードすれば良いか」というスケジュールの計画を自動で行い、最短ルートを提案するのがこの『鶴観調整プランナー』です。</strong></p>
             
@@ -307,7 +311,7 @@
         
             <h3>調整の基本的な仕組み</h3>
             <ul style="text-align: left; list-style: none; padding-left: 0;">
-                <li style="margin-bottom: 10px;"><strong>3つの配置パターン:</strong> 調整対象のエネミーには「A」「B」「C」の3つの出現パターンがあり、それぞれ数や位置が異なります。このパターンは10箇所のエネミーグループごとに独立しています。</li>
+                <li style="margin-bottom: 10px;"><strong>3つの配置パターン:</strong> 調整対象のエネミーには「A」「B」「C」の3つ  出現パターンがあり、それぞれ数や位置が異なります。このパターンは10箇所のエネミーグループごとに独立しています。</li>
                 <li style="margin-bottom: 10px;"><strong>「ロード」による周期の進行:</strong> エネミーのパターンは、ワープや移動でそのエネミーに近づき、<strong>ゲーム内に「ロード」された時にだけ</strong>次のパターンへ1つ進みます。逆を言えば、ロードしなければパターンは変わりません。</li>
                 <li style="margin-bottom: 10px;"><strong>選択的なロード:</strong> 特定の場所へワープしたり、決まったルートを移動したりすることで、一部のエネミーだけを狙ってロードし、周期を進めることができます。これが「調整」の基本となります。</li>
             </ul>
@@ -323,16 +327,16 @@
         </div>
     </div>
 
-    <div id="cycle-hold-info-modal" class="modal backdrop-blur">
+    <div id="cycle-hold-info-modal" class="modal backdrop-blur" role="dialog" aria-modal="true" aria-labelledby="cycle-hold-info-modal-title">
         <div class="modal-content">
-            <span class="modal-close" data-target="cycle-hold-info-modal">&times;</span>
-            <h2>周期ホールドとは？</h2>
+            <button class="modal-close" data-target="cycle-hold-info-modal" aria-label="閉じる">&times;</button>
+            <h2 id="cycle-hold-info-modal-title">周期ホールドとは？</h2>
             <p>周期ホールドとは、<strong>マルチプレイを利用して</strong>鶴観調整をより効率的に行うための<strong>高度なテクニック</strong>です。</p>
             <p><strong>このプランナーで「周期ホールドを有効化」すると、この高度なテクニックを前提とした最短の調整スケジュールを自動で算出します。</strong>ソロでの調整よりも手順は複雑になりますが、調整にかかる日数を大幅に短縮できる可能性があります。</p>
             
             <hr style="margin: 15px 0;">
         
-            <h3>周期ホールドの仕組み</h3>
+            <h3>周期ホ   ルドの仕組み</h3>
             <p>通常、エネミーをロードすると周期は1つ進みますが、周期ホールドを使うと<strong>「ロードしたにもかかわらず、周期を進めない」</strong>という特殊な状況を作り出せます。</p>
             <p>これにより、調整したくないエネミーの周期を「ホールド（維持）」したまま、目的のエネミーの周期だけを進める、という精密な操作が可能になります。</p>
         
@@ -343,23 +347,23 @@
                 <li style="margin-bottom: 5px;"><strong>1P (ホスト):</strong> 壁を青く塗る<strong>「ペイント役」</strong>。周期を進めたい人です。</li>
                 <li style="margin-bottom: 5px;"><strong>2P (ゲスト/ホールド役):</strong> 壁が塗られないよう保護する<strong>「マスキングテープ役」</strong>。周期を進めたくない人です。</li>
             </ul>
-            <p style="text-align: left;">ソロ調整は、ペイント役が1人で作業するのと同じです。塗ろうとした場所はすべて青くなります（周期が進みます）。<br>一方、周期ホールド（マルチ調整）では、まず2Pがマスキングテープで壁を保護します。その後、1Pが塗装をすると、最終的に青く塗られるのは<strong>「1Pが塗ろうとした範囲」から「2Pがマスキングテープで保護した範囲」を<u>除いた部分</u></strong>だけになります。</p>
+            <p style="text-align: left;">ソロ調整は、ペイント役が1人で作業するのと同じです。塗ろうとした場所はすべて青くなります（周期が進みます）。<br>一方、周期ホールド（マルチ調整）では、まず2Pがマスキングテープで壁を保護します。その後、1Pが塗装をすると、最終的に青   塗られるのは<strong>「1Pが塗ろうとした範囲」から「2Pがマスキングテープで保護した範囲」を<u>除いた部分</u></strong>だけになります。</p>
             <p style="text-align: left;">このように、周期ホールドは不要な部分の周期進行を防ぐ「マスキングテープ」の役割を果たし、より正確で素早い調整を実現します。</p>
             <p style="text-align: left; margin-top: 10px;">理論上は複雑に聞こえるかもしれませんが、<strong>当プランナーで計算した後の結果画面では、各日の「手順を確認」ボタンから、ホスト役（1P）とホールド役（2P）がそれぞれ具体的にどの行動をすべきかが示されます。</strong></p>
         
             <hr style="margin: 15px 0;">
         
-            <p style="text-align: center;">周期ホールドの具体的な手順や詳細な解説については、<br>ぜひ、ねこしたさんの動画をご覧ください。（該当の解説箇所から再生されます）<br>
+            <p style="text-align: center;">周期ホールドの具体的な手順や詳細な解説については、<br>ぜひ、ねこしたさんの動画をご覧ください。（該当の解   箇所から再生されます）<br>
                 <a href="https://www.youtube.com/watch?v=2xqllaCTP5c&t=1194s" target="_blank" rel="noopener noreferrer"><strong>周期ホールドの解説はこちら</strong></a>
             </p>
         </div>
     </div>
 
 
-    <div id="disclaimer-modal" class="modal backdrop-blur">
+    <div id="disclaimer-modal" class="modal backdrop-blur" role="dialog" aria-modal="true" aria-labelledby="disclaimer-modal-title">
         <div class="modal-content">
-            <span class="modal-close" data-target="disclaimer-modal">&times;</span>
-            <h2>注意事項</h2>
+            <button class="modal-close" data-target="disclaimer-modal" aria-label="閉じる">&times;</button>
+            <h2 id="disclaimer-modal-title">注意事項</h2>
             <p>このサイトは、私が個人的に制作した非公式のファンツールです。
                 計算結果の正確性には万全を期しておりますが、ゲームのアップデート等により情報が古くなる可能性や、予期せぬ不具合が発生する可能性もございます。</p>
             
@@ -379,9 +383,9 @@
         </div>
     </div>
     
-    <div id="zoom-view" class="modal backdrop-blur">
+    <div id="zoom-view" class="modal backdrop-blur" role="dialog" aria-modal="true" aria-labelledby="zoom-title">
         <div class="modal-content">
-            <span class="modal-close" data-target="zoom-view">&times;</span>
+            <button class="modal-close" data-target="zoom-view" aria-label="閉じる">&times;</button>
             <h3 id="zoom-title"></h3>
             <div id="zoom-map-container" class="image-container">
                 <div class="image-loader">読み込み中...</div>
@@ -390,9 +394,9 @@
         </div>
     </div>
 
-    <div id="screenshot-popup" class="modal backdrop-blur">
+    <div id="screenshot-popup" class="modal backdrop-blur" role="dialog" aria-modal="true" aria-labelledby="screenshot-title">
         <div class="modal-content">
-             <span class="modal-close" data-target="screenshot-popup">&times;</span>
+             <button class="modal-close" data-target="screenshot-popup" aria-label="閉じる">&times;</button>
              <div style="text-align: center; margin-bottom: 15px;">
                 <p style="color: var(--danger-color); font-weight: bold; margin: 0;">この画像と実際のプレイ画面を慎重に比較してください</p>
                 <h3 id="screenshot-title" style="margin: 5px 0 0 0;"></h3>
@@ -407,27 +411,29 @@
         </div>
     </div>
     
-    <div id="loading-modal" class="modal">
+    <div id="loading-modal" class="modal" role="alertdialog" aria-modal="true" aria-labelledby="loading-modal-title">
          <div class="modal-content" style="text-align: center;">
-            <h2 style="font-size: 2.5em; margin-bottom: 10px;">計算中...</h2>
+            <h2 id="loading-modal-title" style="font-size: 2.5em; margin-bottom: 10px;">計算中...</h2>
             <p id="loading-text">最適なルートを探索しています。<br>組み合わせが複雑な場合、十数秒かかることがあります。</p>
-            <div class="loader"></div>
-            <div id="calculation-progress"></div>
+            <div class="loader" role="status">
+                <span class="visually-hidden">読み込み中</span>
+            </div>
+            <div id="calculation-progress" aria-live="polite"></div>
          </div>
     </div>
     
-    <div id="day-detail-modal" class="modal backdrop-blur">
+    <div id="day-detail-modal" class="modal backdrop-blur" role="dialog" aria-modal="true" aria-labelledby="day-detail-title">
          <div class="modal-content">
-              <span class="modal-close" data-target="day-detail-modal">&times;</span>
+              <button class="modal-close" data-target="day-detail-modal" aria-label="閉じる">&times;</button>
               <h2 id="day-detail-title"></h2>
               <div id="day-detail-content"></div>
        </div>
     </div>
 
-    <div id="credit-modal" class="modal backdrop-blur">
+    <div id="credit-modal" class="modal backdrop-blur" role="dialog" aria-modal="true" aria-labelledby="credit-modal-title">
         <div class="modal-content">
-            <span class="modal-close" data-target="credit-modal">&times;</span>
-            <h2>Special Thanks</h2>
+            <button class="modal-close" data-target="credit-modal" aria-label="閉じる">&times;</button>
+            <h2 id="credit-modal-title">Special Thanks</h2>
             <p>このツールの開発にあたり、「ねこした」さんより多大なるご協力をいただきました。<br>心より感謝申し上げます。</p>
             
             <hr style="margin: 20px 0;">
@@ -448,10 +454,10 @@
         </div>
     </div>
     
-    <div id="load-plan-modal" class="modal backdrop-blur">
+    <div id="load-plan-modal" class="modal backdrop-blur" role="dialog" aria-modal="true" aria-labelledby="load-plan-modal-title">
         <div class="modal-content">
-            <span class="modal-close" data-target="load-plan-modal">&times;</span>
-            <h2>保存したプランを読み込む</h2>
+            <button class="modal-close" data-target="load-plan-modal" aria-label="閉じる">&times;</button>
+            <h2 id="load-plan-modal-title">保存したプランを読み込む</h2>
             <ul id="saved-plans-list">
                 <!-- Saved plans will be dynamically inserted here -->
             </ul>
@@ -460,13 +466,13 @@
     </div>
 
     <!-- Logic & Author Modal -->
-    <div id="logic-modal" class="modal backdrop-blur">
+    <div id="logic-modal" class="modal backdrop-blur" role="dialog" aria-modal="true" aria-labelledby="logic-modal-title">
         <div class="modal-content">
-            <span class="modal-close" data-target="logic-modal">&times;</span>
-            <h2>製作者と計算の仕組みについて</h2>
+            <button class="modal-close" data-target="logic-modal" aria-label="閉じる">&times;</button>
+            <h2 id="logic-modal-title">製作者と計算の仕組みについて</h2>
 
             <h3>製作者について</h3>
-            <p>はじめまして、「あの時の鳥です」と申します。この「鶴観調整プランナー」を制作・運営しています。</p>
+            <p>  じめまして、「あの時の鳥です」と申します。この「鶴観調整プランナー」を制作・運営しています。</p>
             <p>精鋭狩りRTAに挑戦する中で、多くの人が直面する「鶴観調整」という高い壁を少しでも低くしたい。そして、この界隈に挑戦する仲間が一人でも増えてくれたら嬉しい。そんな想いで、このツールを丹精込めて制作しました。</p>
             <p>
                 <a href="https://x.com/PIpXlMz1tB5ASjF" target="_blank" rel="noopener noreferrer"><strong>X (旧Twitter) アカウント: @PIpXlMz1tB5ASjF</strong></a>
@@ -493,7 +499,7 @@
             <p style="text-align: left;">次に、このルールをコンピュータが計算できる「数式モデル」に置き換えます。</p>
             <ul style="text-align: left; list-style: none; padding-left: 1em;">
                 <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span><strong>ルールの数値化:</strong> 鶴観の10個の精鋭グループがそれぞれ3パターンの状態を持つということは、3の10乗、すなわち<strong>59,049通り</strong>もの膨大な配置パターンが存在することを意味します。プランナーは、この59,049通りの全パターンを、それぞれ重複しないユニークな番号（状態番号）に変換します。</li>
-                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span>「ワープ②」や「歩き⑬」といった各調整アクションは、「<strong>ある状態番号</strong>を受け取ったら、ルール（`data.js`）に従って影響範囲のパターンを1つ進め、<strong>別の状態番号</strong>を返す関数」としてモデル化されます。</li>
+                <li style="margin-bottom: 10px; padding-left: 1.5em; position: relative;"><span style="position: absolute; left: 0; color: var(--accent-color);">✓</span>「ワープ②」や「歩き⑬」といった各調整アクションは、「<strong>ある状態番号</strong>を受け取ったら、ルール（`data.js`）に従って影響範囲のパターンを1つ進め、<strong>別の状態番号</strong>を返す関数」とし  モデル化されます。</li>
             </ul>
             <p style="text-align: left;"><strong>結論:</strong> ゲーム内で起こりうる<strong>全ての配置パターン</strong>と、プレイヤーが取りうる<strong>全ての調整アクション</strong>を、このように漏れなく数値と数式の関係に変換することで、プランナーはゲーム内の鶴観調整をPC上で<strong>完全にシミュレート</strong>することが可能になります。これにより、計算ロジックが<strong>ゲームのルール通りに正しく機能する</strong>ことが保証されます。</p>
 
@@ -525,10 +531,10 @@
     </div>
 
     <!-- New Request Form Modal -->
-    <div id="request-modal" class="modal backdrop-blur">
+    <div id="request-modal" class="modal backdrop-blur" role="dialog" aria-modal="true" aria-labelledby="request-modal-title">
         <div class="modal-content">
-            <span class="modal-close" data-target="request-modal">&times;</span>
-             <h3>改善案・ご要望フォーム</h3>
+            <button class="modal-close" data-target="request-modal" aria-label="閉じる">&times;</button>
+             <h3 id="request-modal-title">改善案・ご要望フォーム</h3>
                 <p>本サイトの改善案や追加機能のご要望などありましたら、お気軽に相談していただけると幸いです。<br>
                 <small>※このフォームは匿名で送信され、個人情報は一切記録されません。</small>
                 </p>
@@ -547,11 +553,11 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="form-details">詳細</label>
+                        <label for="form-details">詳  </label>
                         <textarea id="form-details" name="entry.1299178169" rows="5" required></textarea>
                     </div>
                     <button type="submit" id="submit-form-btn" class="btn btn-primary">送信する</button>
-                    <p id="form-status-message" style="margin-top: 10px;"></p>
+                    <p id="form-status-message" style="margin-top: 10px;" role="status"></p>
                 </form>
                 <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="if(this.submitted) { TsurumiApp.ui.handleFormSuccess(); }"></iframe>
         </div>
@@ -560,7 +566,7 @@
 
     <footer class="site-credit-footer backdrop-blur">
         <p>
-            <span id="credit-modal-trigger">Special Thanks: ねこしたさん (詳細はこちら)</span>
+            <button id="credit-modal-trigger" class="header-link-btn">Special Thanks: ねこしたさん (詳細はこちら)</button>
             <span class="credit-separator">|</span>
             <span>鶴観を研究してくださった先人の方々</span>
         </p>
@@ -590,4 +596,3 @@
     <script src="js/main.js"></script>
 </body>
 </html>
-
