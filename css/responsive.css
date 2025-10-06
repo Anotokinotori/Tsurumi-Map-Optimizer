@@ -1,0 +1,184 @@
+/* =================================================================== */
+/* 7. Responsive Design
+/* =================================================================== */
+
+/* --- Desktop (Large Screens) --- */
+@media (min-width: 992px) {
+    body {
+        background-color: #000; /* Fallback for older browsers */
+        background-image: url('../images/backgrounds/desktop-background.png');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
+    main {
+        background: none;
+    }
+    .result-grid {
+        grid-template-columns: minmax(350px, 4fr) 6fr;
+        gap: 40px;
+        align-items: flex-start;
+    }
+    .result-layout-container {
+        position: sticky;
+        top: 20px;
+    }
+    .show-on-desktop { display: block; }
+    .show-flex-on-desktop { display: flex; }
+    .hide-on-desktop { display: none; } /* Added */
+    .result-disclaimer-desktop { display: flex; }
+}
+
+/* --- Tablet & Mobile --- */
+@media (max-width: 991px) {
+    body {
+        overflow: auto;
+        height: auto;
+        min-height: 100vh;
+        padding-bottom: 50px; /* Space for fixed footer */
+    }
+    main {
+         padding: 0;
+         height: auto;
+         flex-grow: 1;
+    }
+    .container { 
+        width: 100%; 
+        height: auto;
+        min-height: 0;
+        max-height: none; 
+        border-radius: 0; 
+        overflow: visible;
+    }
+    .page { 
+        padding: 20px; 
+        height: auto;
+        position: relative;
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        display: none; 
+        justify-content: flex-start;
+    }
+    .page.active {
+        display: flex;
+    }
+    .page-content-wrapper {
+        height: auto;
+        min-height: calc(100vh - 80px); /* Header height approx */
+    }
+    #start-page {
+        justify-content: center;
+        padding-top: 2vh;
+        padding-bottom: 2vh;
+        flex-grow: 1; 
+    }
+    #start-page .page-content-wrapper {
+        min-height: 0; 
+        flex-grow: 1; 
+    }
+    .site-header, .site-credit-footer { padding: 10px 20px; }
+    .title-long { display: none; }
+    .title-short { display: inline; }
+    .header-version,
+    .header-version + .credit-separator {
+        display: none;
+    }
+    #start-page h1 { font-size: 2.5em; }
+    .steps-container { gap: 10px; }
+    .step-icon { width: 50px; height: 50px; font-size: 1.2em;}
+    .step-label { font-size: 0.9em; }
+    .step-arrow { font-size: 2em; }
+    h2 { font-size: 1.5em; }
+    .config-list { grid-template-columns: 1fr; height: 100%; max-height: none; }
+    .modal-content { width: 90%; padding: 20px; }
+    .result-table th, .result-table td { padding: 10px; font-size: 0.9em;}
+    .input-views-container {
+        flex-grow: 0;
+        height: 43vh;
+    }
+    .input-views-container .map-container {
+        height: 100%;
+        aspect-ratio: unset;
+    }
+    .site-credit-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+    }
+    /* Reorder result page for mobile */
+    .result-details-container {
+        order: 1;
+    }
+    .result-layout-container {
+        order: 2;
+    }
+    .result-footer-link {
+        display: none;
+    }
+    .result-disclaimer-desktop {
+        display: none;
+    }
+    #disclaimer-link-result-mobile { display: block; }
+    .save-icon-btn {
+        display: block; /* Show on mobile */
+    }
+    /* Hide progress column on mobile */
+    .result-table .progress-col {
+        display: none;
+    }
+    /* Make rows tappable on mobile */
+    .result-table tbody tr.mobile-tappable {
+        cursor: pointer;
+    }
+}
+
+/* --- Small Mobile --- */
+@media (max-width: 480px) {
+    #start-page h1 { font-size: 2em; }
+    .steps-container { gap: 5px; margin-top: 15px; margin-bottom: 10px;}
+    .step-icon { width: 40px; height: 40px; font-size: 1em; }
+    .step-label { font-size: 0.7em; margin-top: 8px; }
+    .step-arrow { font-size: 1.5em; }
+    .btn { font-size: 1em; padding: 12px 24px; }
+    #go-to-current-btn { padding: 18px 36px; font-size: 1.3em; }
+    .page { padding: 15px; }
+    .config-item-label { font-size: 1em; }
+    .pattern-buttons button { width: 40px; height: 40px; padding: 5px; font-size: 0.9em;}
+    .page-footer { 
+        flex-direction: row; 
+        flex-wrap: wrap;
+        gap: 10px;
+        padding-bottom: 15px;
+    }
+    .page-footer .left-action, .page-footer .right-action {
+        flex-basis: auto;
+        flex-grow: 0;
+    }
+    .page-footer .center-action {
+        flex-basis: 100%;
+        order: 3;
+    }
+    .page-footer .right-action {
+        margin-left: auto;
+    }
+    .page-footer .btn { font-size: 0.9em; padding: 10px 20px; }
+    .page-footer .btn-secondary-link { font-size: 0.9em; padding: 5px; }
+}
+
+/* --- Height Constrained Desktop --- */
+@media (min-width: 992px) and (max-height: 800px) {
+    #current-config-page .step-icon,
+    #ideal-config-page .step-icon,
+    #result-page .step-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.2em;
+    }
+    #current-config-page .step-label,
+    #ideal-config-page .step-label,
+    #result-page .step-label {
+        margin-top: 10px;
+        font-size: 0.9em;
+    }
+}
