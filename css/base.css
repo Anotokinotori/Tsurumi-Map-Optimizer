@@ -1,0 +1,47 @@
+/* =================================================================== */
+/* 1. General & Root Styles
+/* =================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+
+:root {
+    --bg-color: #f0f2f5;
+    --panel-bg-color: rgba(255, 255, 255, 0.85);
+    --header-bg-color: rgba(26, 32, 44, 0.85);
+    --primary-text-color: #333;
+    --secondary-text-color: #555;
+    --accent-color: #3B82F6; /* Blue accent */
+    --accent-hover-color: #2563EB;
+    --multiplayer-accent-color: #EC4899; /* Pink for multi */
+    --multiplayer-accent-hover-color: #DB2777;
+    --border-color: #e0e0e0;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --btn-secondary-bg: #f3f4f6;
+    --btn-secondary-bg-hover: #e5e7eb;
+    --danger-color: #ef4444;
+    --danger-hover-color: #dc2626;
+    --completed-color: #e5e7eb; /* A bit darker for better visibility */
+}
+
+body {
+    font-family: 'Noto Sans JP', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-image: url('https://api.mg-dev.net/api/v1/genshin/backgrounds/Tsurumi%20Island');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Prevent body scroll on desktop */
+}
+
+h1, h2, h3 {
+    color: var(--primary-text-color);
+}
+
+.backdrop-blur {
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
