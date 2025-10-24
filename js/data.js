@@ -58,7 +58,7 @@ const actionDetails = {
     16: { images: ['https://assets.st-note.com/img/1743737811-wB7bQ5n9SjWA04tyDLsJROVf.png?width=1200', 'https://assets.st-note.com/img/1743737778-7VAa6i9QBv2HjXslczhdKoTg.png?width=1200'], videoUrl: 'https://youtu.be/2Ev8hvTaVgo?si=nR242nzcypbrcmbF', note: '他の精鋭をロードしないようにボートポイントから向かってください。（ポケワを置くかヤシオリ島から海を渡る）目印はスイートフワラーと崖の隙間です。\n極力動画と同じように移動してください。' },
     17: { images: ['https://assets.st-note.com/img/1738916671-ORDvWIt8zi692QxAJVKb1rlS.png?width=1200', 'https://assets.st-note.com/img/1738916711-VnxAvW1qJdrGXlOzoHe8Mshk.png?width=1200'], videoUrl: 'https://youtu.be/x8Zcoz0VjzY?si=42_j7YWlgBPT_zR3', note: 'ワープ7にワープした段階でモシリ炎アビスとワクカウもロードされます。その後、移動し、アウタケ東もロードします。目標は雷石です。\n極力動画と同じように移動してください。' },
     18: { images: ['https://assets.st-note.com/img/1738401375-T9NnmahGdqv30Ije4tbpZ6y5.jpg?width=1200', 'https://assets.st-note.com/img/1738374779-0BuAKsWRnoTiSNbltd2qIv4H.png?width=1200'], videoUrl: null, note: 'シリコロのボートポイントです。ポケワを置くのがおすすめですが、セイライ島やヤシオリ島から海を渡って来ても大丈夫です。' },
-    19: { images: ['https://assets.st-note.com/img/1741392581-OlQNcjt2W14iaRJymhSG0VdI.png?width=1200', 'https://assets.st-note.com/img/1741392586-2SUxeY4fBXj7z918Tok0nqHu.png?width=1200'], videoUrl: 'https://youtu.be/XbqcgyuE0vw?si=Xf3wZ57Y_nxWjBW8', note: 'オイナ機兵 + シリコロ暴徒 + オイナ暴徒 + アウタケ西 ロード位置\n目印はミントです。\n極力動画と同じように移動してください。' },
+    19: { images: ['https://assets.st-note.com/img/1741392581-OlQNcjt2W14iaRJymhSG0VdI.png?width=1200', 'https://assets.st-note.com/img/1741392586-2SUxeY4fBXj7z918Tok0nqHu.png?width=1200'], videoUrl: 'https://youtu.be/XbqcgyuE0vw?si=Xf3wZ57Y_nxWjBW8', note: 'ポケワを置くのがおすすめですが、セイライ島やヤシオリ島から海を渡って来ても大丈夫です。\n目印はミントです。\n極力動画と同じように移動してください。' },
     20: { images: ['https://assets.st-note.com/img/1740887637-KEB38rW94bPpH2YI6whCcQ7x.jpg?width=1200'], videoUrl: null, note: '意図せぬ精鋭をロードしないよう、目的までの移動ルートに気をつけてください。\nヤシオリ島からボートで向かいます。\nシリコロ山付近の精鋭をロードしないように大回りしてください。' },
     21: { images: ['https://assets.st-note.com/img/1740464299-tWJOErwCv4B1cnPI57XmoMY3.jpg?width=1200'], videoUrl: null, note: '意図せぬ精鋭をロードしないよう、目的までの移動ルートに気をつけてください。\nヤシオリ島からボートで向かいます。\nシリコロ山付近の精鋭をロードしないように大回りしてください。' },
 };
@@ -100,3 +100,4 @@ const screenshotImageUrls = {
     'I': { 'A': 'https://assets.st-note.com/img/1738419855-V8XBf5WexFzy60psuQGvmNdY.jpg?width=1200', 'B': 'https://assets.st-note.com/img/1738586173-KCQXfOlVjNtUoBn37qg5Fcu0.jpg?width=1200', 'C': 'https://assets.st-note.com/img/1738419868-YORuncAJ3DgLoZ560WwCv4Uq.jpg?width=1200' },
     'J': { 'A': 'https://assets.st-note.com/img/1738419900-C9ZW6JqmkxnVz5vBrKbAXtDo.jpg?width=1200', 'B': 'https://assets.st-note.com/img/1738419916-pQNEJcL0dXovR7jnTfa8qzeh.jpg?width=1200', 'C': 'https://assets.st-note.com/img/1738419933-zFKX9tqVyjMilUBRdJIWNYrH.jpg?width=1200' }
 };
+
