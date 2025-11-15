@@ -7,33 +7,58 @@ const TsurumiApp = {
         activeSelection: { configType: null, groupId: null, pattern: null },
         lastCalculatedPlan: null,
         activePlanId: null, // To track the currently displayed plan
+        // Keep display metadata at the root to avoid counting them as groups.
+        isDisplayReversed: true,
+        rawToDisplay: [],
     },
 
     // --- ELEMENTS ---
     // Caches frequently accessed DOM elements.
     elements: {},
 
-    // --- FIREBASE ---
-    firebase: {
-        db: null,
-    },
-
     // --- INITIALIZATION ---
     init: function() {
-        try {
-            this.firebase.db = firebase.firestore();
-        } catch (e) {
-            console.error("Firebase initialization failed:", e);
+        if (!document.getElementById('final-config-modal')) {
+            const m = document.createElement('div');
+            m.id = 'final-config-modal';
+            m.className = 'modal';
+            m.innerHTML = `
+                <div class="modal-content">
+                    <button class="modal-close" data-target="final-config-modal"></button>
+                    <div id="final-config-table-container"></div>
+                </div>`;
+            document.body.appendChild(m);
+            document.querySelectorAll('.modal-close').forEach(el => {
+                el.addEventListener('click', () => TsurumiApp.ui.closeModal(el.dataset.target));
+            });
         }
 
         this.cacheElements();
         this.ui.initInputPage('current');
         this.ui.initInputPage('ideal');
+        
+        const loadedFromUrl = this.applyStateFromURL(); // URL parameter check
+        
         this.bindEvents();
 
         // Check if the info banner was previously closed
         if (localStorage.getItem('tsurumiBannerClosed') === 'true') {
             this.elements.infoBanner.style.display = 'none';
+        }
+        
+        // If loaded from URL, update UI and calculate
+        if (loadedFromUrl) {
+            // Re-use the reliable updateConfig function for each item
+            // to ensure all UI elements are correctly updated.
+            groupKeys.forEach(key => {
+                if (this.state.currentConfig[key]) {
+                    this.updateConfig('current', key, this.state.currentConfig[key]);
+                }
+                if (this.state.idealConfig[key]) {
+                    this.updateConfig('ideal', key, this.state.idealConfig[key]);
+                }
+            });
+            this.calculatePlan();
         }
     },
 
@@ -57,6 +82,7 @@ const TsurumiApp = {
         this.elements.disclaimerLinkResultMobile = document.getElementById('disclaimer-link-result-mobile');
         this.elements.creditTrigger = document.getElementById('credit-modal-trigger');
         this.elements.logicModalTrigger = document.getElementById('logic-modal-trigger');
+        this.elements.versionModalTrigger = document.getElementById('version-modal-trigger');
         this.elements.loadPlanBtn = document.getElementById('load-plan-btn');
         this.elements.goToIdealBtn = document.getElementById('go-to-ideal-btn');
         this.elements.setRecommendedBtn = document.getElementById('set-recommended-btn');
@@ -69,6 +95,7 @@ const TsurumiApp = {
         this.elements.backToCurrentBtn = document.getElementById('back-to-current-btn');
         this.elements.backToIdealBtn = document.getElementById('back-to-ideal-btn');
         this.elements.recalculateBtn = document.getElementById('recalculate-alternate-mode-btn');
+        this.elements.shareUrlBtn = document.getElementById('share-url-btn');
         this.elements.screenshotPrevBtn = document.getElementById('screenshot-prev-btn');
         this.elements.screenshotNextBtn = document.getElementById('screenshot-next-btn');
         this.elements.openRequestFormBtn = document.getElementById('open-request-form-from-logic-btn');
@@ -102,8 +129,13 @@ const TsurumiApp = {
         this.elements.resultSummary = document.getElementById('result-summary');
         this.elements.soloNotice = document.getElementById('solo-mode-notice');
         this.elements.resultPage = document.getElementById('result-page');
+        this.elements.urlCopyMessage = document.getElementById('url-copy-message');
 
-        // Modals
+        
+        // Advanced Preview
+        this.elements.showFinalConfigBtn = document.getElementById('show-final-config-btn');
+        this.elements.finalConfigTableContainer = document.getElementById('final-config-table-container');
+// Modals
         this.elements.dayDetailModalContent = document.getElementById('day-detail-content');
 
         // Checkboxes
@@ -138,6 +170,9 @@ const TsurumiApp = {
         this.elements.savePlanBtn.addEventListener('click', () => this.savePlan());
         this.elements.savePlanIconBtn.addEventListener('click', () => this.savePlan());
         this.elements.loadPlanBtn.addEventListener('click', () => this.ui.openLoadModal());
+        if (this.elements.shareUrlBtn) {
+            this.elements.shareUrlBtn.addEventListener('click', () => this.generatePermalink());
+        }
 
         // Input Helpers
         this.elements.setRecommendedBtn.addEventListener('click', () => this.setRecommendedConfig());
@@ -161,6 +196,9 @@ const TsurumiApp = {
         this.elements.disclaimerLinkResultMobile.addEventListener('click', () => this.ui.showModal('disclaimer-modal'));
         this.elements.creditTrigger.addEventListener('click', () => this.ui.showModal('credit-modal'));
         this.elements.logicModalTrigger.addEventListener('click', () => this.ui.showModal('logic-modal'));
+        if (this.elements.versionModalTrigger) {
+            this.elements.versionModalTrigger.addEventListener('click', () => this.ui.showModal('version-modal'));
+        }
         this.elements.openRequestFormBtn.addEventListener('click', () => this.ui.showModal('request-modal'));
         this.elements.requestFormResultMobileBtn.addEventListener('click', () => this.ui.showModal('request-modal'));
         this.elements.requestFormResultPcBtn.addEventListener('click', () => this.ui.showModal('request-modal'));
@@ -210,7 +248,7 @@ const TsurumiApp = {
 
             // Handle details button click
             if (target.classList.contains('btn-details')) {
-                const dayIndex = parseInt(target.dataset.dayIndex, 10);
+                const dayIndex = parseInt((target.dataset.rawIndex ?? target.dataset.dayIndex), 10);
                 this.ui.showDayDetail(dayIndex);
                 return;
             }
@@ -220,7 +258,7 @@ const TsurumiApp = {
                  this.toggleProgress(parseInt(row.dataset.dayIndex, 10));
             }
         });
-        
+
         this.elements.recalculateBtn.addEventListener('click', () => {
             this.state.activePlanId = null; // Recalculating creates a new, unsaved plan
             const currentMode = this.elements.multiplayerCheckbox.checked;
@@ -235,13 +273,29 @@ const TsurumiApp = {
         });
 
         this.elements.allMapBgs.forEach(img => {
-            const containerId = img.closest('.map-container').id;
+            const container = img.closest('.map-container');
+            if (!container) return;
+            const containerId = container.id;
             if (img.complete && img.naturalWidth > 0) {
                 this.ui.updateMapLayout(containerId);
             } else {
                 img.addEventListener('load', () => this.ui.updateMapLayout(containerId));
             }
         });
+
+        if (this.elements.showFinalConfigBtn) {
+            this.elements.showFinalConfigBtn.addEventListener('click', () => {
+                const rawPlan = TsurumiApp.state.lastCalculatedPlan;
+                if (!rawPlan || !Array.isArray(rawPlan) || rawPlan.length === 0) return;
+                const planForExecution = TsurumiApp.state.isDisplayReversed ? [...rawPlan].reverse() : rawPlan;
+                TsurumiApp.ui.renderProgressTimelineTable(
+                    planForExecution,
+                    TsurumiApp.state.currentConfig,
+                    TsurumiApp.state.idealConfig
+                );
+                TsurumiApp.ui.showModal('final-config-modal');
+            });
+        }
     },
 
     // --- CORE LOGIC ---
@@ -311,9 +365,6 @@ const TsurumiApp = {
             return;
         }
 
-        // Increment the anonymous calculation counter on Firestore
-        this.incrementCalculationCount();
-
         const loadingTextEl = document.getElementById('loading-text');
         if (loadingTextEl) {
             loadingTextEl.innerHTML = `<span style="display: block; font-size: 1.1em; font-weight: bold; margin-bottom: 15px;">このツールは、<a href="https://youtu.be/2xqllaCTP5c?si=m9yyxXo5GS0rwFG9" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold;">ねこしたさんの解説</a>に基づき、プログラムされました！<br>ぜひ解説動画もご覧ください。</span><span style="font-size: 0.9em; color: var(--secondary-text-color);">計算には数分かかる場合がありますので、しばらくお待ちください。</span>`;
@@ -335,6 +386,7 @@ const TsurumiApp = {
                 { isMultiplayer, allowBoat, onProgress }
             ).then(plan => {
                 this.state.lastCalculatedPlan = plan;
+                TsurumiApp.state.isDisplayReversed = true;
                 this.ui.displayResults(plan, isMultiplayer, allowBoat);
                 this.ui.closeModal('loading-modal');
                 if(progressEl) progressEl.textContent = '';
@@ -371,6 +423,7 @@ const TsurumiApp = {
             localStorage.setItem('tsurumiSavedPlans', JSON.stringify(savedPlans));
             
             // Re-render the results to attach the new planId to the rows
+            TsurumiApp.state.isDisplayReversed = true;
             this.ui.displayResults(this.state.lastCalculatedPlan, planData.isMultiplayer, this.elements.boatCheckbox.checked);
 
         } catch (e) {
@@ -396,6 +449,7 @@ const TsurumiApp = {
         this.state.lastCalculatedPlan = deserializedPlan;
         this.state.activePlanId = planToLoad.id;
         this.elements.multiplayerCheckbox.checked = planToLoad.isMultiplayer;
+        TsurumiApp.state.isDisplayReversed = true;
 
         groupKeys.forEach(groupId => {
             if (this.state.currentConfig[groupId]) this.updateConfig('current', groupId, this.state.currentConfig[groupId]);
@@ -470,28 +524,79 @@ const TsurumiApp = {
         }
     },
 
-    incrementCalculationCount: function() {
-        if (!this.firebase.db) {
-            console.warn("Firestore is not initialized. Skipping count increment.");
+    generatePermalink: function() {
+        if (Object.keys(this.state.currentConfig).length !== totalGroups || Object.keys(this.state.idealConfig).length !== totalGroups) {
+            this.ui.showCopyMessage('現在の配置と理想の配置をすべて入力してください', true);
             return;
         }
 
-        const counterRef = this.firebase.db.collection('statistics').doc('planCalculations');
-        const increment = firebase.firestore.FieldValue.increment(1);
+        const currentStr = groupKeys.map(k => this.state.currentConfig[k]).join('');
+        const idealStr = groupKeys.map(k => this.state.idealConfig[k]).join('');
+        const multiStr = this.elements.multiplayerCheckbox.checked ? '1' : '0';
+        const boatStr = this.elements.boatCheckbox.checked ? '1' : '0';
 
-        // Atomically increment the counter.
-        counterRef.update({ count: increment }).catch((error) => {
-            // If the document doesn't exist yet, create it.
-            if (error.code === 'not-found') {
-                counterRef.set({ count: 1 }).catch(err => {
-                    console.error("Error setting initial calculation count:", err);
-                });
-            } else {
-                console.error("Error incrementing calculation count:", error);
-            }
+        const params = new URLSearchParams({
+            c: currentStr,
+            i: idealStr,
+            m: multiStr,
+            b: boatStr
         });
+
+        const url = new URL(window.location.href);
+        url.search = params.toString();
+
+        const textarea = document.createElement('textarea');
+        textarea.value = url.toString();
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            this.ui.showCopyMessage('URLをクリップボードにコピーしました！');
+        } catch (err) {
+            this.ui.showCopyMessage('コピーに失敗しました', true);
+        }
+        document.body.removeChild(textarea);
     },
 
+    applyStateFromURL: function() {
+        const params = new URLSearchParams(window.location.search);
+        const currentStr = params.get('c');
+        const idealStr = params.get('i');
+
+        if (!currentStr || !idealStr || currentStr.length !== totalGroups || idealStr.length !== totalGroups) {
+            return false;
+        }
+
+        try {
+            const currentConfig = {};
+            const idealConfig = {};
+            const patterns = ['A', 'B', 'C'];
+
+            for (let i = 0; i < totalGroups; i++) {
+                const key = groupKeys[i];
+                if (!patterns.includes(currentStr[i]) || !patterns.includes(idealStr[i])) {
+                     throw new Error('Invalid character in URL parameter');
+                }
+                currentConfig[key] = currentStr[i];
+                idealConfig[key] = idealStr[i];
+            }
+            
+            this.state.currentConfig = currentConfig;
+            this.state.idealConfig = idealConfig;
+            this.elements.multiplayerCheckbox.checked = params.get('m') === '1';
+            this.elements.boatCheckbox.checked = params.get('b') === '1';
+            
+            // Clear hash to prevent re-triggering if user reloads
+            history.pushState(null, '', window.location.pathname);
+
+            return true;
+
+        } catch (e) {
+            console.error("Failed to parse URL parameters:", e);
+            history.pushState(null, '', window.location.pathname); // Clear invalid params
+            return false;
+        }
+    },
 
     // --- UI LOGIC ---
     ui: {
@@ -602,63 +707,87 @@ const TsurumiApp = {
 
 
         displayResults: function(plan, isMultiplayer, allowBoat) {
+            const isReversed = !!TsurumiApp.state.isDisplayReversed;
+            const sourcePlan = Array.isArray(plan)
+                ? plan
+                : (Array.isArray(TsurumiApp.state.lastCalculatedPlan) ? TsurumiApp.state.lastCalculatedPlan : null);
+            const totalDays = sourcePlan ? sourcePlan.length : 0;
+            TsurumiApp.state.rawToDisplay = new Array(totalDays);
+
             const summaryEl = document.getElementById('result-summary-text');
-            const summaryText = !plan ? '8日以内に完了する調整プランは見つかりませんでした。'
-                              : plan.length === 0 ? '調整は不要です！'
-                              : `最短 ${plan.length} 日で調整可能！`;
-            
+            const summaryText = !sourcePlan
+                ? '8日以内に完了する調整プランは見つかりませんでした。'
+                : totalDays === 0
+                    ? '調整は不要です！'
+                    : `最短 ${totalDays} 日で調整可能！`;
             summaryEl.textContent = summaryText;
 
             TsurumiApp.elements.soloNotice.style.display = isMultiplayer ? 'none' : 'block';
-            
             const recalcBtnText = document.getElementById('recalculate-btn-text');
             if (recalcBtnText) {
                 recalcBtnText.textContent = isMultiplayer ? '周期ホールドOFFで再計算' : '周期ホールドONで再計算';
             }
             TsurumiApp.elements.recalculateBtn.className = isMultiplayer ? 'btn btn-primary' : 'btn btn-multi';
-            
-            const showSaveButtons = plan && plan.length > 0;
+
+            const showSaveButtons = totalDays > 0;
             document.getElementById('save-plan-btn').style.display = showSaveButtons ? '' : 'none';
             document.getElementById('save-plan-icon-btn').style.display = showSaveButtons ? '' : 'none';
+            const shareUrlBtn = document.getElementById('share-url-btn');
+            if (shareUrlBtn) shareUrlBtn.style.display = '';
 
             const tbody = TsurumiApp.elements.resultTbody;
             tbody.innerHTML = '';
-            
-            if (plan) {
-                 const allProgress = TsurumiApp.getProgressData();
-                 const currentPlanProgress = allProgress[TsurumiApp.state.activePlanId] || {};
 
-                plan.forEach((day, index) => {
+            if (sourcePlan) {
+                const allProgress = TsurumiApp.getProgressData();
+                const currentPlanProgress = allProgress[TsurumiApp.state.activePlanId] || {};
+
+                for (let displayIndex = 0; displayIndex < totalDays; displayIndex++) {
+                    const originalIndex = isReversed ? (totalDays - 1 - displayIndex) : displayIndex;
+                    const day = sourcePlan[originalIndex];
+                    if (!day) continue;
+
+                    const rawIndex = originalIndex;
+                    TsurumiApp.state.rawToDisplay[rawIndex] = displayIndex;
+
                     const tr = document.createElement('tr');
-                    tr.dataset.dayIndex = index;
-                    tr.dataset.dayText = `${index + 1}日目`;
+                    tr.dataset.dayIndex = originalIndex;
+                    tr.dataset.rawIndex = rawIndex;
+                    tr.dataset.dayText = `${displayIndex + 1}日目`;
                     if (TsurumiApp.state.activePlanId) {
-                         tr.dataset.planId = TsurumiApp.state.activePlanId;
+                        tr.dataset.planId = TsurumiApp.state.activePlanId;
                     }
-                    
+
                     if (window.innerWidth <= 991) {
                         tr.classList.add('mobile-tappable');
                     }
 
+                    const formatActionName = (action) => {
+                        if (!action || typeof action.name !== 'string' || action.name.trim() === '') {
+                            return '---';
+                        }
+                        return action.name;
+                    };
+
                     const modeClass = day.mode === 'ソロ' ? 'mode-solo' : 'mode-multi';
+                    const isDayCompleted = !!currentPlanProgress[originalIndex];
                     tr.innerHTML = `
-                        <td class="progress-col"><input type="checkbox" ${currentPlanProgress[index] ? 'checked' : ''}></td>
-                        <td class="date-col">${index + 1}日目</td>
+                        <td class="progress-col"><input type="checkbox" ${isDayCompleted ? 'checked' : ''}></td>
+                        <td class="date-col">${displayIndex + 1}日目</td>
                         <td><span class="${modeClass}">${day.mode}</span></td>
-                        <td>${day.holdAction.name}</td>
-                        <td>${day.advanceAction.name}</td>
-                        <td><button class="btn btn-details" data-day-index="${index}">手順を確認</button></td>
+                        <td>${formatActionName(day.holdAction)}</td>
+                        <td>${formatActionName(day.advanceAction)}</td>
+                        <td><button class="btn btn-details" data-day-index="${originalIndex}" data-raw-index="${rawIndex}">手順を確認</button></td>
                     `;
                     tbody.appendChild(tr);
 
-                    // Apply initial completed view state
-                    if (currentPlanProgress[index]) {
-                        this.updateProgressView(TsurumiApp.state.activePlanId, index, true);
+                    if (isDayCompleted) {
+                        this.updateProgressView(TsurumiApp.state.activePlanId, originalIndex, true);
                     }
-                });
+                }
             }
-            this.showPage('result-page');
 
+            this.showPage('result-page');
             TsurumiApp.elements.resultPage.scrollTop = 0;
             try { window.scrollTo(0, 0); } catch(e) {/* ignore */}
         },
@@ -703,7 +832,7 @@ const TsurumiApp = {
         updateProgress: function(configType) {
             const config = (configType === 'current') ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig;
             const progressEl = (configType === 'current') ? TsurumiApp.elements.progressText : TsurumiApp.elements.idealProgressText;
-            const count = Object.keys(config).length;
+            const count = groupKeys.filter(key => key in config).length;
             progressEl.textContent = `入力完了: ${count} / ${totalGroups}`;
             if (configType === 'current') {
                 TsurumiApp.elements.goToIdealBtn.disabled = count !== totalGroups;
@@ -726,6 +855,40 @@ const TsurumiApp = {
                 btn.classList.toggle('selected', btn.textContent === pattern);
             });
         },
+        
+        showCopyMessage: function(message, isError = false) {
+            const el = TsurumiApp.elements.urlCopyMessage;
+            if (!el) return;
+            el.textContent = message;
+            el.style.backgroundColor = isError ? 'var(--danger-color)' : 'rgba(0, 0, 0, 0.75)';
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 3000);
+        },
+        
+        // This function is no longer needed and can be removed.
+        /*
+        updateAllInputsFromState: function() {
+            ['current', 'ideal'].forEach(configType => {
+                const config = (configType === 'current') ? TsurumiApp.state.currentConfig : TsurumiApp.state.idealConfig;
+                 groupKeys.forEach(groupId => {
+                    const pattern = config[groupId];
+                    if (pattern) {
+                        this.updateMarker(configType, groupId, pattern);
+                        this.updatePatternButtons(configType, groupId, pattern);
+                        if (configType === 'current') {
+                           this.updateIdealDiffDisplay(groupId, pattern);
+                           this.updateIdealMapOverlay(groupId);
+                        } else {
+                           this.updateIdealMapOverlay(groupId);
+                        }
+                    }
+                });
+                this.updateProgress(configType);
+            });
+            this.updateGuideTextVisibility();
+        },
+        */
+
         updateIdealDiffDisplay: function(groupId, newCurrentPattern) {
             const diffEl = document.getElementById(`ideal-list-diff-${groupId}`);
             if (diffEl) {
@@ -874,7 +1037,8 @@ const TsurumiApp = {
             if (!plan || isNaN(dayIndex) || !plan[dayIndex]) return;
 
             const dayData = plan[dayIndex];
-            const dayNumber = dayIndex + 1;
+            const displayIdx = (Array.isArray(TsurumiApp.state.rawToDisplay) && !isNaN(TsurumiApp.state.rawToDisplay[dayIndex])) ? TsurumiApp.state.rawToDisplay[dayIndex] : dayIndex;
+            const dayNumber = displayIdx + 1;
             document.getElementById('day-detail-title').textContent = `${dayNumber}日目の手順詳細`;
             TsurumiApp.elements.dayDetailModalContent.innerHTML = this.generateDayDetailHTML(dayData);
             TsurumiApp.elements.dayDetailModalContent.querySelectorAll('.image-container img').forEach(img => {
@@ -910,7 +1074,7 @@ const TsurumiApp = {
             
             let html = '<ul>';
             const actions = actionData.name.split(' + ');
-            
+
             actions.forEach(actionName => {
                 const action = actionsData.find(a => a.name === actionName);
                 if (!action || ![...action.affectedGroups].some(g => effectiveGroups.has(g))) return;
@@ -961,16 +1125,40 @@ const TsurumiApp = {
                 li.querySelector('.btn-delete').addEventListener('click', () => TsurumiApp.deletePlan(plan.id));
                 listEl.appendChild(li);
             });
-        },
-        showCopyMessage: function(message, isError = false) {
-            const el = TsurumiApp.elements.urlCopyMessage;
-            el.textContent = message;
-            el.style.backgroundColor = isError ? 'var(--danger-color)' : 'rgba(0, 0, 0, 0.75)';
-            el.classList.add('show');
-            setTimeout(() => el.classList.remove('show'), 3000);
         }
     }
 };
+
+TsurumiApp.ui.renderProgressTimelineTable = function(planForExecution, startConfig, idealConfig) {
+    const container = TsurumiApp.elements.finalConfigTableContainer;
+    if (!container) return;
+
+        const cols = groupKeys.slice();
+        const snapshots = PlanCalculator.simulatePlanProgress(startConfig, planForExecution);
+
+        let html = '<table class="result-table final-config-matrix">';
+        html += '<thead><tr><th>精鋭</th>';
+        cols.forEach(groupId => {
+            html += `<th>${eliteGroups[groupId]?.name || groupId}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+
+        snapshots.forEach((stateMap, rowIndex) => {
+            const isFinal = rowIndex === snapshots.length - 1 && rowIndex !== 0;
+            const label = rowIndex === 0 ? '現在' : (isFinal ? `最終日 (${rowIndex}日目)` : `${rowIndex}日目`);
+            html += `<tr><th>${label}</th>`;
+            cols.forEach(groupId => {
+                const char = stateMap[groupId] || '?';
+                const hasChanged = rowIndex > 0 && snapshots[rowIndex - 1][groupId] !== char;
+                const style = hasChanged ? ' style="background: rgba(220,38,38,0.08);"' : '';
+                html += `<td${style}>${char}</td>`;
+            });
+            html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    };
 
 // --- CALCULATION SERVICE ---
 // A pure object for handling complex calculations without side effects.
@@ -1129,11 +1317,71 @@ const PlanCalculator = {
             }
         }
         return Array.from(achievablePatterns.values());
+    },
+
+    configToArray: function(configObj) {
+        const idx = { 'A': 0, 'B': 1, 'C': 2 };
+        return groupKeys.map(key => idx[configObj[key]] ?? 0);
+    },
+
+    arrayToConfig: function(stateArr) {
+        const letters = ['A', 'B', 'C'];
+        const result = {};
+        groupKeys.forEach((key, i) => {
+            result[key] = letters[stateArr[i]] ?? 'A';
+        });
+        return result;
+    },
+
+    affectedGroupsToArray: function(action) {
+        if (!action || !action.affectedGroups) return [];
+        return Array.isArray(action.affectedGroups) ? action.affectedGroups : Array.from(action.affectedGroups);
+    },
+
+    applyGroupsToState: function(stateArr, groups) {
+        if (!groups || groups.length === 0) return stateArr;
+        const next = [...stateArr];
+        groups.forEach(groupId => {
+            const idx = groupKeys.indexOf(groupId);
+            if (idx >= 0) {
+                next[idx] = (next[idx] + 1) % 3;
+            }
+        });
+        return next;
+    },
+
+    applyDayToState: function(stateArr, day) {
+        if (!day) return stateArr;
+        if (day.mode === 'ソロ') {
+            const advance = this.affectedGroupsToArray(day.advanceAction);
+            return this.applyGroupsToState(stateArr, advance);
+        }
+        const holdSet = new Set(this.affectedGroupsToArray(day.holdAction));
+        const advance = this.affectedGroupsToArray(day.advanceAction);
+        const effective = advance.filter(groupId => !holdSet.has(groupId));
+        return this.applyGroupsToState(stateArr, effective);
+    },
+
+    simulatePlanProgress: function(startConfigObj, planArray) {
+        let stateArr = this.configToArray(startConfigObj);
+        const snapshots = [this.arrayToConfig(stateArr)];
+        if (!Array.isArray(planArray)) return snapshots;
+
+        planArray.forEach(day => {
+            stateArr = this.applyDayToState(stateArr, day);
+            snapshots.push(this.arrayToConfig(stateArr));
+        });
+        return snapshots;
+    },
+
+    // Simulate applying a plan to get final config (plan order = display order)
+    simulatePlan: function(startConfigObj, planArray) {
+        const snapshots = this.simulatePlanProgress(startConfigObj, planArray);
+        return snapshots[snapshots.length - 1] || {};
     }
+
 };
 
 
 // --- APP START ---
 document.addEventListener('DOMContentLoaded', () => TsurumiApp.init());
-
-
