@@ -16,7 +16,14 @@
             </h1>
         </div>
         <div class="header-info">
-            <span class="header-version">Ver. 1.3.0</span>
+            <button
+                id="version-modal-trigger"
+                class="header-link-btn header-version"
+                type="button"
+                title="このツールの更新内容を表示"
+            >
+                Ver. 1.4.0
+            </button>
             <span class="credit-separator">|</span>
             <!-- 製作者リンクをボタンに変更 -->
             <button id="logic-modal-trigger" class="header-link-btn">製作者: あの時の鳥です</button>
@@ -193,7 +200,7 @@
                     <div class="result-grid">
                         <div class="result-layout-container">
                             <div class="result-map-container">
-                                <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E3%82%B9%E3%82%AF%E3%83%AA%E3%83%BC%E3%83%B3%E3%82%B7%E3%83%A7%E3%83%83%E3%83%88%202025-09-21%20161308.png?raw=true" alt="鶴観マップ 結果表示" class="map-bg">
+                                <img src="https://github.com/Anotokinotori/test/blob/main/result_ver2.png?raw=true" alt="鶴観マップ 結果表示" class="map-bg">
                             </div>
                             <div class="result-actions-container">
                                 <div id="solo-mode-notice" class="solo-notice show-on-desktop">
@@ -211,6 +218,7 @@
                                     <span class="btn-icon icon-reset"></span>
                                     <span>リセット</span>
                                 </button>
+                                <div id="url-copy-message" class="copy-message"></div>
                                 <div class="footer-links hide-on-desktop">
                                     <button id="disclaimer-link-result-mobile" class="btn btn-secondary-link">注意事項</button>
                                     <span class="link-separator">|</span>
@@ -224,6 +232,15 @@
                                  <button id="save-plan-icon-btn" class="save-icon-btn" title="結果を保存"></button>
                                  <span id="result-summary-text"></span>
                              </div>
+            <!-- ▼ プラン実行後の配置（上級者向けプレビュー） -->
+            <div id="advanced-preview-box" class="container backdrop-blur" style="margin: 12px 0; padding: 10px 12px; border-radius: 8px;">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <strong>プラン実行後の配置</strong>
+                    <button id="show-final-config-btn" class="btn btn-secondary btn-small" type="button" title="このプランを順に実行した後の最終配置を表示">プレビューを開く</button>
+                </div>
+            </div>
+            <!-- ▲ プラン実行後の配置（上級者向けプレビュー） -->
+
                              <div class="result-table-container">
                                  <table class="result-table">
                                      <thead>
@@ -263,26 +280,23 @@
             <hr>
 
             <h3>Step 1: 現在の配置を正確に入力する</h3>
-            <p>まず、あなたのゲーム世界での、現在のエネミー配置を10ヶ所すべて入力します。</p>
-            <p>マップ上のアイコンをタップすると、より詳細なマップが表示されます。**表示されたA/B/Cの各パターンを、ゲーム内のスクリーンショット画像と比較しながら、あなたの世界と完全に一致するものを選択してください。** これが最も重要なステップです！</p>
+            <p>まず、あなたのゲーム世界での、現在のエネミー配置を10ヶ所すべて入力します。<br>マップ上のアイコンをタップすると、より詳細なマップが表示されます。<strong>表示されたA/B/Cの各パターンを、ゲーム内のスクリーンショット画像と比較しながら、あなたの世界と完全に一致するものを選択してください。</strong> これが最も重要なステップです！</p>
             <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%8F%BE%E5%9C%A8.gif?raw=true" alt="マップ入力画面" style="width:100%; border-radius: 8px; margin-top: 10px;">
             
             <hr>
 
             <h3>Step 2: 理想の配置を設定する</h3>
-            <p>次に、あなたが目標とする理想の配置を10ヶ所すべて入力します。</p>
-            <p>どの配置にすれば良いか分からない場合は、**「環境配置」ボタンを押すのがおすすめです。** これは、多くの熟練者が推奨する、狩り効率の良い配置パターンをワンボタンで入力できる機能です。<br>また、「現在配置をコピー」ボタンを使えば、現在の配置をベースに少しだけ変更したい場合に便利です。</p>
+            <p>次に、あなたが目標とする理想の配置を10ヶ所すべて入力します。<br>どの配置にすれば良いか分からない場合は、<strong>「環境配置」ボタンを押すのがおすすめです。</strong> これは、多くの熟練者が推奨する、狩り効率の良い配置パターンをワンボタンで入力できる機能です。<br>また、「現在配置をコピー」ボタンを使えば、現在の配置をベースに少しだけ変更したい場合に便利です。</p>
             <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%90%86%E6%83%B3.gif?raw=true" alt="理想配置の入力" style="width:100%; border-radius: 8px; margin-top: 10px;">
             
             <hr>
             
             <h3>Step 3: 調整プランを確認・実行する</h3>
-            <p>入力が終わったら、「調整プランを計算」ボタンを押します。（スタートページで「周期ホールドを有効化」にチェックを入れていると、マルチプレイを前提とした最短ルートを計算します。）</p>
-            <p>計算が完了すると、最短の調整スケジュールが日数ごとに表示されます。<br>**各日の「手順を確認」ボタンを押すと、その日にどのワープポイントを使い、どう移動すればいいかといった具体的な手順を、画像や動画付きの詳細ガイドで確認できます。**</p>
+            <p>入力が終わったら、「調整プランを計算」ボタンを押します。（スタートページで「周期ホールドを有効化」にチェックを入れていると、マルチプレイを前提とした最短ルートを計算します。）<br>計算が完了すると、最短の調整スケジュールが日数ごとに表示されます。<br><strong>各日の「手順を確認」ボタンを押すと、その日にどのワープポイントを使い、どう移動すればいいかといった具体的な手順を、画像や動画付きの詳細ガイドで確認できます。</strong></p>
             <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%B5%B0%E6%9E%9C.gif?raw=true" alt="結果表示画面" style="width:100%; border-radius: 8px; margin-top: 10px;">
 
             <hr>
-            
+
             <h3>プランの保存と読み込み</h3>
             <p>計算結果は、名前を付けて保存することができます。後日、スタートページの「保存したプランを読み込む」ボタンからいつでも呼び出して、調整の続きから再開できます。</p>
 
@@ -360,22 +374,29 @@
         <div class="modal-content">
             <span class="modal-close" data-target="disclaimer-modal">&times;</span>
             <h2>注意事項</h2>
-            <p>このサイトは、私が個人的に制作した非公式のファンツールです。
-                計算結果の正確性には万全を期しておりますが、ゲームのアップデート等により情報が古くなる可能性や、予期せぬ不具合が発生する可能性もございます。</p>
             
-            <p style="margin-top: 15px;">また、**本ツールの計算結果は、入力された「現在の配置」が100%正確であることを前提としています。配置を誤って入力した場合、正しくない調整スケジュールが出力されますので、入力内容が正しいか、十分にご確認ください。**</p>
+            <hr style="margin: 10px 0;">
+
+            <h4>正確性とリスクについて</h4>
+            <p style="text-align: left; line-height: 1.7; font-size: 0.9em;">
+                このサイトは、私が個人的に制作した非公式のファンツールです。<br>
+                計算結果の正確性には万全を期しておりますが、ゲームのアップデート等により情報が古くなる可能性や、予期せぬ不具合が発生する可能性もございます。<br><br>
+                <strong>本ツールの計算結果は、入力された「現在の配置」が100%正確であることを前提としています。配置を誤って入力した場合、正しくない調整スケジュールが出力されますので、入力内容が正しいか、十分にご確認ください。</strong>
+            </p>
 
             <h4 style="margin-top: 20px;">免責事項</h4>
-            <p>本サイトを利用したことで生じたいかなる損害についても、制作者は一切の責任を負いかねます。<br>
-                **ゲーム内での操作ミス（意図しないロード等）によってプラン通りに調整が進まなかった場合も含め、すべての操作は、自己責任の上で慎重に行っていただきますよう、お願いいたします。**</p>
-            
-            <p style="margin-top: 20px;">計算結果がおかしい、バグかもしれないと思われた場合は、ヘッダーの「製作者: あの時の鳥です」から開けるモーダル内のご要望フォームよりご連絡いただけると幸いです。</p>
-            
-            <p style="margin-top: 20px; font-size: 0.9em; color: #555;">
-                本サイトでは、サービスの品質向上と利用状況の把握のため、個人を特定しない形で、プランの計算実行回数などの統計データを収集しています。入力された配置パターンや、個人を識別できる情報が送信されることは一切ありませんので、ご安心ください。
+            <p style="text-align: left; line-height: 1.7; font-size: 0.9em;">
+                本サイトを利用したことで生じたいかなる損害についても、制作者は一切の責任を負いかねます。<br>
+                <strong>ゲーム内での操作ミス（意図しないロード等）によってプラン通りに調整が進まなかった場合も含め、すべての操作は、自己責任の上で慎重に行っていただきますよう、お願いいたします。</strong>
             </p>
-            
-            <p style="text-align: right; font-size: 0.8em; color: #888; margin-top: 20px;">最終更新日：2025/10/02</p>
+
+            <p style="text-align: left; line-height: 1.7; font-size: 0.9em; margin-top: 20px;">
+                計算結果がおかしい、バグかもしれないと思われた場合は、ヘッダーの「製作者: あの時の鳥です」から開けるモーダル内のご要望フォームよりご連絡いただけると幸いです。
+            </p>
+
+            <p style="text-align: right; font-size: 0.8em; color: var(--secondary-text-color); margin-top: 20px;">
+                最終更新日：2025/10/02
+            </p>
         </div>
     </div>
     
@@ -556,7 +577,40 @@
                 <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="if(this.submitted) { TsurumiApp.ui.handleFormSuccess(); }"></iframe>
         </div>
     </div>
+    <!-- ▼ Final Config Modal -->
+    <div id="final-config-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="final-config-modal">&times;</span>
+            <h2>このプラン実行後の最終配置</h2>
+            <div id="final-config-table-container"></div>
+            <p style="font-size: 12px; color: var(--secondary-text-color); margin-top: 8px;">
+                ※「マルチ」日は、2Pのホールド対象を <strong>除いた</strong>範囲が1Pのロードとして加算される前提で計算しています。
+            </p>
+        </div>
+    </div>
+    <!-- ▲ Final Config Modal -->
 
+
+
+    <div id="version-modal" class="modal backdrop-blur">
+        <div class="modal-content">
+            <span class="modal-close" data-target="version-modal">&times;</span>
+            <h2>バージョン1.4.0での主なアップデート</h2>
+            <p class="changelog-intro">
+                変更点まとめ
+            </p>
+            <ul class="changelog-list">
+                <li>調整スケジュール画面のマップ画像に、注意書きを追加しました。</li>
+                <li>プラン実行後の配置プレビューの確認機能を追加しました。</li>
+                <li>（↑一旦の仮実装です。 今後はこの機能をより'視覚的'に表示するため、引き続き開発中です。）</li>
+                <li>ヘッダーのバージョン情報から更新内容を確認できる導線を追加しました。（これ）</li>
+                <li>調整プランの並び順を、初日に一番難しい調整が表示されるように変更しました。これにより、最終日に鶴観が崩れるという悲惨な事故を防ぎます。</li>
+            </ul>
+        </div>
+    </div>
+
+        </div>
+    </div>
 
     <footer class="site-credit-footer backdrop-blur">
         <p>
@@ -566,28 +620,9 @@
         </p>
     </footer>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script>
-      // Your web app's Firebase configuration
-      const firebaseConfig = {
-        apiKey: "AIzaSyAK6YhrTdQdrXCO9Ym8ebjI2lZFvMhAxyM",
-        authDomain: "tsurumi-map-optimizer.firebaseapp.com",
-        projectId: "tsurumi-map-optimizer",
-        storageBucket: "tsurumi-map-optimizer.appspot.com",
-        messagingSenderId: "305470903539",
-        appId: "1:305470903539:web:9cfc1cca6bc04e25b81386",
-        measurementId: "G-9TGFNL1YH4"
-      };
-      // Initialize Firebase
-      firebase.initializeApp(firebaseConfig);
-    </script>
-
     <!-- JavaScriptファイルを外部から読み込み -->
     <!-- データ定義を先に、メインロジックを後に読み込む -->
     <script src="js/data.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
-
