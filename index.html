@@ -105,7 +105,7 @@
                         <div id="current-map-view" class="input-view active">
                             <div class="map-container" id="current-map-container">
                                  <div class="map-guide-text">アイコンをタップして選択</div>
-                                 <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/input_page_map.png?raw=true" alt="鶴観マップ" class="map-bg">
+                                 <img src="assets/images/maps/input-map.png" alt="鶴観マップ" class="map-bg">
                             </div>
                         </div>
                         <div id="current-list-view" class="input-view">
@@ -158,7 +158,7 @@
                         <div id="ideal-map-view" class="input-view active">
                             <div class="map-container" id="ideal-map-container">
                                  <div class="map-guide-text">アイコンをタップして選択</div>
-                                 <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/input_page_map.png?raw=true" alt="鶴観マップ" class="map-bg">
+                                 <img src="assets/images/maps/input-map.png" alt="鶴観マップ" class="map-bg">
                             </div>
                         </div>
                         <div id="ideal-list-view" class="input-view">
@@ -281,19 +281,19 @@
 
             <h3>Step 1: 現在の配置を正確に入力する</h3>
             <p>まず、あなたのゲーム世界での、現在のエネミー配置を10ヶ所すべて入力します。<br>マップ上のアイコンをタップすると、より詳細なマップが表示されます。<strong>表示されたA/B/Cの各パターンを、ゲーム内のスクリーンショット画像と比較しながら、あなたの世界と完全に一致するものを選択してください。</strong> これが最も重要なステップです！</p>
-            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%8F%BE%E5%9C%A8.gif?raw=true" alt="マップ入力画面" style="width:100%; border-radius: 8px; margin-top: 10px;">
+            <img src="assets/images/guides/current.gif" alt="マップ入力画面" style="width:100%; border-radius: 8px; margin-top: 10px;">
             
             <hr>
 
             <h3>Step 2: 理想の配置を設定する</h3>
             <p>次に、あなたが目標とする理想の配置を10ヶ所すべて入力します。<br>どの配置にすれば良いか分からない場合は、<strong>「環境配置」ボタンを押すのがおすすめです。</strong> これは、多くの熟練者が推奨する、狩り効率の良い配置パターンをワンボタンで入力できる機能です。<br>また、「現在配置をコピー」ボタンを使えば、現在の配置をベースに少しだけ変更したい場合に便利です。</p>
-            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%90%86%E6%83%B3.gif?raw=true" alt="理想配置の入力" style="width:100%; border-radius: 8px; margin-top: 10px;">
+            <img src="assets/images/guides/ideal.gif" alt="理想配置の入力" style="width:100%; border-radius: 8px; margin-top: 10px;">
             
             <hr>
             
             <h3>Step 3: 調整プランを確認・実行する</h3>
             <p>入力が終わったら、「調整プランを計算」ボタンを押します。（スタートページで「周期ホールドを有効化」にチェックを入れていると、マルチプレイを前提とした最短ルートを計算します。）<br>計算が完了すると、最短の調整スケジュールが日数ごとに表示されます。<br><strong>各日の「手順を確認」ボタンを押すと、その日にどのワープポイントを使い、どう移動すればいいかといった具体的な手順を、画像や動画付きの詳細ガイドで確認できます。</strong></p>
-            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/%E4%BD%BF%E3%81%84%E6%96%B9%E3%82%AC%E3%82%A4%E3%83%89GIF/%E7%B5%B0%E6%9E%9C.gif?raw=true" alt="結果表示画面" style="width:100%; border-radius: 8px; margin-top: 10px;">
+            <img src="assets/images/guides/result.gif" alt="結果表示画面" style="width:100%; border-radius: 8px; margin-top: 10px;">
 
             <hr>
 
@@ -534,7 +534,7 @@
                 <li style="margin-bottom: 5px;">次に、リストアップした全ての駅から、さらに<strong>1回の移動（合計2日）</strong>で行ける全ての駅をリストアップします。</li>
                 <li style="margin-bottom: 5px;">これを、「目的地」の状態番号に到着するまで繰り返します。</li>
             </ol>
-            <img src="https://github.com/Anotokinotori/Tsurumi-Route-Optimizer/blob/main/logic-bfs.png?raw=true" alt="ルート探索のイメージ図" style="width:100%; max-width: 500px; border-radius: 8px; margin-top: 10px; display: block; margin-left: auto; margin-right: auto;">
+            <img src="assets/images/diagrams/logic-bfs.svg" alt="ルート探索のイメージ図" style="width:100%; max-width: 500px; border-radius: 8px; margin-top: 10px; display: block; margin-left: auto; margin-right: auto;">
 
             <h4 style="margin-top:20px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">Step 4: なぜそれが「最短」だと証明できるのか</h4>
             <p style="text-align: left;">この「しらみつぶし」の探し方には、重要な特徴があります。</p>

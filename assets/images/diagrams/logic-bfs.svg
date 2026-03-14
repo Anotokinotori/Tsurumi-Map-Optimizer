@@ -1,0 +1,32 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520">
+  <rect width="800" height="520" rx="24" fill="#eef2ff"/>
+  <g font-family="Segoe UI, Noto Sans JP, sans-serif" fill="#1e293b">
+    <text x="40" y="56" font-size="30" font-weight="700">Breadth-First Route Search</text>
+    <text x="40" y="88" font-size="18" fill="#475569">Check each 1-day route pattern from shortest path length first.</text>
+    <rect x="40" y="130" width="200" height="90" rx="16" fill="#fff" stroke="#93c5fd" stroke-width="3"/>
+    <text x="64" y="170" font-size="22" font-weight="700">Start State</text>
+    <text x="64" y="198" font-size="16" fill="#475569">Current + target layout</text>
+    <rect x="300" y="130" width="220" height="90" rx="16" fill="#fff" stroke="#93c5fd" stroke-width="3"/>
+    <text x="324" y="170" font-size="22" font-weight="700">Expand Actions</text>
+    <text x="324" y="198" font-size="16" fill="#475569">Try every solo or multi action</text>
+    <rect x="580" y="130" width="180" height="90" rx="16" fill="#fff" stroke="#93c5fd" stroke-width="3"/>
+    <text x="604" y="170" font-size="22" font-weight="700">Simulate</text>
+    <text x="604" y="198" font-size="16" fill="#475569">Apply one more day</text>
+    <polygon points="400,270 520,350 400,430 280,350" fill="#dbeafe" stroke="#60a5fa" stroke-width="3"/>
+    <text x="360" y="346" font-size="24" font-weight="700">Goal?</text>
+    <text x="320" y="376" font-size="16" fill="#475569">Matches the ideal layout</text>
+    <rect x="580" y="302" width="180" height="86" rx="16" fill="#eff6ff" stroke="#60a5fa" stroke-width="2"/>
+    <text x="604" y="340" font-size="22" font-weight="700">Queue</text>
+    <text x="604" y="366" font-size="16" fill="#475569">Store unseen states</text>
+    <rect x="280" y="458" width="240" height="42" rx="16" fill="#fff" stroke="#93c5fd" stroke-width="3"/>
+    <text x="312" y="486" font-size="22" font-weight="700">Shortest route found</text>
+  </g>
+  <g stroke="#2563eb" stroke-width="5" fill="none">
+    <path d="M240 175H300"/>
+    <path d="M520 175H580"/>
+    <path d="M670 220V270H460"/>
+    <path d="M520 350H580"/>
+    <path d="M400 430V458"/>
+    <path d="M670 388H740V479H520"/>
+  </g>
+</svg>
