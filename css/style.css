@@ -27,7 +27,6 @@ body {
     font-family: 'Noto Sans JP', sans-serif;
     margin: 0;
     padding: 0;
-    background-image: url('https://api.mg-dev.net/api/v1/genshin/backgrounds/Tsurumi%20Island');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -411,8 +410,7 @@ main {
     font-size: clamp(1em, 1.5vw, 1.2em);
     color: var(--secondary-text-color);
     max-width: 600px;
-    margin: 0 auto;
-    margin-bottom: 10px;
+    margin: 0 auto 10px;
     line-height: 1.6;
 }
 .start-buttons {
@@ -505,19 +503,19 @@ main {
     flex-wrap: wrap;
 }
 .page-footer .left-action {
-     flex: 1 1 0%;
+     flex: 1 1 0;
      display: flex;
      justify-content: flex-start;
      gap: 10px;
 }
 .page-footer .center-action {
-     flex: 1 1 0%;
+     flex: 1 1 0;
      display: flex;
      justify-content: center;
      gap: 15px;
 }
  .page-footer .right-action {
-     flex: 1 1 0%;
+     flex: 1 1 0;
      display: flex;
      justify-content: flex-end;
      gap: 15px;
@@ -652,7 +650,6 @@ main {
     padding: 0 40px; /* Add padding to prevent text overlap with icon */
 }
 .save-icon-btn {
-    background: none;
     border: none;
     cursor: pointer;
     padding: 5px;
@@ -839,7 +836,6 @@ main {
 }
 .title-short { display: none; }
 .btn-back {
-    background: none;
     border: none;
     cursor: pointer;
     padding: 0;
@@ -1403,7 +1399,7 @@ main {
 @media (min-width: 992px) {
     body {
         background-color: #000; /* Fallback for older browsers */
-        background-image: url('https://cdn.jsdelivr.net/gh/Anotokinotori/Tsurumi-Map-Optimizer@main/20250927140652.png');
+        background-image: url('/assets/images/background/tsurumi.png');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
